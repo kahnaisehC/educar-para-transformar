@@ -99,36 +99,36 @@ el sistema es de naturaleza híbrida:
 la información se organizará mediante portales definidos por rol:
 
 ```mermaid
-flowchart td
-    a[inicio de sesión] --> b{rol del usuario}
-    b --> c[portal alumno]
-    b --> d[portal padre]
-    b --> e[portal docente]
-    b --> f[panel administrador]
-    b --> g[módulo dirección]
+ flowchart TD
+     a["inicio de sesión"] --> b{"rol del usuario"}
+     b --> c["portal alumno"]
+     b --> d["portal padre"]
+     b --> e["portal docente"]
+     b --> f["panel administrador"]
+     b --> g["módulo dirección"]
 
-    c --> c1[perfil y estudios]
-    c --> c2[deportes y horarios]
-    c --> c3[transporte y comedor]
-    c --> c4[reporte de alumno]
+     c --> c1["perfil y estudios"]
+     c --> c2["deportes y horarios"]
+     c --> c3["transporte y comedor"]
+     c --> c4["reporte de alumno"]
 
-    d --> d1[mis hijos]
-    d --> d2[información académica]
-    d --> d3[inscripción al cursado]
+     d --> d1["mis hijos"]
+     d --> d2["información académica"]
+     d --> d3["inscripción al cursado"]
 
-    e --> e1[perfil y contacto]
-    e --> e2[carga horaria]
-    e --> e3[mis alumnos]
-    e --> e4[reportes docentes]
+     e --> e1["perfil y contacto"]
+     e --> e2["carga horaria"]
+     e --> e3["mis alumnos"]
+     e --> e4["reportes docentes"]
 
-    f --> f1[gestión académica]
-    f --> f2[usuarios y permisos]
-    f --> f3[deportes y servicios]
-    f --> f4[reportes]
+     f --> f1["gestión académica"]
+     f --> f2["usuarios y permisos"]
+     f --> f3["deportes y servicios"]
+     f --> f4["reportes"]
 
-    g --> g1[plantillas de reportes]
-    g --> g2[parámetros]
-    g --> g3[reportes institucionales]
+     g --> g1["plantillas de reportes"]
+     g --> g2["parámetros"]
+     g --> g3["reportes institucionales"]
 ```
 
 ## 1.7 arquitectura de la aplicación de software
@@ -230,14 +230,14 @@ el código se alojará en un repositorio privado de github. se utilizarán ramas
 ### gráfico de arquitectura de software
 
 ```mermaid
-flowchart lr
-    u[usuarios: alumno, padre, docente, administrador, director]
-    fe[frontend web responsive\nreact]
-    api[api rest\nbackend y mvc]
-    auth[autenticación y rbac]
-    db[(postgresql)]
-    rep[motor de reportes]
-    ext[exportación pdf/csv]
+ flowchart LR
+     u["usuarios: alumno, padre, docente, administrador, director"]
+     fe["frontend web responsive<br/>react"]
+     api["api rest<br/>backend y mvc"]
+     auth["autenticación y rbac"]
+     db[("postgresql")]
+     rep["motor de reportes"]
+     ext["exportación pdf/csv"]
 
     u --> fe
     fe --> api
@@ -359,20 +359,20 @@ las fechas son referenciales y deben ajustarse al calendario real de la cátedra
 # 5. diagrama de pert
 
 ```mermaid
-flowchart lr
-    a[inicio] --> b[planificación]
-    b --> c[estudio de requerimientos]
-    c --> d[modelado de datos]
-    c --> e[arquitectura de información]
-    d --> f[arquitectura de software]
-    e --> g[wireframes y prototipo]
-    f --> h[sprint 1]
-    g --> h
-    h --> i[sprint 2]
-    i --> j[sprint 3]
-    j --> k[pruebas finales]
-    k --> l[despliegue]
-    l --> m[presentación final]
+ flowchart LR
+     a["inicio"] --> b["planificación"]
+     b --> c["estudio de requerimientos"]
+     c --> d["modelado de datos"]
+     c --> e["arquitectura de información"]
+     d --> f["arquitectura de software"]
+     e --> g["wireframes y prototipo"]
+     f --> h["sprint 1"]
+     g --> h
+     h --> i["sprint 2"]
+     i --> j["sprint 3"]
+     j --> k["pruebas finales"]
+     k --> l["despliegue"]
+     l --> m["presentación final"]
 ```
 
 la ruta crítica estimada es: planificación, requerimientos, modelado, diseño técnico, sprint 1, sprint 2, sprint 3, pruebas finales y despliegue.
