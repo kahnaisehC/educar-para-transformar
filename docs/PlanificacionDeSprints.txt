@@ -1,0 +1,121 @@
+﻿Backlog del Sprint 
+De acuerdo con el archivo "Inscripción a Deportes", el backlog completo contiene las 6 historias de usuario.
+ID
+	Título
+	Prioridad
+	Estado
+	Tareas
+	Criterios de aceptación
+	HU-01
+	Inscripción a Deportes
+	Alta
+	To Do
+	1. Diseñar el catálogo de deportes.2. Implementar la inscripción.3. Validar máximo de 2 deportes por alumno.4. Validar conflictos de horario.5. Registrar la inscripción.6. Realizar pruebas funcionales.
+	Seleccionar un deporte válido → inscripción registrada correctamente.Intentar inscribirse en un tercer deporte → el sistema muestra "Límite máximo alcanzado".Seleccionar un deporte con horario superpuesto → el sistema bloquea la inscripción y muestra "Conflicto de horario".
+	HU-02
+	Consulta de Información Académica
+	Alta
+	To Do
+	1. Obtener alumnos asociados al padre.2. Mostrar profesores por materia.3. Mostrar deportes del alumno.4. Implementar control de acceso (RBAC).5. Realizar pruebas de permisos.
+	Seleccionar un hijo asociado → el sistema muestra su información académica y deportiva.Intentar acceder a un alumno no asociado → el acceso es denegado.No tener hijos asociados → el sistema muestra el mensaje correspondiente.
+	HU-03
+	Actualización de Datos de Contacto
+	Media
+	To Do
+	1. Crear formulario de edición.2. Validar formato del correo electrónico.3. Actualizar teléfono y correo en la base de datos.4. Mostrar mensaje de confirmación.5. Ejecutar pruebas funcionales.
+	Ingresar datos válidos → el sistema guarda correctamente los cambios.Ingresar un correo inválido → el sistema muestra un error y no guarda los cambios.
+	HU-04
+	Gestión de Usuarios y Roles
+	Alta
+	To Do
+	1. Implementar alta de usuarios.2. Implementar edición y eliminación de usuarios.3. Asignar roles obligatorios.4. Configurar permisos según el rol.5. Ejecutar pruebas de seguridad.
+	Crear un usuario con un rol válido → el usuario se registra correctamente.Crear un usuario sin rol → el sistema rechaza la operación.Iniciar sesión → el usuario accede únicamente a las funciones permitidas por su rol.
+	HU-05
+	Generación de Listado de Alumnos por Materia
+	Media
+	To Do
+	1. Crear consulta de materias asignadas al docente.2. Generar listado de alumnos.3. Mostrar nivel, curso, materia, profesor y legajo.4. Implementar exportación (opcional CSV).5. Realizar pruebas del listado.
+	Seleccionar una materia → el sistema muestra únicamente los alumnos de esa materia.Generar el listado → incluye nivel, curso, materia, profesor, alumno y legajo.
+	HU-06
+	Inscripción al Servicio de Transporte
+	Alta
+	To Do
+	1. Mostrar los cuatro recorridos disponibles.2. Implementar inscripción al recorrido.3. Validar que el alumno no tenga otra inscripción.4. Registrar la inscripción.5. Realizar pruebas de duplicados.
+	Seleccionar un recorrido disponible → el sistema registra la inscripción correctamente.Intentar inscribirse nuevamente → el sistema bloquea la operación e indica que ya existe una inscripción.Consultar recorridos → el sistema muestra únicamente los cuatro recorridos disponibles.
+	
+
+Sprint 1 (1 semana)
+Objetivo del Sprint
+Implementar las funcionalidades principales para que los alumnos puedan inscribirse a actividades deportivas y los padres consulten la información académica de sus hijos de manera segura.
+Historias incluidas
+ID
+	Título
+	Prioridad
+	Estimación
+	HU-01
+	Inscripción a Deportes
+	Alta
+	5 puntos
+	HU-02
+	Consulta de Información Académica
+	Alta
+	3 puntos
+	Total: 8 puntos de historia
+Plan del Sprint
+* Día 1-2: Diseño de la base de datos, catálogo de deportes y desarrollo del módulo de inscripción.
+* Día 3-4: Implementación de validaciones (máximo de dos deportes y conflictos de horario) y desarrollo de la consulta de información académica con control de acceso por roles.
+* Día 5: Pruebas funcionales, integración de ambas historias, corrección de errores y demostración del Sprint.
+Definition of Done
+Las historias HU-01 y HU-02 cumplen todos sus criterios de aceptación, las pruebas funcionales son exitosas, el código fue revisado por el equipo, integrado al repositorio y la funcionalidad quedó disponible en el entorno de pruebas.
+________________
+
+
+Sprint 2 (1 semana)
+Objetivo del Sprint
+Desarrollar las funcionalidades de autogestión para docentes y administración de usuarios con control de acceso mediante roles.
+Historias incluidas
+ID
+	Título
+	Prioridad
+	Estimación
+	HU-03
+	Actualización de Datos de Contacto
+	Media
+	2 puntos
+	HU-04
+	Gestión de Usuarios y Roles
+	Alta
+	8 puntos
+	Total: 10 puntos de historia
+Plan del Sprint
+* Día 1-2: Desarrollo del formulario de actualización de datos del docente y validaciones de correo electrónico.
+* Día 3-4: Implementación del ABM de usuarios, asignación de roles y configuración de permisos.
+* Día 5: Pruebas de seguridad, integración, corrección de errores y demostración del Sprint.
+Definition of Done
+Las historias HU-03 y HU-04 cumplen sus criterios de aceptación, las validaciones funcionan correctamente, se realizaron pruebas de integración y seguridad, el código fue revisado y quedó desplegado en el entorno de pruebas.
+________________
+
+
+Sprint 3 (1 semana)
+Objetivo del Sprint
+Implementar las funcionalidades de consulta para docentes y la inscripción de alumnos al servicio de transporte institucional.
+Historias incluidas
+ID
+	Título
+	Prioridad
+	Estimación
+	HU-05
+	Generación de Listado de Alumnos por Materia
+	Media
+	3 puntos
+	HU-06
+	Inscripción al Servicio de Transporte
+	Alta
+	5 puntos
+	Total: 8 puntos de historia
+Plan del Sprint
+* Día 1-2: Desarrollo del módulo de generación del listado de alumnos por materia y consulta de información del docente.
+* Día 3-4: Implementación del módulo de inscripción al servicio de transporte y validación de recorridos únicos.
+* Día 5: Pruebas funcionales, pruebas de integración, corrección de incidencias, demostración final y cierre del proyecto.
+Definition of Done
+Las historias HU-05 y HU-06 cumplen todos los criterios de aceptación, las pruebas unitarias y de integración fueron aprobadas, el código fue revisado e integrado al repositorio y todas las funcionalidades quedaron disponibles para la demostración final.

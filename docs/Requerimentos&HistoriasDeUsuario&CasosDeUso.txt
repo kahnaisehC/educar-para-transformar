@@ -1,0 +1,544 @@
+﻿TRABAJO PRÁCTICO N°1
+Parte 1
+
+
+Integrantes: Hakanson Ian, Morales Elias 
+1. Módulo Alumnos (Rol: Alumno)
+El alumno gestiona su propia información de contacto y sus inscripciones extracurriculares.
+* RF-AL-01: El sistema debe permitir al Alumno consultar su información personal y académica (Legajo, DNI, Nombre, Apellido, Fecha de nacimiento, Domicilio, Nivel educativo, Curso y Estado).
+* RF-AL-02: El sistema debe permitir al Alumno modificar su información de contacto (Correo electrónico y Teléfono).
+* RF-AL-03: El sistema debe permitir al Alumno inscribirse a actividades deportivas.
+* RF-AL-04: El sistema debe permitir al Alumno inscribirse al servicio de transporte seleccionando uno de los recorridos disponibles.
+* RF-AL-05: El sistema debe permitir al Alumno inscribirse al servicio de comedor.
+* RF-AL-06: El sistema debe permitir al Alumno generar su propio "Reporte de Alumno", el cual incluirá: Curso al que pertenece, materias que cursa, profesores de cada materia, deportes en los que participa, horarios deportivos y uso de servicios (transporte y comedor).
+2. Módulo Padres (Rol: Padre)
+Este rol se deriva directamente de las reglas de negocio.
+* RF-PA-01: El sistema debe permitir al Padre consultar la información académica exclusivamente de sus hijos asociados (Profesores por materia y Deportes en los que participa).
+* RF-PA-02: El sistema debe permitir al Padre inscribir a sus hijos al cursado del año lectivo.
+3. Módulo Profesores (Rol: Docente/Profesor)
+El docente visualiza su carga horaria y el listado de alumnos a su cargo.
+* RF-PR-01: El sistema debe permitir al Docente consultar su perfil profesional (Legajo, DNI, Nombre, Apellido, Especialidad, Estado, materias a su cargo, curso y nivel).
+* RF-PR-02: El sistema debe permitir al Docente modificar su información de contacto (Correo electrónico y Teléfono).
+* RF-PR-03: El sistema debe permitir al Docente generar su propio "Reporte Docente" (Cursos a cargo por Nivel y Horarios de cada curso).
+* RF-PR-04: El sistema debe permitir al Docente generar reportes de su alumnado: Listado de alumnos por curso y Listado de alumnos por materia (restringido a los cursos/materias que dicta).
+4. Módulo Administrador (Rol: Administrador)
+Tiene el control total del CRUD (Crear, Leer, Actualizar, Borrar) y la seguridad del sistema.
+* RF-AD-01: El sistema debe permitir al Administrador gestionar (crear, borrar, editar y modificar) la información de: Alumnos, Profesores, Padres, Niveles educativos, Cursos, Materias, Deportes, Horarios e Inscripciones.
+* RF-AD-02: El sistema debe permitir al Administrador gestionar los servicios de la institución (Transporte y Comedor).
+* RF-AD-03: El sistema debe permitir al Administrador gestionar los Usuarios del sistema y asignar sus permisos/roles.
+* RF-AD-04: El sistema debe permitir al Administrador generar y consultar todos los reportes definidos por la Dirección.
+REQUERIMIENTO ADICIONAL
+5. Módulo Dirección (Rol: Director)
+Enfocado en la toma de decisiones y definición de métricas.
+* RF-DI-01: El sistema debe permitir al Director crear y definir las plantillas/parámetros de los reportes organizacionales.
+* RF-DI-02: El sistema debe generar los siguientes reportes institucionales para la Dirección (y el Administrador):
+   * Listado de alumnos por curso (Nivel, Curso, Legajo, Apellido, Nombre).
+   * Listado de alumnos por materia (Nivel, Curso, Materia, Profesor, Alumno, Legajo).
+   * Listado de docentes por nivel educativo (Nivel, Profesor, Materias a cargo, Cursos).
+   * Listado de alumnos por deporte (Deporte, Alumno, Curso, Nivel).
+   * Listado de alumnos por deporte y por nivel.
+   * Listado de alumnos por deporte, nivel, horario y profesor a cargo.
+   * Listado de alumnos por recorrido del servicio de transporte.
+6. Reglas de Negocio (Restricciones y Validaciones del Sistema)
+Estas reglas definen el comportamiento interno del software y restringen las acciones de los requerimientos funcionales descritos arriba.
+* RN-01 (Inscripción Deportiva): Un alumno puede inscribirse a un máximo de dos (2) deportes simultáneamente.
+* RN-02 (Conflicto de Horarios): El sistema debe impedir la inscripción de un alumno a una actividad deportiva si existe solapamiento o conflicto de horarios con otra actividad ya registrada.
+* RN-03 (Unicidad de Curso): Un alumno debe pertenecer a un (1) único curso. A su vez, un curso pertenece a un (1) único nivel educativo.
+* RN-04 (Relación Padre-Hijo): Un padre puede tener asociados uno o varios hijos, pero el sistema debe restringir su acceso para que solo pueda consultar y gestionar la información de sus propios hijos.
+* RN-05 (Estructura de Transporte): El servicio de transporte está limitado estrictamente a cuatro (4) recorridos.
+* RN-06 (Prevención de Duplicados): El sistema debe validar y evitar el registro duplicado de cualquier tipo de inscripción (cursado, deportes, transporte, comedor).
+* RN-07 (Control de Acceso - RBAC): El sistema debe garantizar que cada usuario acceda únicamente a los módulos e información permitidos por su rol (Alumno, Docente, Padre, Admin, Director).
+* RN-08 (Estructura Académica): Una materia puede dictarse en diferentes cursos; y una misma materia puede tener diferentes profesores dependiendo del curso.
+* RN-09 (Estructura Deportiva): Cada deporte debe tener obligatoriamente un profesor responsable. Además, un deporte puede dividirse en diferentes grupos según nivel y horario.
+
+
+
+
+1. Clasificación del Sistema de Información
+Este sistema es de naturaleza híbrida, ya que cubre necesidades operativas y de gestión. Principalmente, se clasifica en dos categorías:
+
+
+A. Nivel Operativo: TPS (Transaction Processing System - Sistema de Procesamiento de Transacciones)
+
+
+Justificación: El núcleo del sistema se encarga de registrar, procesar y almacenar las transacciones diarias y rutinarias de la institución educativa.
+
+
+Ejemplos en el sistema:
+
+* Inscripción de alumnos al ciclo lectivo (cursado).
+* Inscripciones a deportes (validando la regla de máximo 2 y conflictos de horarios).
+* Altas y modificaciones en los servicios de comedor y transporte.
+* Actualización de datos de contacto (teléfono, correo) por parte de docentes y alumnos.
+
+
+B. Nivel Táctico/Administrativo: MIS (Management Information System - Sistema de Información Gerencial)
+
+
+* Justificación: El sistema toma los datos generados por el TPS (las transacciones operativas) y los resume en información estructurada para el control y la toma de decisiones gerenciales (en este caso, de la Dirección y Administración).
+* Ejemplos en el sistema:
+
+   * Generación de reportes predefinidos por la dirección (Listados de alumnos por curso, materia, deporte, transporte).
+   * Control de asignación de carga horaria y docentes por nivel educativo.
+   * Monitoreo del uso de servicios (comedor/transporte) para la logística del colegio.
+
+
+2. Arquitectura de la Información (AI)
+La Arquitectura de la Información define cómo se organizará, estructurará y navegará la información para que sea intuitiva. Dado que el sistema tiene una fuerte regla de negocio de Control de Acceso Basado en Roles (RBAC), la AI debe estructurarse mediante Portales o Vistas por Rol:
+
+
+Estructura de Navegación (Mapa del Sitio Lógico):
+
+
+   1. Portal de Autogestión (Alumnos / Padres):
+
+      * Mi Perfil: Datos personales, Modificación de contacto.
+      * Mis Estudios: Curso actual, Materias, Profesores asignados.
+      * Mis Actividades: Inscripción a Deportes, Horarios (con validación visual de conflictos).
+      * Mis Servicios: Inscripción a Transporte (elección de 4 recorridos) y Comedor.
+      * Mis Reportes: Generación de constancias o reportes propios.
+
+
+      2. Portal Docente:
+
+         * Mi Perfil: Especialidad, Datos de contacto.
+         * Mi Carga Horaria: Cursos y materias a cargo, Horarios.
+         * Mis Alumnos: Listados de alumnos por curso/materia.
+         3. Backoffice / Panel de Control (Administrador):
+
+            * Gestión Académica: ABM (Alta, Baja, Modificación) de Niveles, Cursos, Materias y Horarios.
+            * Gestión de Usuarios: ABM de Alumnos, Padres, Docentes, Administradores, y asignación de Permisos.
+            * Gestión de Extracurriculares: ABM de Deportes (asignación de profesores, niveles, grupos) y Servicios (Transporte, Comedor).
+            4. Módulo de Dirección (Director / Admin):
+
+               * Gestor de Reportes: Interfaz para configurar y emitir reportes institucionales (Deportes, Transporte, Docentes por nivel, etc.).
+  
+
+
+
+3. Arquitectura de Software
+Considerando que es un sistema concurrente (padres, alumnos, docentes y administradores accediendo simultáneamente) y que requiere alta integridad de datos (evitar duplicados, cruce de horarios), la arquitectura más adecuada es una Arquitectura Web de Tres Capas (3-Tier Architecture) apoyada en el patrón MVC (Modelo-Vista-Controlador).
+
+
+Capa 1: Capa de Presentación (Frontend / Vista)
+
+
+               * Descripción: Es la interfaz de usuario con la que interactúan los distintos roles. Debe ser Responsive (adaptable a celulares y computadoras), ya que padres y alumnos probablemente accedan desde móviles.
+               * Tecnologías recomendadas: HTML5, CSS3, JavaScript. Frameworks como React.js, Angular o Vue.js (creando una Single Page Application - SPA para mayor fluidez).
+Capa 2: Capa de Lógica de Negocio (Backend / Aplicación / Controlador)
+
+
+               * Descripción: Aquí residen todas las Reglas de Negocio. Es el motor del sistema. Si un alumno intenta inscribirse a un tercer deporte, o a un horario que se solapa, esta capa rechaza la transacción. También maneja la autenticación y autorización (verificando si el usuario es Padre, Admin, etc.).
+               * Tecnologías recomendadas: Java (Spring Boot), C# (.NET Core), Python (Django/FastAPI) o Node.js.
+               * Componente clave: Una API RESTful que comunique el Frontend con el Backend de forma segura (usando tokens JWT para manejar las sesiones y los roles).
+Capa 3: Capa de Acceso a Datos (Base de Datos / Modelo)
+
+
+               * Descripción: Almacena toda la información del sistema. Dado que las entidades están fuertemente relacionadas (Un alumno pertenece a un curso, un curso a un nivel, una materia es dictada por un docente, etc.), es indispensable usar una Base de Datos Relacional (RDBMS).
+               * Tecnologías recomendadas: PostgreSQL, MySQL o SQL Server.
+               * Justificación: Las bases de datos relacionales garantizan la integridad referencial (no se puede borrar un curso si tiene alumnos inscritos) y permiten consultas complejas (JOINs) necesarias para generar los reportes cruzados que exige la Dirección (ej: Alumnos por deporte, nivel, horario y profesor).
+Módulo Transversal Adicional:
+
+
+Motor de Reportes: Se debe integrar una librería en el Backend (como JasperReports en Java, o librerías de generación de PDF/Excel) para materializar los reportes solicitados por la Dirección y los Docentes.
+________________
+
+
+DIAGRAMA DE ARQUITECTURA DE SOFTWARE
+  
+
+
+
+
+
+________________
+Inscripción a Deporte
+Historia 1:
+
+
+HISTORIA DE USUARIO
+	
+
+	Número:
+	HU-01
+	Usuario:
+	Alumno
+	Prioridad en negocio:
+	Alta
+	Riesgo en desarrollo:
+	Medio
+	Puntos estimados:
+	5
+	Iteración asignada:
+	Sprint 1
+	Programador responsable:
+	[A definir]
+	Descripción:
+	Como Alumno, quiero inscribirme en actividades deportivas ofrecidas por la institución para participar en deportes extracurriculares.
+	Validación:
+	1. El sistema muestra el catálogo de deportes disponibles.
+2. El sistema impide inscribirse a más de 2 (dos) deportes simultáneamente.
+3. El sistema bloquea la inscripción si el horario del nuevo deporte presenta un conflicto o solapamiento con una actividad ya registrada.
+
+
+	Notas:
+	Es fundamental controlar las condiciones de carrera (race conditions) a nivel de base de datos al validar los cupos y los solapamientos horarios.
+	Caso 1:
+
+
+CASO DE USO
+	
+
+	Autor:
+	Elías
+	Fecha:
+	11 de agosto de 2026
+	Prioridad:
+	Alta
+	Descripción:
+	Proceso mediante el cual un alumno se inscribe en un deporte, validando límites máximos y evitando superposiciones horarias.
+	Actores:
+	Alumno
+	Precondiciones:
+	El alumno debe estar autenticado en el sistema y tener un curso y nivel educativo asignados.
+	Flujo Normal:
+	1. El alumno accede al módulo "Inscripciones".
+2. Selecciona la opción "Deportes".
+3. El sistema lista los deportes disponibles y sus horarios.
+4. El alumno selecciona un deporte y confirma.
+5. El sistema valida que el alumno no supere el límite de 2 deportes y que no existan conflictos de horarios.
+6. El sistema registra la inscripción y muestra un mensaje de éxito.
+	Flujo Alternativo:
+	Paso 5a: Si el alumno ya está inscrito en 2 deportes, el sistema muestra el error "Límite máximo alcanzado" y cancela la acción.
+Paso 5b: Si el horario coincide con otra actividad, arroja el error "Conflicto de horario" y cancela la acción.
+
+
+	Poscondiciones:
+	El alumno queda vinculado al grupo, horario y profesor responsable del deporte seleccionado.
+	Diagrama 1:
+
+
+  
+    participant Sistema    end
+________________
+Consulta de Información Académica
+Historia 2:
+
+
+HISTORIA DE USUARIO
+	
+
+	Número:
+	HU-02
+	Usuario:
+	Padre
+	Prioridad en negocio:
+	Alta
+	Riesgo en desarrollo:
+	Bajo
+	Puntos estimados:
+	3
+	Iteración asignada:
+	Sprint 1
+	Programador responsable:
+	[A definir]
+	Descripción:
+	Como Padre, quiero consultar la información académica de mis hijos para hacer seguimiento de los profesores por materia y los deportes en los que participan.
+	Validación:
+	1. El usuario solo visualiza la información de los alumnos que estén explícitamente vinculados como sus hijos.
+2. Se oculta cualquier información del resto del alumnado.
+
+
+	Notas:
+	La relación Padre-Hijo debe estar correctamente mapeada para garantizar un Control de Acceso Basado en Roles (RBAC) estricto y el aislamiento de los datos.
+	Caso 2:
+
+
+CASO DE USO
+	
+
+	Autor:
+	Elías
+	Fecha:
+	11 de agosto de 2026
+	Prioridad:
+	Alta
+	Descripción:
+	Proceso que permite a un padre visualizar la información académica y extracurriculcar exclusivamente de sus hijos.
+	Actores:
+	Padre
+	Precondiciones:
+	El padre debe estar logueado y tener al menos un hijo (alumno) asociado a su cuenta.
+	Flujo Normal:
+	1. El padre ingresa a la sección "Mis Hijos".
+2. El sistema muestra la lista de hijos asociados.
+3. El padre hace clic sobre el perfil de uno de sus hijos.
+4. El sistema consulta la base de datos y despliega la grilla con los profesores por materia y los deportes en los que el alumno participa.
+
+
+	Flujo Alternativo:
+	Paso 2a: Si por un error de carga el sistema no detecta asociaciones, muestra el mensaje "No tiene alumnos asociados. Por favor, comuníquese con Administración".
+	Poscondiciones:
+	El padre visualiza la información académica actualizada correspondiente únicamente a su hijo.
+	Diagrama 2:
+
+
+  
+
+Actualización de Datos de Contacto
+Historia 3:
+
+
+HISTORIA DE USUARIO
+	
+
+	Número:
+	HU-03
+	Usuario:
+	Docente
+	Prioridad en negocio:
+	Media
+	Riesgo en desarrollo:
+	Bajo
+	Puntos estimados:
+	2
+	Iteración asignada:
+	Sprint 2
+	Programador responsable:
+	[A definir]
+	Descripción:
+	Como Docente, quiero modificar mi teléfono y correo electrónico personal para mantener mi información de contacto actualizada ante la administración.
+	Validación:
+	1. El sistema permite editar los campos de texto de teléfono y correo.
+2. Los cambios se impactan y guardan correctamente en el perfil del docente.
+
+
+	Notas:
+	Implementar validación de formato de correo (RegEx) tanto en el frontend como en la validación del modelo en el backend.
+	Caso 3:
+
+
+CASO DE USO
+	
+
+	Autor:
+	Elías
+	Fecha:
+	11 de agosto de 2026
+	Prioridad:
+	Media
+	Descripción:
+	Proceso mediante el cual un docente actualiza sus datos personales de contacto en el sistema.
+	Actores:
+	Docente
+	Precondiciones:
+	El docente ha iniciado sesión correctamente en su portal.
+	Flujo Normal:
+	1. El docente se dirige a "Mi Perfil" y selecciona "Administrar información".
+2. Modifica los campos "Correo electrónico" y "Teléfono".
+3. Hace clic en "Guardar cambios".
+4. El sistema valida los datos ingresados.
+5. La base de datos actualiza el registro del docente y se retorna un mensaje de confirmación.
+
+
+	Flujo Alternativo:
+	Paso 4a: Si el formato del correo ingresado es inválido, el sistema resalta el campo de texto y bloquea la actualización hasta que se corrija.
+	Poscondiciones:
+	La información de contacto del docente queda actualizada en el sistema.
+	Diagrama 3:
+  
+
+cente: Mostrar mensaje de confirmación
+________________
+Alta de Nuevo Curso
+Historia 4:
+
+
+HISTORIA DE USUARIO
+	
+
+	Número:
+	HU-04
+	Usuario:
+	Administrador
+	Prioridad en negocio:
+	Crítica
+	Riesgo en desarrollo:
+	Alto
+	Puntos estimados:
+	8
+	Iteración asignada:
+	Sprint 2
+	Programador responsable:
+	[A definir]
+	Descripción:
+	Como Administrador, quiero crear, editar y eliminar usuarios asignándoles roles específicos para gestionar los niveles de acceso al sistema informático.
+	Validación:
+	1. El administrador puede dar de alta nuevos usuarios.
+2. Es obligatorio asignar un rol (Alumno, Padre, Docente, Administrador, Director).
+3. Cada usuario creado solo puede acceder a las partes del sistema asociadas a su rol.
+
+
+	Notas:
+	La arquitectura de permisos requiere que los modelos de la base de datos estén altamente modularizados para separar la autenticación de la autorización.
+	Caso 4:
+
+
+CASO DE USO
+	
+
+	Autor:
+	Elías
+	Fecha:
+	11 de agosto de 2026
+	Prioridad:
+	Alta
+	Descripción:
+	Proceso donde el Administrador da de alta un nuevo curso académico dentro de un nivel educativo específico.
+	Actores:
+	Administrador
+	Precondiciones:
+	El usuario autenticado posee el rol de Administrador.
+	Flujo Normal:
+	1. El administrador ingresa a "Gestión Educativa" > "Cursos".
+2. Selecciona "Nuevo Curso".
+3. Completa los datos del curso y selecciona en el desplegable a qué único Nivel Educativo pertenece.
+4. Presiona "Crear".
+5. El sistema verifica que no exista un curso con la misma nomenclatura en ese nivel.
+6. El curso se guarda exitosamente.
+
+
+	Flujo Alternativo:
+	Paso 5a: Si el curso ya existe, el sistema previene el registro duplicado mostrando una alerta de validación.
+	Poscondiciones:
+	El curso queda creado y disponible para asociarle materias, docentes y alumnos.
+	Diagrama 4:
+  ________________
+Configuración de Plantilla de Reporte
+Historia 5:
+
+
+HISTORIA DE USUARIO
+	
+
+	Número:
+	HU-05
+	Usuario:
+	Docente
+	Prioridad en negocio:
+	Media
+	Riesgo en desarrollo:
+	Bajo
+	Puntos estimados:
+	3
+	Iteración asignada:
+	Sprint 3
+	Programador responsable:
+	[A definir]
+	Descripción:
+	Como Docente, quiero generar un listado de los alumnos inscritos por materia para llevar el control del curso que tengo a cargo.
+	Validación:
+	1. El sistema filtra y solo muestra las materias asignadas a ese docente específico.
+2. El listado generado incluye: Nivel educativo, Curso, Materia, Profesor a cargo, Alumno y Legajo.
+	Notas:
+	Sería ideal renderizar estos datos en una tabla dinámica en el frontend que permita, opcionalmente, la exportación directa a un archivo CSV.
+	Caso 5:
+
+
+CASO DE USO
+	
+
+	Autor:
+	Elías
+	Fecha:
+	11 de agosto de 2026
+	Prioridad:
+	Media
+	Descripción:
+	Proceso que permite a la Dirección configurar y guardar una plantilla para un reporte institucional.
+	Actores:
+	Director
+	Precondiciones:
+	El director debe estar autenticado en el sistema.
+	Flujo Normal:
+	1. El director ingresa al módulo "Reportes de Dirección".
+2. Hace clic en "Crear reporte".
+3. Selecciona la entidad base (Ej. Docente) y los parámetros a mostrar (Ej. Cursos a cargo, Horarios).
+4. Asigna un nombre al reporte y guarda la definición.
+5. El sistema almacena la configuración de la plantilla.
+
+
+	Flujo Alternativo:
+	Paso 3a: Si el director no selecciona ningún parámetro para el reporte, el botón de "Guardar" permanece deshabilitado.
+	Poscondiciones:
+	La nueva estructura del reporte queda guardada en el sistema para ser generada y consultada en el futuro.
+	Diagrama 5:
+  
+
+
+
+
+
+________________
+Inscripción a Servicio de Transporte
+Historia 6:
+
+
+HISTORIA DE USUARIO
+	
+
+	Número:
+	HU-06
+	Usuario:
+	Alumno
+	Prioridad en negocio:
+	Alta
+	Riesgo en desarrollo:
+	Medio
+	Puntos estimados:
+	5
+	Iteración asignada:
+	Sprint 3
+	Programador responsable:
+	[A definir]
+	Descripción:
+	Como Alumno, quiero inscribirme a uno de los recorridos del servicio de transporte para asegurar mi traslado a la institución educativa.
+	Validación:
+	1. El sistema lista únicamente los 4 recorridos predefinidos.
+2. El sistema evita registros duplicados, asegurando que el alumno quede inscrito una sola vez al servicio.
+
+
+	Notas:
+	Utilizar restricciones de unicidad (unique constraints) combinando el ID del alumno y la entidad del servicio de transporte.
+	Caso 6:
+
+
+CASO DE USO
+	
+
+	Autor:
+	Elías
+	Fecha:
+	11 de agosto de 2026
+	Prioridad:
+	Media
+	Descripción:
+	Proceso de inscripción de un alumno al servicio de transporte escolar seleccionando uno de los trayectos establecidos.
+	Actores:
+	Alumno
+	Precondiciones:
+	El alumno tiene la sesión iniciada en el portal de autogestión.
+	Flujo Normal:
+	1. El alumno navega a la sección "Servicios de la Institución".
+2. Selecciona "Transporte".
+3. El sistema muestra una lista con exactamente cuatro (4) recorridos disponibles.
+4. El alumno selecciona el recorrido que le corresponde y confirma la inscripción.
+5. El sistema verifica que el alumno no esté previamente inscrito en otro recorrido.
+6. El registro se confirma exitosamente.
+
+
+	Flujo Alternativo:
+	Paso 5a: Si el sistema detecta que el alumno ya está inscrito en el transporte, bloquea la acción indicando que debe dar de baja el recorrido anterior antes de elegir uno nuevo (evita registros duplicados).
+	Poscondiciones:
+	El alumno queda registrado en el recorrido de transporte seleccionado.
+	Diagrama 6:

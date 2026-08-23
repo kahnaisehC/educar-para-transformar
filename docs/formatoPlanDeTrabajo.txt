@@ -1,0 +1,178 @@
+﻿PLAN DE TRABAJO – PROYECTO
+         CENTRO EDUCATIVO        
+“Transformar para educar”- Sistema de Gestión
+
+
+NOMBRE DEL EQUIPO DE TRABAJO  
+
+
+APELLIDO Y NOMBRE DEL EQUIPO DE TRABAJO
+  
+
+
+
+DESCRIPCIÓN DEL PROYECTO
+* Enunciar el Problema
+* Enunciar los requerimientos y clasificarlos en funcionales y no funcionales
+* Clasificar el tipo de Sistema de Información 
+* Graficar la Arquitectura de la Información
+* Arquitectura de la aplicación de software
+   * Aplicación de los principios
+   * Componentes
+   * Componentes funcionales
+   * Restricciones
+   * Conectores
+   * Tipo de Arquitectura de Software
+   * Tecnologías
+   * Gestión de Proyecto: Jira u otra herramienta que permita para la presentación final del trabajo se debe mostrar un registro o bitácora de la evolución del trabajo usando tablero Kanban. Se debe registrar el del equipo y el de cada integrante.
+   * Backend
+   * Frontend
+   * Gestor de Base de Datos
+   * Maquetación: 
+   * wireframe, 
+   * mockup
+   * prototipo
+   * Repositorio de Software
+   * Gráfico de la arquitectura de software
+
+
+
+
+
+
+OBJETIVOS DEL PROYECTO (usar el formato de objetivo SMART para enunciarlos) CRONOGRAMA DE ACTIVIDADES – PARTE SISTEMA DE GESTIÓN
+DESCRIPCIÓN DE LAS ACTIVIDADES
+(En el caso de trabajar en equipo utilizar la siguiente tabla:
+ETAPA
+	TAREAS
+	DURACIÓN en HS
+	RESULTADOS ESPERADOS
+	ALUMO RESPONSABLE
+	Planificación del Proyecto
+	
+
+	
+
+	
+
+	
+
+	Estudio de Requerimientos
+	
+
+	
+
+	
+
+	
+
+	Modelado
+	
+
+	
+
+	
+
+	
+
+	Diseño
+	
+
+	
+
+	
+
+	
+
+	Codificación
+	
+
+	
+
+	
+
+	
+
+	Pruebas
+	
+
+	
+
+	
+
+	
+
+	Implementación o Despliegue
+	
+
+	
+
+	
+
+	
+
+	
+
+GRÁFICO DEL DIAGRAMA DE GANTT
+
+
+DIAGRAMA DE PERT
+
+
+BACKLOG DEL SPRINT: Se debe realizar uno por cada historia de usuario realizado.
+ID
+	Título / Historia de Usuario
+	Prioridad
+	  
+
+Estado  
+	Tareas
+	Criterios de Aceptación
+	HU1
+	
+
+	
+
+	To Do
+	1. 	* 	HU2
+	
+
+	
+
+	To Do
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+PLAN DE SPRINT[1]
+* Realizar el Plan por semana.
+* Indicar los requerimientos incluidos en cada sprint.
+
+
+Formato Recomendado:
+      * Tamaño de página A4, márgenes: 2,5 cm superior, 2 cm inferior, 2,5 cm
+izquierdo, 2 cm derecha.
+      * Texto Calibri, 11, normal, entrelíneas normal simple.
+      * 
+
+
+
+  
+  
+
+________________
+[1] Aplicar este plan para la Etapa de Programación

@@ -1,0 +1,188 @@
+El centro educativo “EDUCAR PARA TRANSFORMAR”, es una institución de gestión privada de
+alta calidad educativa, ubicada en las afuera de la ciudad de Resistencia. Tiene previsto iniciar
+sus actividades en marzo de 2027 por lo cual requiere iniciar el proceso de automatización de
+sus actividades de gestión, por lo cual requiere:
+• Implementación de una página web,
+• un sistema de gestión y
+• una app.
+El centro educativo cuenta con
+• Niveles educativos con jornada extendida
+o Inicial
+o Primario
+o Secundario
+• Servicio de Apoyo estudiantil
+• Idiomas:
+o Inglés
+o Portugués
+o Francés
+• Instalaciones
+o Pileta de Natación
+o Canchas de fútbol
+o Pista de Atletismo
+o Gimnasio cubierto
+o Comedor
+• Deportes
+o Atletismo
+o Natación
+o Fútbol
+o Artes Marciales
+o Vóleibol
+o Danza
+o Básquet
+o Ajedrez
+• Servicio de Micros de traslado
+• Laboratorios de computación, física y química.
+• Comedor
+• Enfermería
+2
+PARTE-1 – Página Web
+El siguiente paso en el proceso de automatización de la gestión del centro educativo es el diseño
+e implementación de su página web. La información
+proporcionada con respecto a la misma es:
+• Información corporativa
+• Información de contacto con el centro
+educativo para realizar consultas mediante página
+web, whtasapp y redes sociales.
+•
+• Los usuarios deben poder dejar su opinión en la página sin necesidad de estar
+logueados-
+• Debe haber una galería de imágenes del centro educativo.
+• Los estudiantes y padres deben estar registrados en la página para poder
+acceder a la información.
+• Acceso a docentes, autoridades y personal de la escuela
+• Acceso a padres
+• Acceso a estudiantes.
+• Quienes somos
+• Niveles Educativos
+• Bienestar estudiantil
+• Noticias
+• Acceso a docentes, personal, autoridades, padres y estudiantes.
+• Solicitud de Inscripción (formulario)
+• Empleo
+PARTE-2 – SISTEMA DE GESTIÓN
+Continuando con el proceso de automatización de los procesos, la Dirección del Centro Educativo
+considera que necesita un sistema de gestión que permita centralizar la información y facilitar la
+gestión académica, administrativa y extracurricular.
+Objetivo general
+Desarrollar un sistema que permita gestionar de manera integrada la información académica,
+deportiva y de servicios de los alumnos, facilitando el trabajo de docentes, padres y personal
+administrativo.
+El sistema deberá garantizar que la información se encuentre actualizada, sea consistente y
+pueda ser consultada de acuerdo con los permisos correspondientes.
+En esta etapa del proyecto se desarrollarán tres módulos principales:
+• Módulo Alumnos
+• Módulo de Profesores
+• Módulo Administrador
+Módulo Alumnos:
+3
+Este módulo permitirá consultar y administrar la información relacionada con los alumnos.
+Cada alumno tendrá, como mínimo:
+• Legajo.
+• DNI.
+• Nombre.
+• Apellido.
+• Fecha de nacimiento.
+• Domicilio.
+• Teléfono.
+• Correo electrónico.
+• Nivel educativo.
+• Curso.
+• Estado del alumno.
+Módulo Profesores:
+El módulo permitirá administrar la información de los docentes.
+Cada profesor tendrá:
+• Legajo.
+• DNI.
+• Nombre.
+• Apellido.
+• Especialidad.
+• Correo electrónico.
+• Teléfono.
+• Estado.
+El sistema deberá permitir registrar las materias que tiene a su cargo y los cursos/niveles en los
+que desarrolla sus actividades.
+Módulo Administración:
+El administrador será responsable de configurar y mantener la información general del sistema.
+Podrá administrar:
+• Alumnos.
+• Profesores.
+• Niveles educativos.
+• Cursos.
+• Materias.
+• Deportes.
+• Horarios.
+• Inscripciones.
+• Servicio de transporte.
+• Servicio de comedor.
+• Usuarios y permisos.
+Además, tendrá acceso a todos los reportes definidos por la Dirección.
+4
+El sistema deberá permitir, además, generar información para la toma de decisiones mediante
+diferentes reportes que son:
+• Por alumno:
+o Curso al que pertenece.
+o Materias que cursa.
+o Profesores de cada materia.
+o Deportes en los que participa.
+o Horarios de las actividades deportivas.
+o Uso del servicio de transporte.
+o Uso del servicio de comedor.
+• Por docente:
+o Cursos a cargo por Nivel
+o Horarios de cada curso
+• Listado de alumnos por curso. Debe mostrar:
+o Nivel educativo.
+o Curso.
+o Legajo.
+o Apellido.
+o Nombre.
+• Listado de alumnos por materia- Debe mostrar:
+o Nivel educativo.
+o Curso.
+o Materia.
+o Profesor a cargo.
+o Alumno.
+o Legajo.
+• Listado de docentes por nivel educativo. Debe mostrar:
+o Nivel educativo.
+o Profesor.
+o Materias a cargo.
+o Cursos.
+• Listado de alumnos por deporte. Debe mostrar:
+o Deporte.
+o Alumno.
+o Curso.
+o Nivel educativo.
+• Listado de alumnos por deporte y por nivel.
+• Listado de alumnos por deporte, nivel, horario y profesor a cargo.
+• Listado de alumnos por recorrido del servicio de transporte.
+Reglas de Negocio:
+5
+• Cada alumno puede:
+o inscribirse a dos deportes simultáneamente.
+o Inscribirse al servicio de transporte por recorrido.
+o Inscribirse al servicio de comedor
+• Los padres pueden acceder a la siguiente información de cada hijo:
+o Profesores por materia
+o Deportes en que participa
+o Inscribir a su hijo al cursado.
+• Un alumno pertenece a un curso y puede cursar diferentes materias.
+• Una materia puede ser dictada por un profesor a diferentes cursos.
+• El sistema deberá controlar que no existan conflictos de horarios entre las actividades
+deportivas seleccionadas por los estudiantes.
+• El servicio de transporte tiene cuatro recorridos.
+• Cada alumno debe pertenecer a un único curso.
+• Cada curso pertenece a un único nivel educativo.
+• Una materia puede ser dictada en diferentes cursos.
+• Una materia puede tener diferentes profesores según el curso.
+• Cada deporte debe tener un profesor responsable.
+• Un deporte puede tener diferentes grupos según nivel y horario.
+• Un padre puede tener asociados uno o varios hijos.
+• Un padre solamente puede consultar y gestionar información de sus hijos.
+• El administrador puede gestionar toda la información del sistema.
+• El sistema debe evitar registros duplicados de inscripciones.
+• El administrador debe permitir que cada tipo de usuario solo puede acceder a las partes
+del sistema asociado a su rol.
+DESAFÍO
+Agregar al sistema al menos una funcionalidad que genere valor y que no esté contemplada
+inicialmente.
