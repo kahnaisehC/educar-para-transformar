@@ -1,243 +1,273 @@
-# plan de trabajo - proyecto
+<div class="cover">
+  <div class="cover-logos">
+    <img src="assets/logo-educar-para-transformar.png" alt="Logo del Centro Educativo EDUCAR PARA TRANSFORMAR">
+    <img src="assets/logo-tecnicatura-univ-en-prog.png" alt="Logo de la Tecnicatura Universitaria en Programación">
+  </div>
 
-## centro educativo "educar para transformar"
+  <div class="cover-content">
+    <h1>Plan de Trabajo - Proyecto</h1>
+    <h2>Centro Educativo "EDUCAR PARA TRANSFORMAR"</h2>
+    <h3>Sistema de Gestión</h3>
+    <p class="cover-career">Tecnicatura Universitaria en Programación</p>
+    <p><strong>Equipo de trabajo</strong></p>
+    <p>Hakanson, Ian<br>Morales, Elías</p>
+  </div>
+</div>
 
-### sistema de gestión
+<div class="index-page">
+  <h1>Índice</h1>
+  <ul class="index-list">
+    <li><a href="#1-descripción-del-proyecto">1. Descripción del Proyecto</a></li>
+    <li><a href="#2-objetivos-del-proyecto">2. Objetivos del Proyecto</a></li>
+    <li><a href="#3-cronograma-de-actividades---sistema-de-gestión">3. Cronograma de Actividades - Sistema de Gestión</a></li>
+    <li><a href="#4-diagrama-de-gantt">4. Diagrama de Gantt</a></li>
+    <li><a href="#5-diagrama-de-pert">5. Diagrama de PERT</a></li>
+    <li><a href="#6-backlog-de-los-sprints">6. Backlog de los Sprints</a></li>
+    <li><a href="#7-plan-de-sprint">7. Plan de Sprint</a></li>
+    <li><a href="#8-entregables">8. Entregables</a></li>
+  </ul>
+</div>
 
-## nombre del equipo de trabajo
+# Plan de Trabajo - Proyecto
 
-**equipo de desarrollo del sistema de gestión educativo**
+## Centro Educativo "EDUCAR PARA TRANSFORMAR"
 
-## apellido y nombre del equipo de trabajo
+### Sistema de Gestión
 
-- hakanson, ian
-- morales, elias
+## Nombre del Equipo de Trabajo
+
+**Equipo de desarrollo del sistema de gestión educativo**
+
+## Apellido y Nombre del Equipo de Trabajo
+
+- Hakanson, Ian
+- Morales, Elías
 
 ---
 
-# 1. descripción del proyecto
+# 1. Descripción del Proyecto
 
-## 1.1 problema
+## 1.1 Problema
 
-el centro educativo privado "educar para transformar", ubicado en las afueras de la ciudad de resistencia, iniciará sus actividades en marzo de 2027. la institución necesita automatizar y centralizar sus procesos académicos, administrativos, deportivos y de servicios.
+El centro educativo privado "EDUCAR PARA TRANSFORMAR", ubicado en las afueras de la ciudad de Resistencia, iniciará sus actividades en marzo de 2027. La institución necesita automatizar y centralizar sus procesos académicos, administrativos, deportivos y de servicios.
 
-actualmente, la información de alumnos, padres, docentes, cursos, materias, deportes, horarios, transporte y comedor puede encontrarse dispersa y resultar difícil de actualizar o consultar. esta situación puede producir duplicación de datos, errores en las inscripciones, conflictos de horarios y dificultades para generar información para la toma de decisiones.
+Actualmente, la información de alumnos, padres, docentes, cursos, materias, deportes, horarios, transporte y comedor puede encontrarse dispersa y resultar difícil de actualizar o consultar. Esta situación puede producir duplicación de datos, errores en las inscripciones, conflictos de horarios y dificultades para generar información para la toma de decisiones.
 
-el proyecto propone desarrollar un sistema web de gestión que permita administrar la información de manera integrada, segura y consistente. el sistema tendrá portales diferenciados para alumnos, padres, docentes, administradores y dirección, con acceso controlado según el rol de cada usuario.
+El proyecto propone desarrollar un sistema web de gestión que permita administrar la información de manera integrada, segura y consistente. El sistema tendrá portales diferenciados para alumnos, padres, docentes, administradores y Dirección, con acceso controlado según el rol de cada usuario.
 
-la página web institucional y la aplicación móvil forman parte del escenario general de automatización, pero el alcance de este plan se concentra en el sistema de gestión.
+La página web institucional y la aplicación móvil forman parte del escenario general de automatización, pero el alcance de este plan se concentra en el sistema de gestión.
 
-## 1.2 requerimientos funcionales
+## 1.2 Requerimientos Funcionales
 
-### alumno
+### Alumno
 
-- consultar información personal y académica.
-- actualizar correo electrónico y teléfono.
-- inscribirse a actividades deportivas.
-- inscribirse a un recorrido del servicio de transporte.
-- inscribirse al servicio de comedor.
-- generar un reporte propio de alumno.
+- Consultar información personal y académica.
+- Actualizar correo electrónico y teléfono.
+- Inscribirse a actividades deportivas.
+- Inscribirse a un recorrido del servicio de transporte.
+- Inscribirse al servicio de comedor.
+- Generar un reporte propio de alumno.
 
-### padre
+### Padre
 
-- consultar profesores y deportes de sus hijos asociados.
-- inscribir a sus hijos al cursado del año lectivo.
-- acceder exclusivamente a la información de sus hijos.
+- Consultar profesores y deportes de sus hijos asociados.
+- Inscribir a sus hijos al cursado del año lectivo.
+- Acceder exclusivamente a la información de sus hijos.
 
-### docente
+### Docente
 
-- consultar su perfil profesional, materias, cursos y niveles.
-- actualizar correo electrónico y teléfono.
-- consultar su carga horaria.
-- generar listados de alumnos por curso y materia.
-- generar un reporte docente.
+- Consultar su perfil profesional, materias, cursos y niveles.
+- Actualizar correo electrónico y teléfono.
+- Consultar su carga horaria.
+- Generar listados de alumnos por curso y materia.
+- Generar un reporte docente.
 
-### administrador
+### Administrador
 
-- gestionar alumnos, padres, docentes, niveles, cursos, materias, deportes, horarios e inscripciones.
-- gestionar transporte y comedor.
-- gestionar usuarios, roles y permisos.
-- generar y consultar reportes institucionales autorizados.
+- Gestionar alumnos, padres, docentes, niveles, cursos, materias, deportes, horarios e inscripciones.
+- Gestionar transporte y comedor.
+- Gestionar usuarios, roles y permisos.
+- Generar y consultar reportes institucionales autorizados.
 
-### director
+### Director
 
-- crear, editar, activar y desactivar plantillas de reportes.
-- seleccionar entidades y parámetros para los reportes.
-- generar reportes institucionales para la toma de decisiones.
+- Crear, editar, activar y desactivar plantillas de reportes.
+- Seleccionar entidades y parámetros para los reportes.
+- Generar reportes institucionales para la toma de decisiones.
 
-## 1.3 requerimientos no funcionales
+## 1.3 Requerimientos No Funcionales
 
-- el sistema debe autenticar a los usuarios y aplicar control de acceso basado en roles.
-- cada usuario debe acceder solo a la información autorizada.
-- la base de datos debe mantener integridad referencial y evitar duplicados.
-- el sistema debe soportar accesos concurrentes.
-- la interfaz debe ser clara y responsive.
-- el código debe organizarse por capas y mantenerse en un repositorio versionado.
-- las operaciones administrativas importantes deben quedar registradas para auditoría.
+- El sistema debe autenticar a los usuarios y aplicar control de acceso basado en roles.
+- Cada usuario debe acceder solo a la información autorizada.
+- La base de datos debe mantener integridad referencial y evitar duplicados.
+- El sistema debe soportar accesos concurrentes.
+- La interfaz debe ser clara y responsive.
+- El código debe organizarse por capas y mantenerse en un repositorio versionado.
+- Las operaciones administrativas importantes deben quedar registradas para auditoría.
 
-## 1.4 reglas de negocio principales
+## 1.4 Reglas de Negocio Principales
 
-- un alumno puede inscribirse como máximo a dos deportes simultáneamente.
-- el sistema debe impedir conflictos de horarios entre actividades deportivas.
-- cada alumno pertenece a un único curso.
-- cada curso pertenece a un único nivel educativo.
-- un padre puede tener uno o varios hijos asociados, pero solo puede consultar y gestionar esos hijos.
-- el servicio de transporte tiene exactamente cuatro recorridos.
-- no se permiten inscripciones duplicadas.
-- cada deporte debe tener un docente responsable.
-- un deporte puede tener grupos diferentes según nivel y horario.
+- Un alumno puede inscribirse como máximo a dos deportes simultáneamente.
+- El sistema debe impedir conflictos de horarios entre actividades deportivas.
+- Cada alumno pertenece a un único curso.
+- Cada curso pertenece a un único nivel educativo.
+- Un padre puede tener uno o varios hijos asociados, pero solo puede consultar y gestionar esos hijos.
+- El servicio de transporte tiene exactamente cuatro recorridos.
+- No se permiten inscripciones duplicadas.
+- Cada deporte debe tener un docente responsable.
+- Un deporte puede tener grupos diferentes según nivel y horario.
 
-## 1.5 tipo de sistema de información
+## 1.5 Tipo de Sistema de Información
 
-el sistema es de naturaleza híbrida:
+El sistema es de naturaleza híbrida:
 
-- **tps - sistema de procesamiento de transacciones:** procesa inscripciones, altas, modificaciones, asignaciones y uso de servicios.
-- **mis - sistema de información gerencial:** transforma los datos operativos en reportes para la administración y la dirección.
+- **TPS - Sistema de Procesamiento de Transacciones:** procesa inscripciones, altas, modificaciones, asignaciones y uso de servicios.
+- **MIS - Sistema de Información Gerencial:** transforma los datos operativos en reportes para la Administración y la Dirección.
 
-## 1.6 arquitectura de la información
+## 1.6 Arquitectura de la Información
 
-la información se organizará mediante portales definidos por rol:
+La información se organizará mediante portales definidos por rol:
 
 ```mermaid
  flowchart TD
-     a["inicio de sesión"] --> b{"rol del usuario"}
-     b --> c["portal alumno"]
-     b --> d["portal padre"]
-     b --> e["portal docente"]
-     b --> f["panel administrador"]
-     b --> g["módulo dirección"]
+     a["Inicio de sesión"] --> b{"Rol del usuario"}
+     b --> c["Portal Alumno"]
+     b --> d["Portal Padre"]
+     b --> e["Portal Docente"]
+     b --> f["Panel Administrador"]
+     b --> g["Módulo Dirección"]
 
-     c --> c1["perfil y estudios"]
-     c --> c2["deportes y horarios"]
-     c --> c3["transporte y comedor"]
-     c --> c4["reporte de alumno"]
+     c --> c1["Perfil y estudios"]
+     c --> c2["Deportes y horarios"]
+     c --> c3["Transporte y comedor"]
+     c --> c4["Reporte de alumno"]
 
-     d --> d1["mis hijos"]
-     d --> d2["información académica"]
-     d --> d3["inscripción al cursado"]
+     d --> d1["Mis hijos"]
+     d --> d2["Información académica"]
+     d --> d3["Inscripción al cursado"]
 
-     e --> e1["perfil y contacto"]
-     e --> e2["carga horaria"]
-     e --> e3["mis alumnos"]
-     e --> e4["reportes docentes"]
+     e --> e1["Perfil y contacto"]
+     e --> e2["Carga horaria"]
+     e --> e3["Mis alumnos"]
+     e --> e4["Reportes docentes"]
 
-     f --> f1["gestión académica"]
-     f --> f2["usuarios y permisos"]
-     f --> f3["deportes y servicios"]
-     f --> f4["reportes"]
+     f --> f1["Gestión académica"]
+     f --> f2["Usuarios y permisos"]
+     f --> f3["Deportes y servicios"]
+     f --> f4["Reportes"]
 
-     g --> g1["plantillas de reportes"]
-     g --> g2["parámetros"]
-     g --> g3["reportes institucionales"]
+     g --> g1["Plantillas de reportes"]
+     g --> g2["Parámetros"]
+     g --> g3["Reportes institucionales"]
 ```
 
-## 1.7 arquitectura de la aplicación de software
+## 1.7 Arquitectura de la Aplicación de Software
 
-### aplicación de principios
+### Aplicación de Principios
 
-- **separación de responsabilidades:** cada capa tendrá una función definida.
-- **bajo acoplamiento:** los módulos se comunicarán mediante interfaces claras.
-- **alta cohesión:** cada módulo agrupará funcionalidades relacionadas.
-- **seguridad por diseño:** la autenticación y autorización se validarán en el backend.
-- **integridad de datos:** las reglas críticas se validarán en la lógica de negocio y en la base de datos.
-- **responsive design:** las pantallas se adaptarán a computadoras y dispositivos móviles.
+- **Separación de responsabilidades:** Cada capa tendrá una función definida.
+- **Bajo acoplamiento:** Los módulos se comunicarán mediante interfaces claras.
+- **Alta cohesión:** Cada módulo agrupará funcionalidades relacionadas.
+- **Seguridad por diseño:** La autenticación y autorización se validarán en el backend.
+- **Integridad de datos:** Las reglas críticas se validarán en la lógica de negocio y en la base de datos.
+- **Responsive design:** Las pantallas se adaptarán a computadoras y dispositivos móviles.
 
-### componentes
+### Componentes
 
-- aplicación frontend web.
-- api rest del backend.
-- módulo de autenticación y autorización rbac.
-- módulo de alumnos y padres.
-- módulo de docentes.
-- módulo de administración.
-- módulo de dirección.
-- motor de reportes.
-- base de datos relacional.
+- Aplicación frontend web.
+- API REST del backend.
+- Módulo de autenticación y autorización RBAC.
+- Módulo de alumnos y padres.
+- Módulo de docentes.
+- Módulo de Administración.
+- Módulo de Dirección.
+- Motor de reportes.
+- Base de datos relacional.
 
-### componentes funcionales
+### Componentes Funcionales
 
-1. gestión de usuarios, roles y permisos.
-2. gestión académica: niveles, cursos, materias y horarios.
-3. gestión de alumnos, padres y docentes.
-4. gestión de actividades deportivas.
-5. gestión de transporte y comedor.
-6. inscripciones y validaciones de negocio.
-7. reportes operativos e institucionales.
-8. alertas y notificaciones como funcionalidad adicional.
+1. Gestión de usuarios, roles y permisos.
+2. Gestión académica: niveles, cursos, materias y horarios.
+3. Gestión de alumnos, padres y docentes.
+4. Gestión de actividades deportivas.
+5. Gestión de transporte y comedor.
+6. Inscripciones y validaciones de negocio.
+7. Reportes operativos e institucionales.
+8. Alertas y notificaciones como funcionalidad adicional.
 
-### restricciones
+### Restricciones
 
-- el sistema debe respetar el acceso basado en roles.
-- un alumno no puede superar dos deportes.
-- no se permiten conflictos de horarios deportivos.
-- un alumno solo puede tener un recorrido de transporte activo.
-- deben mantenerse exactamente cuatro recorridos de transporte.
-- no deben duplicarse inscripciones ni usuarios según las claves definidas.
-- los cambios administrativos deben poder auditarse.
+- El sistema debe respetar el acceso basado en roles.
+- Un alumno no puede superar dos deportes.
+- No se permiten conflictos de horarios deportivos.
+- Un alumno solo puede tener un recorrido de transporte activo.
+- Deben mantenerse exactamente cuatro recorridos de transporte.
+- No deben duplicarse inscripciones ni usuarios según las claves definidas.
+- Los cambios administrativos deben poder auditarse.
 
-### conectores
+### Conectores
 
-- frontend y backend: http/https mediante api rest y json.
-- backend y base de datos: orm o repositorio de persistencia.
-- backend y motor de reportes: servicio interno con consultas autorizadas.
-- equipo y repositorio: git mediante github o gitlab.
-- equipo y gestión: tablero kanban en jira, github projects u otra herramienta equivalente.
+- Frontend y backend: HTTP/HTTPS mediante API REST y JSON.
+- Backend y base de datos: ORM o repositorio de persistencia.
+- Backend y motor de reportes: servicio interno con consultas autorizadas.
+- Equipo y repositorio: Git mediante GitHub o GitLab.
+- Equipo y gestión: tablero Kanban en Jira, GitHub Projects u otra herramienta equivalente.
 
-### tipo de arquitectura de software
+### Tipo de Arquitectura de Software
 
-se utilizará una arquitectura web de tres capas, complementada con el patrón mvc:
+Se utilizará una arquitectura web de tres capas, complementada con el patrón MVC:
 
-1. **capa de presentación:** interfaz web y componentes visuales.
-2. **capa de lógica de negocio:** casos de uso, validaciones, autenticación y autorización.
-3. **capa de acceso a datos:** repositorios, orm y base de datos relacional.
+1. **Capa de presentación:** Interfaz web y componentes visuales.
+2. **Capa de lógica de negocio:** Casos de uso, validaciones, autenticación y autorización.
+3. **Capa de acceso a datos:** Repositorios, ORM y base de datos relacional.
 
-### tecnologías previstas
+### Tecnologías Previstas
 
-las tecnologías definitivas se seleccionarán durante la etapa de diseño. la propuesta inicial es:
+Las tecnologías definitivas se seleccionarán durante la etapa de diseño. La propuesta inicial es:
 
-- **backend:** node.js con una api rest.
-- **frontend:** react.
-- **gestor de base de datos:** postgresql.
-- **autenticación:** sesiones seguras o tokens jwt.
-- **reportes:** generación en pantalla y exportación opcional a pdf o csv.
-- **repositorio:** github.
-- **gestión del proyecto:** jira o github projects.
+- **Backend:** Node.js con una API REST.
+- **Frontend:** React.
+- **Gestor de base de datos:** PostgreSQL.
+- **Autenticación:** Sesiones seguras o tokens JWT.
+- **Reportes:** Generación en pantalla y exportación opcional a PDF o CSV.
+- **Repositorio:** GitHub.
+- **Gestión del proyecto:** Jira o GitHub Projects.
 
-### backend
+### Backend
 
-el backend centralizará la lógica de negocio, validará permisos, gestionará las inscripciones y expondrá los endpoints de la api. las reglas de máximo de deportes, conflictos de horarios, unicidad y relación padre-hijo no dependerán únicamente del frontend.
+El backend centralizará la lógica de negocio, validará permisos, gestionará las inscripciones y expondrá los endpoints de la API. Las reglas de máximo de deportes, conflictos de horarios, unicidad y relación padre-hijo no dependerán únicamente del frontend.
 
-### frontend
+### Frontend
 
-el frontend proporcionará interfaces diferenciadas por rol, formularios de gestión, tablas de consulta, mensajes de validación y visualización de reportes. se priorizará una interfaz responsive y accesible.
+El frontend proporcionará interfaces diferenciadas por rol, formularios de gestión, tablas de consulta, mensajes de validación y visualización de reportes. Se priorizará una interfaz responsive y accesible.
 
-### gestor de base de datos
+### Gestor de Base de Datos
 
-se utilizará postgresql por su soporte para relaciones, restricciones de unicidad, integridad referencial y consultas complejas para reportes.
+Se utilizará PostgreSQL por su soporte para relaciones, restricciones de unicidad, integridad referencial y consultas complejas para reportes.
 
-### maquetación
+### Maquetación
 
-- **wireframes:** definirán la estructura básica de las pantallas principales.
-- **mockups:** representarán la apariencia visual, colores, tipografías y componentes.
-- **prototipo:** permitirá simular la navegación y validar los flujos principales antes de codificar.
+- **Wireframes:** Definirán la estructura básica de las pantallas principales.
+- **Mockups:** Representarán la apariencia visual, colores, tipografías y componentes.
+- **Prototipo:** Permitirá simular la navegación y validar los flujos principales antes de codificar.
 
-las pantallas mínimas a prototipar son inicio de sesión, portal del alumno, consulta del padre, portal docente, panel administrador, inscripción deportiva, inscripción al transporte y reportes de dirección.
+Las pantallas mínimas a prototipar son inicio de sesión, portal del alumno, consulta del padre, portal docente, panel administrador, inscripción deportiva, inscripción al transporte y reportes de Dirección.
 
-### repositorio de software
+### Repositorio de Software
 
-el código se alojará en un repositorio privado de github. se utilizarán ramas para funcionalidades, revisiones mediante pull requests y mensajes de commit descriptivos. también se almacenarán allí el `readme`, la documentación técnica, los diagramas y las evidencias de pruebas.
+El código se alojará en un repositorio privado de GitHub. Se utilizarán ramas para funcionalidades, revisiones mediante pull requests y mensajes de commit descriptivos. También se almacenarán allí el `README`, la documentación técnica, los diagramas y las evidencias de pruebas.
 
-### gráfico de arquitectura de software
+### Gráfico de Arquitectura de Software
 
 ```mermaid
  flowchart LR
-     u["usuarios: alumno, padre, docente, administrador, director"]
-     fe["frontend web responsive<br/>react"]
-     api["api rest<br/>backend y mvc"]
-     auth["autenticación y rbac"]
-     db[("postgresql")]
-     rep["motor de reportes"]
-     ext["exportación pdf/csv"]
+     u["Usuarios: Alumno, Padre, Docente, Administrador, Director"]
+     fe["Frontend web responsive<br/>React"]
+     api["API REST<br/>Backend y MVC"]
+     auth["Autenticación y RBAC"]
+     db[("PostgreSQL")]
+     rep["Motor de reportes"]
+     ext["Exportación PDF/CSV"]
 
     u --> fe
     fe --> api
@@ -248,354 +278,354 @@ el código se alojará en un repositorio privado de github. se utilizarán ramas
     rep --> ext
 ```
 
-## 1.8 gestión del proyecto
+## 1.8 Gestión del Proyecto
 
-se utilizará un tablero kanban con las columnas **backlog**, **to do**, **in progress**, **review**, **done** y **blocked**. cada tarea tendrá un responsable, estimación, estado y evidencia.
+Se utilizará un tablero Kanban con las columnas **Backlog**, **To Do**, **In Progress**, **Review**, **Done** y **Blocked**. Cada tarea tendrá un responsable, estimación, estado y evidencia.
 
-la bitácora deberá registrar:
+La bitácora deberá registrar:
 
-- reuniones y decisiones del equipo.
-- tareas asignadas a cada integrante.
-- avances y bloqueos.
-- revisiones de código.
-- pruebas ejecutadas y resultados.
-- entregables de cada sprint.
+- Reuniones y decisiones del equipo.
+- Tareas asignadas a cada integrante.
+- Avances y bloqueos.
+- Revisiones de código.
+- Pruebas ejecutadas y resultados.
+- Entregables de cada sprint.
 
-## 1.9 integrantes y responsabilidades
+## 1.9 Integrantes y Responsabilidades
 
-| integrante | responsabilidades principales |
+| Integrante | Responsabilidades principales |
 |---|---|
-| ian hakanson | coordinación técnica, modelado de datos, backend, seguridad y documentación de arquitectura |
-| elias morales | análisis funcional, frontend, maquetación, pruebas y documentación de historias y casos de uso |
-| ambos | planificación, revisión de código, integración, demostraciones y presentación final |
+| Ian Hakanson | Coordinación técnica, modelado de datos, backend, seguridad y documentación de arquitectura |
+| Elías Morales | Análisis funcional, frontend, maquetación, pruebas y documentación de historias y casos de uso |
+| Ambos | Planificación, revisión de código, integración, demostraciones y presentación final |
 
 ---
 
-# 2. objetivos del proyecto
+# 2. Objetivos del Proyecto
 
-los objetivos se expresan utilizando el formato smart.
+Los objetivos se expresan utilizando el formato SMART.
 
-## objetivo general
+## Objetivo General
 
-desarrollar, durante el período académico definido por la cátedra, un sistema web de gestión para "educar para transformar" que centralice la información académica, extracurricular y de servicios, aplicando control de acceso por roles y validaciones de integridad para que la versión demostrable cumpla los criterios de aceptación de las historias priorizadas.
+Desarrollar, durante el período académico definido por la cátedra, un sistema web de gestión para "EDUCAR PARA TRANSFORMAR" que centralice la información académica, extracurricular y de servicios, aplicando control de acceso por roles y validaciones de integridad para que la versión demostrable cumpla los criterios de aceptación de las historias priorizadas.
 
-## objetivos específicos
+## Objetivos Específicos
 
-1. **relevante y específico:** analizar y documentar el 100% de los requisitos, reglas de negocio, historias de usuario y casos de uso incluidos en el alcance antes de iniciar la codificación.
-2. **medible:** diseñar el modelo de datos, la arquitectura de información, los wireframes, mockups y el prototipo de los flujos principales antes de finalizar la etapa de diseño.
-3. **alcanzable:** implementar las siete historias de usuario en tres sprints semanales, priorizando inscripción deportiva, consulta familiar, seguridad, reportes y transporte.
-4. **medible:** ejecutar pruebas funcionales, de integración y de permisos para el 100% de los criterios de aceptación antes de la demostración final.
-5. **relevante:** entregar una versión desplegada en un entorno de pruebas, con documentación, repositorio, bitácora kanban y evidencias de participación individual.
+1. **Relevante y específico:** Analizar y documentar el 100% de los requisitos, reglas de negocio, historias de usuario y casos de uso incluidos en el alcance antes de iniciar la codificación.
+2. **Medible:** Diseñar el modelo de datos, la arquitectura de información, los wireframes, mockups y el prototipo de los flujos principales antes de finalizar la etapa de diseño.
+3. **Alcanzable:** Implementar las siete historias de usuario en tres sprints semanales, priorizando inscripción deportiva, consulta familiar, seguridad, reportes y transporte.
+4. **Medible:** Ejecutar pruebas funcionales, de integración y de permisos para el 100% de los criterios de aceptación antes de la demostración final.
+5. **Relevante:** Entregar una versión desplegada en un entorno de pruebas, con documentación, repositorio, bitácora Kanban y evidencias de participación individual.
 
 ---
 
-# 3. cronograma de actividades - sistema de gestión
+# 3. Cronograma de Actividades - Sistema de Gestión
 
-las horas son estimaciones iniciales para el trabajo del equipo. el campo responsable identifica al integrante que coordina la tarea; ambos integrantes participan en las actividades de integración y revisión.
+Las horas son estimaciones iniciales para el trabajo del equipo. El campo responsable identifica al integrante que coordina la tarea; ambos integrantes participan en las actividades de integración y revisión.
 
-| etapa | tareas | duración en hs | resultados esperados | responsable |
+| Etapa | Tareas | Duración en hs | Resultados esperados | Responsable |
 |---|---|---:|---|---|
-| planificación del proyecto | definir alcance, equipo, roles, riesgos, repositorio, tablero y calendario | 4 | acta inicial, tablero kanban y repositorio creados | ambos |
-| planificación del proyecto | descomponer historias en tareas y estimar puntos y horas | 3 | backlog priorizado y plan de sprints | ian |
-| estudio de requerimientos | revisar escenario, requisitos, reglas de negocio y alcance | 5 | requisitos funcionales y no funcionales validados | elias |
-| estudio de requerimientos | corregir historias, criterios de aceptación y casos de uso | 6 | catálogo consistente de hu y cu | elias |
-| modelado | diseñar modelo entidad-relación y diccionario de datos | 8 | modelo de datos normalizado | ian |
-| modelado | modelar roles, permisos, inscripciones y restricciones | 5 | matriz rbac y reglas de integridad | ian |
-| modelado | completar arquitectura de información y mapa de navegación | 4 | mapa del sitio lógico | elias |
-| diseño | diseñar arquitectura de tres capas y contratos de api | 6 | diagrama técnico y endpoints definidos | ian |
-| diseño | crear wireframes, mockups y prototipo navegable | 8 | prototipo de los flujos principales | elias |
-| diseño | definir componentes visuales y criterios responsive | 4 | guía visual inicial | elias |
-| codificación | configurar proyecto, base de datos y autenticación | 8 | estructura ejecutable y acceso seguro | ian |
-| codificación | implementar módulos de alumnos, padres y docentes | 12 | portales y consultas básicas funcionales | ambos |
-| codificación | implementar deportes, horarios, transporte y comedor | 12 | inscripciones y validaciones operativas | ian |
-| codificación | implementar administración, rbac y reportes | 14 | panel administrativo y reportes funcionales | ambos |
-| codificación | implementar frontend y validaciones de formularios | 14 | interfaces responsive conectadas a la api | elias |
-| pruebas | crear casos de prueba y datos de prueba | 4 | plan de pruebas y datos controlados | elias |
-| pruebas | ejecutar pruebas funcionales y de integración | 10 | evidencias y defectos registrados | ambos |
-| pruebas | ejecutar pruebas de permisos, duplicados y conflictos horarios | 6 | reglas críticas verificadas | ian |
-| pruebas | corregir errores y realizar regresión | 8 | versión estable candidata a entrega | ambos |
-| implementación o despliegue | preparar variables de entorno y base de datos de prueba | 4 | entorno configurado | ian |
-| implementación o despliegue | desplegar aplicación y ejecutar smoke tests | 5 | sistema disponible en entorno de pruebas | ian |
-| implementación o despliegue | completar documentación, bitácora y presentación | 6 | entrega final completa | ambos |
+| Planificación del proyecto | Definir alcance, equipo, roles, riesgos, repositorio, tablero y calendario | 4 | Acta inicial, tablero Kanban y repositorio creados | Ambos |
+| Planificación del proyecto | Descomponer historias en tareas y estimar puntos y horas | 3 | Backlog priorizado y plan de sprints | Ian |
+| Estudio de requerimientos | Revisar escenario, requisitos, reglas de negocio y alcance | 5 | Requisitos funcionales y no funcionales validados | Elías |
+| Estudio de requerimientos | Corregir historias, criterios de aceptación y casos de uso | 6 | Catálogo consistente de HU y CU | Elías |
+| Modelado | Diseñar modelo entidad-relación y diccionario de datos | 8 | Modelo de datos normalizado | Ian |
+| Modelado | Modelar roles, permisos, inscripciones y restricciones | 5 | Matriz RBAC y reglas de integridad | Ian |
+| Modelado | Completar arquitectura de información y mapa de navegación | 4 | Mapa del sitio lógico | Elías |
+| Diseño | Diseñar arquitectura de tres capas y contratos de API | 6 | Diagrama técnico y endpoints definidos | Ian |
+| Diseño | Crear wireframes, mockups y prototipo navegable | 8 | Prototipo de los flujos principales | Elías |
+| Diseño | Definir componentes visuales y criterios responsive | 4 | Guía visual inicial | Elías |
+| Codificación | Configurar proyecto, base de datos y autenticación | 8 | Estructura ejecutable y acceso seguro | Ian |
+| Codificación | Implementar módulos de alumnos, padres y docentes | 12 | Portales y consultas básicas funcionales | Ambos |
+| Codificación | Implementar deportes, horarios, transporte y comedor | 12 | Inscripciones y validaciones operativas | Ian |
+| Codificación | Implementar Administración, RBAC y reportes | 14 | Panel administrativo y reportes funcionales | Ambos |
+| Codificación | Implementar frontend y validaciones de formularios | 14 | Interfaces responsive conectadas a la API | Elías |
+| Pruebas | Crear casos de prueba y datos de prueba | 4 | Plan de pruebas y datos controlados | Elías |
+| Pruebas | Ejecutar pruebas funcionales y de integración | 10 | Evidencias y defectos registrados | Ambos |
+| Pruebas | Ejecutar pruebas de permisos, duplicados y conflictos horarios | 6 | Reglas críticas verificadas | Ian |
+| Pruebas | Corregir errores y realizar regresión | 8 | Versión estable candidata a entrega | Ambos |
+| Implementación o despliegue | Preparar variables de entorno y base de datos de prueba | 4 | Entorno configurado | Ian |
+| Implementación o despliegue | Desplegar aplicación y ejecutar smoke tests | 5 | Sistema disponible en entorno de pruebas | Ian |
+| Implementación o despliegue | Completar documentación, bitácora y presentación | 6 | Entrega final completa | Ambos |
 
-**estimación total:** 162 horas de trabajo del equipo.
+**Estimación total:** 162 horas de trabajo del equipo.
 
 ---
 
-# 4. diagrama de gantt
+# 4. Diagrama de Gantt
 
-la planificación se distribuye en cinco semanas: análisis y planificación, modelado y diseño, y tres semanas de programación correspondientes a los sprints.
+La planificación se distribuye en cinco semanas: análisis y planificación, modelado y diseño, y tres semanas de programación correspondientes a los sprints.
 
 ```mermaid
 gantt
-    title plan de trabajo del sistema de gestión
-    dateformat  yyyy-mm-dd
-    axisformat  %d/%m
+     title Plan de trabajo del sistema de gestión
+     dateFormat  yyyy-mm-dd
+     axisFormat  %d/%m
 
-    section análisis y planificación
-    planificación del proyecto       :a1, 2026-08-24, 3d
-    estudio de requerimientos        :a2, after a1, 4d
+     section Análisis y planificación
+     Planificación del proyecto       :a1, 2026-08-24, 3d
+     Estudio de requerimientos        :a2, after a1, 4d
 
-    section modelado y diseño
-    modelo de datos                  :b1, after a2, 4d
-    arquitectura de información      :b2, after a2, 3d
-    arquitectura de software         :b3, after b1, 3d
-    wireframes, mockups y prototipo  :b4, after b2, 5d
+     section Modelado y diseño
+     Modelo de datos                  :b1, after a2, 4d
+     Arquitectura de información      :b2, after a2, 3d
+     Arquitectura de software         :b3, after b1, 3d
+     Wireframes, mockups y prototipo  :b4, after b2, 5d
 
-    section programación
-    sprint 1 - hu-01 y hu-02         :c1, after b3, 5d
-    sprint 2 - hu-03 y hu-04         :c2, after c1, 5d
-    sprint 3 - hu-05, hu-06 y hu-07  :c3, after c2, 5d
+     section Programación
+     Sprint 1 - HU-01 y HU-02         :c1, after b3, 5d
+     Sprint 2 - HU-03 y HU-04         :c2, after c1, 5d
+     Sprint 3 - HU-05, HU-06 y HU-07  :c3, after c2, 5d
 
-    section cierre
-    pruebas de regresión              :d1, after c3, 3d
-    despliegue y presentación         :d2, after d1, 2d
+     section Cierre
+     Pruebas de regresión              :d1, after c3, 3d
+     Despliegue y presentación         :d2, after d1, 2d
 ```
 
-las fechas son referenciales y deben ajustarse al calendario real de la cátedra.
+Las fechas son referenciales y deben ajustarse al calendario real de la cátedra.
 
 ---
 
-# 5. diagrama de pert
+# 5. Diagrama de PERT
 
 ```mermaid
  flowchart LR
-     a["inicio"] --> b["planificación"]
-     b --> c["estudio de requerimientos"]
-     c --> d["modelado de datos"]
-     c --> e["arquitectura de información"]
-     d --> f["arquitectura de software"]
-     e --> g["wireframes y prototipo"]
-     f --> h["sprint 1"]
+     a["Inicio"] --> b["Planificación"]
+     b --> c["Estudio de requerimientos"]
+     c --> d["Modelado de datos"]
+     c --> e["Arquitectura de información"]
+     d --> f["Arquitectura de software"]
+     e --> g["Wireframes y prototipo"]
+     f --> h["Sprint 1"]
      g --> h
-     h --> i["sprint 2"]
-     i --> j["sprint 3"]
-     j --> k["pruebas finales"]
-     k --> l["despliegue"]
-     l --> m["presentación final"]
+     h --> i["Sprint 2"]
+     i --> j["Sprint 3"]
+     j --> k["Pruebas finales"]
+     k --> l["Despliegue"]
+     l --> m["Presentación final"]
 ```
 
-la ruta crítica estimada es: planificación, requerimientos, modelado, diseño técnico, sprint 1, sprint 2, sprint 3, pruebas finales y despliegue.
+La ruta crítica estimada es: planificación, requerimientos, modelado, diseño técnico, Sprint 1, Sprint 2, Sprint 3, pruebas finales y despliegue.
 
 ---
 
-# 6. backlog de los sprints
+# 6. Backlog de los Sprints
 
-## hu-01 - inscripción a deportes
+## HU-01 - Inscripción a Deportes
 
-| id | título / historia de usuario | prioridad | estado |
+| ID | Título / Historia de Usuario | Prioridad | Estado |
 |---|---|---|---|
-| hu-01 | como alumno, quiero inscribirme a actividades deportivas para participar en propuestas extracurriculares | alta | to do |
+| HU-01 | Como Alumno, quiero inscribirme a actividades deportivas para participar en propuestas extracurriculares | Alta | To Do |
 
-**tareas:**
+**Tareas:**
 
-1. diseñar catálogo de deportes, grupos y horarios.
-2. implementar consulta de actividades disponibles.
-3. implementar inscripción deportiva.
-4. validar máximo de dos deportes activos.
-5. validar conflictos de horarios.
-6. registrar deporte, grupo, horario y docente responsable.
-7. ejecutar pruebas funcionales y de concurrencia.
+1. Diseñar catálogo de deportes, grupos y horarios.
+2. Implementar consulta de actividades disponibles.
+3. Implementar inscripción deportiva.
+4. Validar máximo de dos deportes activos.
+5. Validar conflictos de horarios.
+6. Registrar deporte, grupo, horario y docente responsable.
+7. Ejecutar pruebas funcionales y de concurrencia.
 
-**criterios de aceptación:**
+**Criterios de aceptación:**
 
-- el catálogo muestra deportes y grupos disponibles.
-- se bloquea el tercer deporte.
-- se bloquean horarios superpuestos.
-- la inscripción confirmada queda asociada al alumno.
+- El catálogo muestra deportes y grupos disponibles.
+- Se bloquea el tercer deporte.
+- Se bloquean horarios superpuestos.
+- La inscripción confirmada queda asociada al alumno.
 
-## hu-02 - consulta de información académica
+## HU-02 - Consulta de Información Académica
 
-| id | título / historia de usuario | prioridad | estado |
+| ID | Título / Historia de Usuario | Prioridad | Estado |
 |---|---|---|---|
-| hu-02 | como padre, quiero consultar la información académica y deportiva de mis hijos | alta | to do |
+| HU-02 | Como Padre, quiero consultar la información académica y deportiva de mis hijos | Alta | To Do |
 
-**tareas:**
+**Tareas:**
 
-1. modelar la relación padre-hijo.
-2. obtener los hijos asociados al usuario autenticado.
-3. mostrar profesores por materia y deportes activos.
-4. implementar autorización por relación padre-hijo.
-5. probar acceso autorizado y no autorizado.
+1. Modelar la relación padre-hijo.
+2. Obtener los hijos asociados al usuario autenticado.
+3. Mostrar profesores por materia y deportes activos.
+4. Implementar autorización por relación padre-hijo.
+5. Probar acceso autorizado y no autorizado.
 
-**criterios de aceptación:**
+**Criterios de aceptación:**
 
-- el padre visualiza únicamente hijos asociados.
-- se muestran profesores y deportes del hijo seleccionado.
-- se rechaza el acceso a alumnos no asociados.
-- se informa si no existen hijos asociados.
+- El padre visualiza únicamente hijos asociados.
+- Se muestran profesores y deportes del hijo seleccionado.
+- Se rechaza el acceso a alumnos no asociados.
+- Se informa si no existen hijos asociados.
 
-## hu-03 - actualización de datos de contacto
+## HU-03 - Actualización de Datos de Contacto
 
-| id | título / historia de usuario | prioridad | estado |
+| ID | Título / Historia de Usuario | Prioridad | Estado |
 |---|---|---|---|
-| hu-03 | como alumno o docente, quiero modificar mi correo y teléfono | media | to do |
+| HU-03 | Como Alumno o Docente, quiero modificar mi correo y teléfono | Media | To Do |
 
-**tareas:**
+**Tareas:**
 
-1. crear formulario de edición para ambos roles.
-2. validar campos obligatorios y correo electrónico.
-3. validar permisos para modificar únicamente el perfil propio.
-4. persistir los cambios en la base de datos.
-5. mostrar confirmación o errores.
-6. ejecutar pruebas de validación.
+1. Crear formulario de edición para ambos roles.
+2. Validar campos obligatorios y correo electrónico.
+3. Validar permisos para modificar únicamente el perfil propio.
+4. Persistir los cambios en la base de datos.
+5. Mostrar confirmación o errores.
+6. Ejecutar pruebas de validación.
 
-**criterios de aceptación:**
+**Criterios de aceptación:**
 
-- el usuario puede modificar sus propios datos.
-- un correo inválido no se guarda.
-- los cambios válidos se persisten.
-- se muestra un mensaje de confirmación.
+- El usuario puede modificar sus propios datos.
+- Un correo inválido no se guarda.
+- Los cambios válidos se persisten.
+- Se muestra un mensaje de confirmación.
 
-## hu-04 - gestión de usuarios y roles
+## HU-04 - Gestión de Usuarios y Roles
 
-| id | título / historia de usuario | prioridad | estado |
+| ID | Título / Historia de Usuario | Prioridad | Estado |
 |---|---|---|---|
-| hu-04 | como administrador, quiero gestionar usuarios y roles para controlar el acceso | crítica | to do |
+| HU-04 | Como Administrador, quiero gestionar usuarios y roles para controlar el acceso | Crítica | To Do |
 
-**tareas:**
+**Tareas:**
 
-1. implementar alta, consulta, edición y desactivación de usuarios.
-2. implementar asignación de roles.
-3. configurar permisos de alumno, padre, docente, administrador y director.
-4. evitar usuarios duplicados.
-5. proteger endpoints y vistas según rol.
-6. ejecutar pruebas de seguridad y autorización.
+1. Implementar alta, consulta, edición y desactivación de usuarios.
+2. Implementar asignación de roles.
+3. Configurar permisos de Alumno, Padre, Docente, Administrador y Director.
+4. Evitar usuarios duplicados.
+5. Proteger endpoints y vistas según rol.
+6. Ejecutar pruebas de seguridad y autorización.
 
-**criterios de aceptación:**
+**Criterios de aceptación:**
 
-- se pueden gestionar usuarios.
-- es obligatorio asignar un rol válido.
-- cada usuario accede solo a sus funciones autorizadas.
-- no se permiten duplicados según las claves definidas.
+- Se pueden gestionar usuarios.
+- Es obligatorio asignar un rol válido.
+- Cada usuario accede solo a sus funciones autorizadas.
+- No se permiten duplicados según las claves definidas.
 
-## hu-05 - listado de alumnos por materia
+## HU-05 - Listado de Alumnos por Materia
 
-| id | título / historia de usuario | prioridad | estado |
+| ID | Título / Historia de Usuario | Prioridad | Estado |
 |---|---|---|---|
-| hu-05 | como docente, quiero generar listados de alumnos de mis materias | media | to do |
+| HU-05 | Como Docente, quiero generar listados de alumnos de mis materias | Media | To Do |
 
-**tareas:**
+**Tareas:**
 
-1. consultar materias y cursos asignados al docente.
-2. generar consulta de alumnos por materia.
-3. mostrar nivel, curso, materia, profesor, alumno y legajo.
-4. aplicar restricciones de acceso.
-5. implementar exportación csv opcional.
-6. probar listados con distintos docentes.
+1. Consultar materias y cursos asignados al docente.
+2. Generar consulta de alumnos por materia.
+3. Mostrar nivel, curso, materia, profesor, alumno y legajo.
+4. Aplicar restricciones de acceso.
+5. Implementar exportación CSV opcional.
+6. Probar listados con distintos docentes.
 
-**criterios de aceptación:**
+**Criterios de aceptación:**
 
-- el docente solo ve sus materias y cursos.
-- el listado contiene todos los campos requeridos.
-- no se expone información de otros docentes.
+- El docente solo ve sus materias y cursos.
+- El listado contiene todos los campos requeridos.
+- No se expone información de otros docentes.
 
-## hu-06 - inscripción al servicio de transporte
+## HU-06 - Inscripción al Servicio de Transporte
 
-| id | título / historia de usuario | prioridad | estado |
+| ID | Título / Historia de Usuario | Prioridad | Estado |
 |---|---|---|---|
-| hu-06 | como alumno, quiero seleccionar un recorrido de transporte | alta | to do |
+| HU-06 | Como Alumno, quiero seleccionar un recorrido de transporte | Alta | To Do |
 
-**tareas:**
+**Tareas:**
 
-1. configurar los cuatro recorridos disponibles.
-2. mostrar recorridos activos.
-3. implementar inscripción a un recorrido.
-4. validar una única inscripción activa por alumno.
-5. evitar duplicados mediante validación y restricción de base de datos.
-6. ejecutar pruebas funcionales.
+1. Configurar los cuatro recorridos disponibles.
+2. Mostrar recorridos activos.
+3. Implementar inscripción a un recorrido.
+4. Validar una única inscripción activa por alumno.
+5. Evitar duplicados mediante validación y restricción de base de datos.
+6. Ejecutar pruebas funcionales.
 
-**criterios de aceptación:**
+**Criterios de aceptación:**
 
-- se muestran exactamente cuatro recorridos.
-- el alumno puede seleccionar un recorrido.
-- no puede inscribirse dos veces ni tener recorridos simultáneos.
-- la inscripción queda registrada correctamente.
+- Se muestran exactamente cuatro recorridos.
+- El alumno puede seleccionar un recorrido.
+- No puede inscribirse dos veces ni tener recorridos simultáneos.
+- La inscripción queda registrada correctamente.
 
-## hu-07 - configuración de reportes institucionales
+## HU-07 - Configuración de Reportes Institucionales
 
-| id | título / historia de usuario | prioridad | estado |
+| ID | Título / Historia de Usuario | Prioridad | Estado |
 |---|---|---|---|
-| hu-07 | como director, quiero configurar plantillas de reportes institucionales | media | to do |
+| HU-07 | Como Director, quiero configurar plantillas de reportes institucionales | Media | To Do |
 
-**tareas:**
+**Tareas:**
 
-1. definir entidades y campos disponibles para reportes.
-2. crear formulario de configuración de plantilla.
-3. validar nombre y selección de parámetros.
-4. guardar, editar, activar y desactivar plantillas.
-5. generar el reporte desde una plantilla autorizada.
-6. probar permisos y resultados.
+1. Definir entidades y campos disponibles para reportes.
+2. Crear formulario de configuración de plantilla.
+3. Validar nombre y selección de parámetros.
+4. Guardar, editar, activar y desactivar plantillas.
+5. Generar el reporte desde una plantilla autorizada.
+6. Probar permisos y resultados.
 
-**criterios de aceptación:**
+**Criterios de aceptación:**
 
-- el director puede elegir entidad y parámetros.
-- no se guarda una plantilla sin nombre o campos.
-- las plantillas se pueden administrar.
-- solo usuarios autorizados pueden generar reportes.
+- El Director puede elegir entidad y parámetros.
+- No se guarda una plantilla sin nombre o campos.
+- Las plantillas se pueden administrar.
+- Solo usuarios autorizados pueden generar reportes.
 
 ---
 
-# 7. plan de sprint
+# 7. Plan de Sprint
 
-## sprint 1 - semana 1
+## Sprint 1 - Semana 1
 
-**objetivo:** implementar la inscripción deportiva y la consulta segura de información de los hijos.
+**Objetivo:** Implementar la inscripción deportiva y la consulta segura de información de los hijos.
 
-**requerimientos incluidos:** hu-01 y hu-02.
+**Requerimientos incluidos:** HU-01 y HU-02.
 
-| día | actividades | resultado esperado |
+| Día | Actividades | Resultado esperado |
 |---|---|---|
-| 1 | modelo de alumnos, padres, cursos, deportes y horarios | estructura de datos inicial |
-| 2 | catálogo de deportes y grupos | actividades disponibles para consulta |
-| 3 | inscripción deportiva y límite de dos deportes | inscripción básica funcionando |
-| 4 | conflictos horarios y consulta padre-hijo | validaciones y acceso seguro |
-| 5 | pruebas, integración y demostración | hu-01 y hu-02 listas para revisión |
+| 1 | Modelo de alumnos, padres, cursos, deportes y horarios | Estructura de datos inicial |
+| 2 | Catálogo de deportes y grupos | Actividades disponibles para consulta |
+| 3 | Inscripción deportiva y límite de dos deportes | Inscripción básica funcionando |
+| 4 | Conflictos horarios y consulta padre-hijo | Validaciones y acceso seguro |
+| 5 | Pruebas, integración y demostración | HU-01 y HU-02 listas para revisión |
 
-## sprint 2 - semana 2
+## Sprint 2 - Semana 2
 
-**objetivo:** implementar la actualización de contacto y la gestión segura de usuarios y roles.
+**Objetivo:** Implementar la actualización de contacto y la gestión segura de usuarios y roles.
 
-**requerimientos incluidos:** hu-03 y hu-04.
+**Requerimientos incluidos:** HU-03 y HU-04.
 
-| día | actividades | resultado esperado |
+| Día | Actividades | Resultado esperado |
 |---|---|---|
-| 1 | formularios de contacto para alumnos y docentes | edición de datos disponible |
-| 2 | validaciones y persistencia | datos válidos almacenados |
-| 3 | abm de usuarios | gestión de usuarios funcionando |
-| 4 | roles, permisos y protección de endpoints | rbac implementado |
-| 5 | pruebas de seguridad, integración y demostración | hu-03 y hu-04 listas para revisión |
+| 1 | Formularios de contacto para alumnos y docentes | Edición de datos disponible |
+| 2 | Validaciones y persistencia | Datos válidos almacenados |
+| 3 | ABM de usuarios | Gestión de usuarios funcionando |
+| 4 | Roles, permisos y protección de endpoints | RBAC implementado |
+| 5 | Pruebas de seguridad, integración y demostración | HU-03 y HU-04 listas para revisión |
 
-## sprint 3 - semana 3
+## Sprint 3 - Semana 3
 
-**objetivo:** completar los reportes docentes, el transporte y la configuración de reportes institucionales.
+**Objetivo:** Completar los reportes docentes, el transporte y la configuración de reportes institucionales.
 
-**requerimientos incluidos:** hu-05, hu-06 y hu-07.
+**Requerimientos incluidos:** HU-05, HU-06 y HU-07.
 
-| día | actividades | resultado esperado |
+| Día | Actividades | Resultado esperado |
 |---|---|---|
-| 1 | listado de alumnos por materia | reporte docente disponible |
-| 2 | filtros y restricciones por docente | información protegida |
-| 3 | recorridos e inscripción al transporte | transporte funcionando |
-| 4 | plantillas y parámetros de reportes | reportes de dirección configurables |
-| 5 | pruebas finales, correcciones y demostración | versión candidata a entrega |
+| 1 | Listado de alumnos por materia | Reporte docente disponible |
+| 2 | Filtros y restricciones por docente | Información protegida |
+| 3 | Recorridos e inscripción al transporte | Transporte funcionando |
+| 4 | Plantillas y parámetros de reportes | Reportes de Dirección configurables |
+| 5 | Pruebas finales, correcciones y demostración | Versión candidata a entrega |
 
-## definición de terminado
+## Definición de Terminado
 
-una historia se considera terminada cuando cumple sus criterios de aceptación, incluye validaciones de error, fue probada, revisada por el equipo, integrada al repositorio y desplegada en el entorno de pruebas.
+Una historia se considera terminada cuando cumple sus criterios de aceptación, incluye validaciones de error, fue probada, revisada por el equipo, integrada al repositorio y desplegada en el entorno de pruebas.
 
 ---
 
-# 8. entregables
+# 8. Entregables
 
-- documento del plan de trabajo.
-- requerimientos funcionales y no funcionales.
-- historias de usuario y casos de uso.
-- modelo de datos y diccionario de datos.
-- diagramas de arquitectura de información y software.
-- wireframes, mockups y prototipo.
-- código fuente en el repositorio.
-- tablero kanban y bitácora del equipo e integrantes.
-- casos y evidencias de pruebas.
-- aplicación desplegada en un entorno de pruebas.
-- presentación y demostración final.
+- Documento del plan de trabajo.
+- Requerimientos funcionales y no funcionales.
+- Historias de usuario y casos de uso.
+- Modelo de datos y diccionario de datos.
+- Diagramas de arquitectura de información y software.
+- Wireframes, mockups y prototipo.
+- Código fuente en el repositorio.
+- Tablero Kanban y bitácora del equipo e integrantes.
+- Casos y evidencias de pruebas.
+- Aplicación desplegada en un entorno de pruebas.
+- Presentación y demostración final.

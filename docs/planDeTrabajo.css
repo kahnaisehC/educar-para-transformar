@@ -1,0 +1,184 @@
+@page {
+  size: A4 portrait;
+  margin: 2.5cm 2cm 2cm 2.5cm;
+}
+
+:root {
+  --primary: #1f4e79;
+  --secondary: #2f75b5;
+  --light-blue: #eaf3f8;
+  --lighter-blue: #f7fbfd;
+  --border: #8fb7d4;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  font-family: Calibri, Carlito, Arial, sans-serif;
+  font-size: 11pt;
+  font-weight: normal;
+  line-height: 1;
+}
+
+body {
+  color: #000;
+  background: #fff;
+}
+
+a {
+  color: var(--primary);
+}
+
+h1 {
+  color: var(--primary);
+  padding-bottom: 6pt;
+  border-bottom: 2px solid var(--secondary);
+}
+
+h2 {
+  color: var(--primary);
+  padding-bottom: 3pt;
+  border-bottom: 1px solid var(--border);
+}
+
+h3,
+h4,
+h5,
+h6 {
+  color: var(--secondary);
+}
+
+.cover {
+  min-height: 24cm;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  break-after: page;
+  page-break-after: always;
+}
+
+.cover-logos {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1cm;
+  margin-bottom: 4cm;
+}
+
+.cover-logos img {
+  width: 4.8cm;
+  height: 4.8cm;
+  object-fit: contain;
+}
+
+.cover-content {
+  width: 100%;
+  margin-top: auto;
+  margin-bottom: auto;
+}
+
+.cover-content h1 {
+  border-bottom: none;
+}
+
+.cover-content h2,
+.cover-content h3 {
+  border-bottom: none;
+}
+
+.cover-career {
+  color: var(--primary);
+  font-weight: bold;
+}
+
+.index-page {
+  min-height: 24cm;
+  break-after: page;
+  page-break-after: always;
+}
+
+.index-list {
+  margin-top: 1.5cm;
+  padding: 0;
+  list-style: none;
+}
+
+.index-list li {
+  margin: 10pt 0;
+}
+
+p,
+li,
+td,
+th {
+  font-family: inherit;
+  font-size: 11pt;
+  line-height: 1;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: inherit;
+  line-height: 1.1;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+th,
+td {
+  padding: 4pt;
+  border: 1px solid var(--border);
+  vertical-align: top;
+}
+
+th {
+  color: var(--primary);
+  background: var(--light-blue);
+  font-weight: bold;
+}
+
+tr:nth-child(even) td {
+  background: var(--lighter-blue);
+}
+
+pre {
+  padding: 8pt;
+  background: #f3f6f8;
+  border-left: 3px solid var(--secondary);
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+}
+
+code {
+  color: var(--primary);
+  background: var(--light-blue);
+}
+
+.mermaid,
+.mermaid svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 0 auto;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.mermaid {
+  padding: 6pt;
+  background: var(--lighter-blue);
+  border: 1px solid var(--border);
+  border-radius: 4pt;
+}
