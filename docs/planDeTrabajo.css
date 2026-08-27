@@ -182,3 +182,25 @@ code {
   border: 1px solid var(--border);
   border-radius: 4pt;
 }
+
+.repository-diagram {
+  margin: 12pt auto;
+  text-align: center;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.repository-diagram img {
+  display: block;
+  max-width: 100%;
+  max-height: 10cm;
+  height: auto;
+  margin: 0 auto;
+  object-fit: contain;
+}
+
+.repository-diagram figcaption {
+  margin-top: 4pt;
+  color: var(--primary);
+  font-style: italic;
+}
