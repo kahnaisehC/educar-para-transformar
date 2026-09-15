@@ -1,0 +1,19 @@
+{
+  "name": "educar-para-transformar",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Sprint 1 del sistema de gestion de EDUCAR PARA TRANSFORMAR",
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev:api": "npm run dev --workspace @educar/api",
+    "dev:web": "npm run dev --workspace @educar/web",
+    "build": "npm run build --workspaces",
+    "test": "npm run test --workspace @educar/api",
+    "typecheck": "npm run typecheck --workspaces"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

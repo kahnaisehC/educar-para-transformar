@@ -1,0 +1,48 @@
+services:
+  db:
+    image: docker.io/library/postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: educar
+      POSTGRES_USER: educar
+      POSTGRES_PASSWORD: educar_dev_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./database/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U educar -d educar"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    environment:
+      PORT: 4000
+      DATABASE_URL: postgres://educar:educar_dev_password@db:5432/educar
+      JWT_SECRET: ${JWT_SECRET:-local-only-change-this-jwt-secret-educar-2026}
+      CORS_ORIGIN: http://localhost:5173
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "4000:4000"
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    environment:
+      VITE_PROXY_TARGET: http://api:4000
+    depends_on:
+      - api
+    ports:
+      - "5173:5173"
+
+volumes:
+  postgres_data:

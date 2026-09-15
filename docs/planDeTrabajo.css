@@ -24,6 +24,38 @@ body {
 body {
   color: #000;
   background: #fff;
+  text-align: justify;
+}
+
+p {
+  margin: 0 0 8pt;
+  text-align: justify;
+  text-indent: 1.27cm;
+}
+
+.cover p,
+.index-page p {
+  text-align: center;
+  text-indent: 0;
+}
+
+li,
+td,
+th {
+  text-align: left;
+  text-indent: 0;
+}
+
+.reference {
+  padding-left: 1.27cm;
+  text-align: left;
+  text-indent: -1.27cm;
+}
+
+.figure-caption {
+  margin-bottom: 6pt;
+  text-align: left;
+  text-indent: 0;
 }
 
 a {

@@ -2,3 +2,14 @@ docs/pdf
 .vscode
 
 *pdf
+__pycache__/
+*.pyc
+data/
+node_modules/
+dist/
+.vite/
+.env
+.env.*
+!.env.example
+postgres_data/
+*.log

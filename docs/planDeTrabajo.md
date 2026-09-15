@@ -25,6 +25,7 @@
     <li><a href="#6-backlog-de-los-sprints">6. Backlog de los Sprints</a></li>
     <li><a href="#7-plan-de-sprint">7. Plan de Sprint</a></li>
     <li><a href="#8-entregables">8. Entregables</a></li>
+    <li><a href="#9-referencias">9. Referencias</a></li>
   </ul>
 </div>
 
@@ -49,7 +50,7 @@
 
 ## 1.1 Problema
 
-El centro educativo privado "EDUCAR PARA TRANSFORMAR", ubicado en las afueras de la ciudad de Resistencia, iniciará sus actividades en marzo de 2027. La institución necesita automatizar y centralizar sus procesos académicos, administrativos, deportivos y de servicios.
+El centro educativo privado "EDUCAR PARA TRANSFORMAR", ubicado en las afueras de la ciudad de Resistencia, iniciará sus actividades en marzo de 2027. La institución necesita automatizar y centralizar sus procesos académicos, administrativos, deportivos y de servicios (Centro Educativo EDUCAR PARA TRANSFORMAR, 2026).
 
 Actualmente, la información de alumnos, padres, docentes, cursos, materias, deportes, horarios, transporte y comedor puede encontrarse dispersa y resultar difícil de actualizar o consultar. Esta situación puede producir duplicación de datos, errores en las inscripciones, conflictos de horarios y dificultades para generar información para la toma de decisiones.
 
@@ -59,63 +60,63 @@ La página web institucional y la aplicación móvil forman parte del escenario 
 
 ## 1.2 Requerimientos Funcionales
 
-### Alumno
+### Módulo: Alumno
 
-- Consultar información personal y académica.
-- Actualizar correo electrónico y teléfono.
-- Inscribirse a actividades deportivas.
-- Inscribirse a un recorrido del servicio de transporte.
-- Inscribirse al servicio de comedor.
-- Generar un reporte propio de alumno.
+- **RF-AL-01 - Consulta de información personal y académica:** El sistema debe permitir al alumno consultar su información personal y académica.
+- **RF-AL-02 - Actualización de datos de contacto:** El sistema debe permitir al alumno actualizar su correo electrónico y teléfono.
+- **RF-AL-03 - Inscripción a actividades deportivas:** El sistema debe permitir al alumno inscribirse a actividades deportivas.
+- **RF-AL-04 - Inscripción al transporte:** El sistema debe permitir al alumno inscribirse a un recorrido del servicio de transporte.
+- **RF-AL-05 - Inscripción al comedor:** El sistema debe permitir al alumno inscribirse al servicio de comedor.
+- **RF-AL-06 - Generación del reporte de alumno:** El sistema debe permitir al alumno generar un reporte propio con su información académica, deportiva y de servicios.
 
-### Padre
+### Módulo: Padre
 
-- Consultar profesores y deportes de sus hijos asociados.
-- Inscribir a sus hijos al cursado del año lectivo.
-- Acceder exclusivamente a la información de sus hijos.
+- **RF-PA-01 - Consulta de información de los hijos:** El sistema debe permitir al padre consultar los profesores y deportes de sus hijos asociados.
+- **RF-PA-02 - Inscripción de los hijos al cursado:** El sistema debe permitir al padre inscribir a sus hijos al cursado del año lectivo.
+- **RF-PA-03 - Acceso restringido a hijos asociados:** El sistema debe permitir al padre acceder exclusivamente a la información de sus hijos asociados.
 
-### Docente
+### Módulo: Docente
 
-- Consultar su perfil profesional, materias, cursos y niveles.
-- Actualizar correo electrónico y teléfono.
-- Consultar su carga horaria.
-- Generar listados de alumnos por curso y materia.
-- Generar un reporte docente.
+- **RF-PR-01 - Consulta del perfil profesional:** El sistema debe permitir al docente consultar su perfil profesional, materias, cursos y niveles.
+- **RF-PR-02 - Actualización de datos de contacto:** El sistema debe permitir al docente actualizar su correo electrónico y teléfono.
+- **RF-PR-03 - Consulta de carga horaria:** El sistema debe permitir al docente consultar su carga horaria.
+- **RF-PR-04 - Listado de alumnos:** El sistema debe permitir al docente generar listados de alumnos por curso y materia.
+- **RF-PR-05 - Generación del reporte docente:** El sistema debe permitir al docente generar un reporte con los cursos a su cargo por nivel y sus horarios.
 
-### Administrador
+### Módulo: Administrador
 
-- Gestionar alumnos, padres, docentes, niveles, cursos, materias, deportes, horarios e inscripciones.
-- Gestionar transporte y comedor.
-- Gestionar usuarios, roles y permisos.
-- Generar y consultar reportes institucionales autorizados.
+- **RF-AD-01 - Gestión académica e inscripciones:** El sistema debe permitir al administrador gestionar alumnos, padres, docentes, niveles, cursos, materias, deportes, horarios e inscripciones.
+- **RF-AD-02 - Gestión de servicios institucionales:** El sistema debe permitir al administrador gestionar los servicios de transporte y comedor.
+- **RF-AD-03 - Gestión de usuarios y permisos:** El sistema debe permitir al administrador gestionar usuarios y asignar roles y permisos.
+- **RF-AD-04 - Gestión de reportes institucionales:** El sistema debe permitir al administrador generar y consultar los reportes institucionales autorizados.
 
-### Director
+### Módulo: Director
 
-- Crear, editar, activar y desactivar plantillas de reportes.
-- Seleccionar entidades y parámetros para los reportes.
-- Generar reportes institucionales para la toma de decisiones.
+- **RF-DI-01 - Gestión de plantillas de reportes:** El sistema debe permitir al Director crear, editar, activar y desactivar plantillas de reportes.
+- **RF-DI-02 - Configuración de parámetros:** El sistema debe permitir al Director seleccionar entidades y parámetros para los reportes.
+- **RF-DI-03 - Generación de reportes institucionales:** El sistema debe permitir al Director generar reportes institucionales para la toma de decisiones.
 
 ## 1.3 Requerimientos No Funcionales
 
-- El sistema debe autenticar a los usuarios y aplicar control de acceso basado en roles.
-- Cada usuario debe acceder solo a la información autorizada.
-- La base de datos debe mantener integridad referencial y evitar duplicados.
-- El sistema debe soportar accesos concurrentes.
-- La interfaz debe ser clara y responsive.
-- El código debe organizarse por capas y mantenerse en un repositorio versionado.
-- Las operaciones administrativas importantes deben quedar registradas para auditoría.
+- **RNF-01 - Autenticación y control de acceso:** El sistema debe autenticar a los usuarios y aplicar control de acceso basado en roles.
+- **RNF-02 - Privacidad de la información:** Cada usuario debe acceder solo a la información autorizada.
+- **RNF-03 - Integridad de datos:** La base de datos debe mantener integridad referencial y evitar duplicados.
+- **RNF-04 - Concurrencia y disponibilidad:** El sistema debe soportar accesos concurrentes de los usuarios autorizados.
+- **RNF-05 - Usabilidad y diseño responsive:** La interfaz debe ser clara y adaptable a computadoras y dispositivos móviles.
+- **RNF-06 - Mantenibilidad y versionado:** El código debe organizarse por capas y mantenerse en un repositorio versionado.
+- **RNF-07 - Auditoría de operaciones:** Las operaciones administrativas importantes deben quedar registradas para auditoría.
 
 ## 1.4 Reglas de Negocio Principales
 
-- Un alumno puede inscribirse como máximo a dos deportes simultáneamente.
-- El sistema debe impedir conflictos de horarios entre actividades deportivas.
-- Cada alumno pertenece a un único curso.
-- Cada curso pertenece a un único nivel educativo.
-- Un padre puede tener uno o varios hijos asociados, pero solo puede consultar y gestionar esos hijos.
-- El servicio de transporte tiene exactamente cuatro recorridos.
-- No se permiten inscripciones duplicadas.
-- Cada deporte debe tener un docente responsable.
-- Un deporte puede tener grupos diferentes según nivel y horario.
+- **RN-01 - Límite de inscripciones deportivas:** Un alumno puede inscribirse como máximo a dos deportes simultáneamente.
+- **RN-02 - Prevención de conflictos de horarios:** El sistema debe impedir conflictos de horarios entre actividades deportivas.
+- **RN-03 - Unicidad de alumno y curso:** Cada alumno pertenece a un único curso y cada curso pertenece a un único nivel educativo.
+- **RN-04 - Relación padre-hijo:** Un padre puede tener uno o varios hijos asociados, pero solo puede consultar y gestionar esos hijos.
+- **RN-05 - Cantidad de recorridos de transporte:** El servicio de transporte tiene exactamente cuatro recorridos.
+- **RN-06 - Prevención de inscripciones duplicadas:** No se permiten inscripciones duplicadas.
+- **RN-07 - Control de acceso por roles:** Cada usuario debe acceder únicamente a los módulos y datos permitidos por su rol.
+- **RN-08 - Asignación académica:** Una materia puede dictarse en diferentes cursos y puede tener distintos profesores según el curso.
+- **RN-09 - Organización de actividades deportivas:** Cada deporte debe tener un docente responsable y puede tener grupos diferentes según nivel y horario.
 
 ## 1.5 Tipo de Sistema de Información
 
@@ -127,6 +128,10 @@ El sistema es de naturaleza híbrida:
 ## 1.6 Arquitectura de la Información
 
 La información se organizará mediante portales definidos por rol:
+
+### Gráfico de la Arquitectura de la Información
+
+<p class="figure-caption"><strong>Figura 1</strong><br><em>Arquitectura de la información y navegación por rol.</em></p>
 
 ```mermaid
  flowchart TD
@@ -161,16 +166,66 @@ La información se organizará mediante portales definidos por rol:
      g --> g3["Reportes institucionales"]
 ```
 
+El gráfico muestra el punto de entrada del sistema, la selección del rol y las vistas disponibles para cada tipo de usuario. Esta organización reduce la complejidad de navegación y evita que un usuario acceda a módulos que no le corresponden.
+
 ## 1.7 Arquitectura de la Aplicación de Software
 
 ### Aplicación de Principios
 
-- **Separación de responsabilidades:** Cada capa tendrá una función definida.
-- **Bajo acoplamiento:** Los módulos se comunicarán mediante interfaces claras.
-- **Alta cohesión:** Cada módulo agrupará funcionalidades relacionadas.
-- **Seguridad por diseño:** La autenticación y autorización se validarán en el backend.
-- **Integridad de datos:** Las reglas críticas se validarán en la lógica de negocio y en la base de datos.
-- **Responsive design:** Las pantallas se adaptarán a computadoras y dispositivos móviles.
+- **Separación de responsabilidades:** La presentación gestionará las vistas por rol, el backend aplicará las reglas de negocio y PostgreSQL almacenará la información persistente.
+- **Seguridad por diseño:** La autenticación y la autorización RBAC se validarán en el backend para proteger especialmente la información de los hijos y los reportes institucionales.
+- **Integridad de datos:** Las inscripciones deportivas, los conflictos de horarios, los recorridos de transporte y los registros duplicados se controlarán tanto en la lógica de negocio como en la base de datos.
+- **Bajo acoplamiento y alta cohesión:** Los módulos de alumnos, padres, docentes, administración y Dirección se comunicarán mediante la API sin depender directamente de la interfaz de otro módulo.
+
+### Gráfico de Arquitectura de Software
+
+<p class="figure-caption"><strong>Figura 2</strong><br><em>Arquitectura de software de tres capas y aplicación de patrones de diseño.</em></p>
+
+```mermaid
+ flowchart TB
+     usuarios["Usuarios: Alumno, Padre, Docente, Administrador, Director"]
+
+     subgraph presentacion["Capa de presentación"]
+         frontend["Frontend web responsive<br/>React"]
+         exportacion["Exportación PDF/CSV"]
+     end
+
+     subgraph negocio["Capa de lógica de negocio"]
+         api["API REST<br/>Backend y MVC"]
+         auth["Autenticación y RBAC"]
+         reglas["Reglas de negocio"]
+         reportes["Motor de reportes"]
+         auditoria["Auditoría y registro de logs"]
+         iterator["Iterator<br/>Recorridos de resultados"]
+         proxy["Proxy<br/>Permisos y auditoría"]
+     end
+
+     subgraph datos["Capa de acceso a datos"]
+         singleton["Singleton<br/>Cliente o pool de conexiones"]
+         db[("PostgreSQL")]
+     end
+
+     usuarios --> frontend
+     frontend --> api
+     api --> auth
+     api --> reglas
+     api --> reportes
+     api --> auditoria
+     api --> proxy
+     reportes --> iterator
+     reportes --> db
+     reportes --> exportacion
+     auditoria --> db
+     proxy --> auth
+     api --> singleton
+     singleton --> db
+
+     style presentacion fill:#f7fbfd,stroke:#1f4e79,stroke-width:2px
+     style negocio fill:#f7fbfd,stroke:#2f75b5,stroke-width:2px
+     style datos fill:#f7fbfd,stroke:#8fb7d4,stroke-width:2px
+```
+
+El gráfico muestra el flujo desde los usuarios hacia la presentación, la lógica de negocio y la persistencia. También ubica explícitamente los patrones `Iterator`, `Proxy` y `Singleton` dentro de los componentes donde serán aplicados.
 
 ### Componentes
 
@@ -182,6 +237,7 @@ La información se organizará mediante portales definidos por rol:
 - Módulo de Administración.
 - Módulo de Dirección.
 - Motor de reportes.
+- Módulo de auditoría y registro de logs.
 - Base de datos relacional.
 
 ### Componentes Funcionales
@@ -193,7 +249,8 @@ La información se organizará mediante portales definidos por rol:
 5. Gestión de transporte y comedor.
 6. Inscripciones y validaciones de negocio.
 7. Reportes operativos e institucionales.
-8. Alertas y notificaciones como funcionalidad adicional.
+8. Auditoría de operaciones y registro de logs.
+9. Alertas y notificaciones como funcionalidad adicional.
 
 ### Restricciones
 
@@ -221,6 +278,16 @@ Se utilizará una arquitectura web de tres capas, complementada con el patrón M
 2. **Capa de lógica de negocio:** Casos de uso, validaciones, autenticación y autorización.
 3. **Capa de acceso a datos:** Repositorios, ORM y base de datos relacional.
 
+### Patrones de Diseño de Software
+
+Se incorporarán los patrones Iterator, Proxy y Singleton para resolver problemas concretos del sistema. La aplicación de cada patrón se realizará en la capa donde aporta mayor beneficio y no se utilizará únicamente como una formalidad del diseño.
+
+| Patrón | Lugar de aplicación | Problema que resuelve |
+|---|---|---|
+| Iterator | Servicios de reportes y recorridos de resultados de consultas | Permite iterar registros sin exponer la estructura interna de la colección. |
+| Proxy | Servicios de inscripción y operaciones administrativas | Agrega autorización y registra logs después de ejecutar la operación. |
+| Singleton | Cliente o pool de conexiones a PostgreSQL | Evita crear múltiples instancias de configuración de acceso a la base de datos. |
+
 ### Tecnologías Previstas
 
 Las tecnologías definitivas se seleccionarán durante la etapa de diseño. La propuesta inicial es:
@@ -235,21 +302,21 @@ Las tecnologías definitivas se seleccionarán durante la etapa de diseño. La p
 
 ### Backend
 
-El backend centralizará la lógica de negocio, validará permisos, gestionará las inscripciones y expondrá los endpoints de la API. Las reglas de máximo de deportes, conflictos de horarios, unicidad y relación padre-hijo no dependerán únicamente del frontend.
+El backend implementará la API REST y concentrará las reglas que afectan la consistencia del sistema. Validará el rol del usuario, la relación padre-hijo, el límite de dos deportes, los conflictos de horarios, la unicidad de las inscripciones y la selección de un único recorrido de transporte. También gestionará los reportes y el registro de auditoría.
 
 ### Frontend
 
-El frontend proporcionará interfaces diferenciadas por rol, formularios de gestión, tablas de consulta, mensajes de validación y visualización de reportes. Se priorizará una interfaz responsive y accesible.
+El frontend implementará portales diferenciados para alumnos, padres, docentes, administradores y Dirección. Mostrará formularios de inscripción, consultas académicas, listados y reportes, enviando las operaciones a la API para que las validaciones no dependan únicamente de la interfaz. La interfaz será responsive para facilitar el acceso de padres y alumnos desde dispositivos móviles.
 
 ### Gestor de Base de Datos
 
-Se utilizará PostgreSQL por su soporte para relaciones, restricciones de unicidad, integridad referencial y consultas complejas para reportes.
+Se utilizará PostgreSQL para modelar alumnos, padres, docentes, niveles, cursos, materias, deportes, grupos, horarios, servicios e inscripciones. Se definirán claves foráneas, restricciones de unicidad y transacciones para evitar duplicados y mantener consistencia cuando se procesen inscripciones simultáneas.
 
 ### Maquetación
 
-- **Wireframes:** Definirán la estructura básica de las pantallas principales.
-- **Mockups:** Representarán la apariencia visual, colores, tipografías y componentes.
-- **Prototipo:** Permitirá simular la navegación y validar los flujos principales antes de codificar.
+- **Wireframes:** Se realizarán en Excalidraw para definir la estructura y el flujo de las pantallas de inicio de sesión, portales por rol, inscripciones y reportes.
+- **Mockups:** Se realizarán en Figma para definir la apariencia visual, la jerarquía de la información, los formularios y las tablas.
+- **Prototipo:** Se construirá en Figma a partir de los mockups para validar la navegación antes de iniciar la codificación.
 
 Las pantallas mínimas a prototipar son inicio de sesión, portal del alumno, consulta del padre, portal docente, panel administrador, inscripción deportiva, inscripción al transporte y reportes de Dirección.
 
@@ -257,26 +324,6 @@ Las pantallas mínimas a prototipar son inicio de sesión, portal del alumno, co
 
 El código se alojará en un repositorio privado de GitHub. Se utilizarán ramas para funcionalidades, revisiones mediante pull requests y mensajes de commit descriptivos. También se almacenarán allí el `README`, la documentación técnica, los diagramas y las evidencias de pruebas.
 
-### Gráfico de Arquitectura de Software
-
-```mermaid
- flowchart LR
-     u["Usuarios: Alumno, Padre, Docente, Administrador, Director"]
-     fe["Frontend web responsive<br/>React"]
-     api["API REST<br/>Backend y MVC"]
-     auth["Autenticación y RBAC"]
-     db[("PostgreSQL")]
-     rep["Motor de reportes"]
-     ext["Exportación PDF/CSV"]
-
-    u --> fe
-    fe --> api
-    api --> auth
-    api --> db
-    api --> rep
-    rep --> db
-    rep --> ext
-```
 
 ## 1.8 Gestión del Proyecto
 
@@ -299,23 +346,33 @@ La bitácora deberá registrar:
 | Elías Morales | Análisis funcional, frontend, maquetación, pruebas y documentación de historias y casos de uso |
 | Ambos | Planificación, revisión de código, integración, demostraciones y presentación final |
 
----
+## 1.10 Formato de Presentación
+
+El documento seguirá una adaptación de las normas APA, de acuerdo con las indicaciones de la cátedra. Se utilizarán citas parentéticas y una sección final de referencias con formato autor-fecha.
+
+- Papel A4.
+- Márgenes: 2,5 cm superior, 2 cm inferior, 2,5 cm izquierdo y 2 cm derecho.
+- Fuente Calibri, tamaño 11, con estilo normal para el cuerpo del texto.
+- Interlineado simple y texto de los párrafos justificado.
+- Sangría de primera línea de 1,27 cm para los párrafos del cuerpo.
+- Sangría francesa de 1,27 cm para las referencias.
+- Figuras y tablas numeradas con título o leyenda explicativa.
 
 # 2. Objetivos del Proyecto
 
-Los objetivos se expresan utilizando el formato SMART.
+Los objetivos se expresan utilizando el formato SMART: específicos, medibles, logrables, relevantes y con un límite temporal claro.
 
 ## Objetivo General
 
-Desarrollar, durante el período académico definido por la cátedra, un sistema web de gestión para "EDUCAR PARA TRANSFORMAR" que centralice la información académica, extracurricular y de servicios, aplicando control de acceso por roles y validaciones de integridad para que la versión demostrable cumpla los criterios de aceptación de las historias priorizadas.
+Desarrollar entre el 1 y el 22 de septiembre de 2026 un sistema web de gestión para "EDUCAR PARA TRANSFORMAR" que centralice la información académica, extracurricular y de servicios, aplique control de acceso por roles y cumpla los criterios de aceptación de las historias priorizadas.
 
 ## Objetivos Específicos
 
-1. **Relevante y específico:** Analizar y documentar el 100% de los requisitos, reglas de negocio, historias de usuario y casos de uso incluidos en el alcance antes de iniciar la codificación.
-2. **Medible:** Diseñar el modelo de datos, la arquitectura de información, los wireframes, mockups y el prototipo de los flujos principales antes de finalizar la etapa de diseño.
-3. **Alcanzable:** Implementar las siete historias de usuario en tres sprints semanales, priorizando inscripción deportiva, consulta familiar, seguridad, reportes y transporte.
-4. **Medible:** Ejecutar pruebas funcionales, de integración y de permisos para el 100% de los criterios de aceptación antes de la demostración final.
-5. **Relevante:** Entregar una versión desplegada en un entorno de pruebas, con documentación, repositorio, bitácora Kanban y evidencias de participación individual.
+1. **Analizar y documentar el alcance completo antes del 31/08/2026.** Específico: incluir requisitos, reglas de negocio, historias y casos de uso. Medible: documentar el 100% de los elementos identificados. Lograble: se utilizarán los documentos entregados por la cátedra y las reuniones del equipo. Relevante: establecerá una base común antes de programar. Temporal: límite del 31/08/2026.
+2. **Diseñar la solución antes del 31/08/2026.** Específico: completar el modelo de datos, la arquitectura de información, la arquitectura de software, los wireframes, los mockups y el prototipo. Medible: entregar cada artefacto definido y revisarlo con el equipo. Lograble: se reutilizarán los requisitos ya analizados. Relevante: reducirá errores y retrabajo durante la codificación. Temporal: límite del 31/08/2026.
+3. **Implementar las siete historias de usuario entre el 01/09/2026 y el 21/09/2026.** Específico: desarrollar las funcionalidades de inscripción, consulta, usuarios, reportes y transporte. Medible: completar HU-01 y HU-02 en el Sprint 1, HU-03 y HU-04 en el Sprint 2, y HU-05, HU-06 y HU-07 en el Sprint 3. Lograble: se distribuirá el trabajo en tres sprints semanales. Relevante: cubrirá las funciones prioritarias del sistema. Temporal: límite de implementación del 21/09/2026.
+4. **Validar la solución antes del 22/09/2026.** Específico: ejecutar pruebas funcionales, de integración, de permisos, de duplicados y de conflictos horarios. Medible: verificar el 100% de los criterios de aceptación y registrar los resultados. Lograble: se utilizarán casos y datos de prueba definidos por el equipo. Relevante: garantizará la seguridad y consistencia del sistema. Temporal: límite del 22/09/2026.
+5. **Entregar y demostrar el proyecto el 22/09/2026.** Específico: publicar la versión estable en el entorno de pruebas y presentar la documentación completa. Medible: entregar el sistema, el repositorio, la bitácora Kanban, los diagramas, las evidencias y la presentación. Lograble: se reservará el 22/09/2026 para despliegue, revisión final y demostración. Relevante: permitirá evaluar el resultado completo del proyecto. Temporal: 22/09/2026.
 
 ---
 
@@ -350,36 +407,46 @@ Las horas son estimaciones iniciales para el trabajo del equipo. El campo respon
 
 **Estimación total:** 162 horas de trabajo del equipo.
 
+## 3.1 Calendario de Sprints
+
+El ciclo de programación comenzará el 01/09/2026 y finalizará el 22/09/2026. Cada sprint tendrá una duración semanal; el 22/09/2026 se reservará para el despliegue, la revisión final y la presentación del proyecto.
+
+| Sprint o etapa | Fecha de inicio | Fecha de finalización | Requerimientos incluidos | Resultado principal |
+|---|---|---|---|---|
+| Sprint 1 | 01/09/2026 | 07/09/2026 | HU-01 y HU-02 | Inscripción a deportes y consulta segura de información familiar |
+| Sprint 2 | 08/09/2026 | 14/09/2026 | HU-03 y HU-04 | Actualización de contacto y gestión de usuarios y roles |
+| Sprint 3 | 15/09/2026 | 21/09/2026 | HU-05, HU-06 y HU-07 | Reportes docentes, transporte y plantillas de reportes institucionales |
+| Cierre y presentación | 22/09/2026 | 22/09/2026 | Integración de todos los requerimientos | Despliegue, revisión final y demostración |
+
 ---
 
 # 4. Diagrama de Gantt
 
-La planificación se distribuye en cinco semanas: análisis y planificación, modelado y diseño, y tres semanas de programación correspondientes a los sprints.
+La preparación se realizará antes del inicio de los sprints. La etapa de programación se desarrollará del 01/09/2026 al 21/09/2026 y el cierre del proyecto se realizará el 22/09/2026.
 
 ```mermaid
 gantt
      title Plan de trabajo del sistema de gestión
-     dateFormat  yyyy-mm-dd
+     dateFormat  YYYY-MM-DD
      axisFormat  %d/%m
 
      section Análisis y planificación
-     Planificación del proyecto       :a1, 2026-08-24, 3d
-     Estudio de requerimientos        :a2, after a1, 4d
+     Planificación del proyecto       :a1, 2026-08-24, 2d
+     Estudio de requerimientos        :a2, after a1, 3d
 
      section Modelado y diseño
-     Modelo de datos                  :b1, after a2, 4d
-     Arquitectura de información      :b2, after a2, 3d
-     Arquitectura de software         :b3, after b1, 3d
-     Wireframes, mockups y prototipo  :b4, after b2, 5d
+     Modelo de datos                  :b1, 2026-08-29, 1d
+     Arquitectura de información      :b2, 2026-08-29, 1d
+     Arquitectura de software         :b3, 2026-08-30, 1d
+     Wireframes, mockups y prototipo  :b4, 2026-08-31, 1d
 
      section Programación
-     Sprint 1 - HU-01 y HU-02         :c1, after b3, 5d
-     Sprint 2 - HU-03 y HU-04         :c2, after c1, 5d
-     Sprint 3 - HU-05, HU-06 y HU-07  :c3, after c2, 5d
+     Sprint 1 - HU-01 y HU-02         :c1, 2026-09-01, 7d
+     Sprint 2 - HU-03 y HU-04         :c2, 2026-09-08, 7d
+     Sprint 3 - HU-05, HU-06 y HU-07  :c3, 2026-09-15, 7d
 
      section Cierre
-     Pruebas de regresión              :d1, after c3, 3d
-     Despliegue y presentación         :d2, after d1, 2d
+     Despliegue, revisión y presentación :d1, 2026-09-22, 1d
 ```
 
 Las fechas son referenciales y deben ajustarse al calendario real de la cátedra.
@@ -568,7 +635,7 @@ La ruta crítica estimada es: planificación, requerimientos, modelado, diseño 
 
 # 7. Plan de Sprint
 
-## Sprint 1 - Semana 1
+## Sprint 1 - Semana 1 (01/09/2026 - 07/09/2026)
 
 **Objetivo:** Implementar la inscripción deportiva y la consulta segura de información de los hijos.
 
@@ -576,13 +643,13 @@ La ruta crítica estimada es: planificación, requerimientos, modelado, diseño 
 
 | Día | Actividades | Resultado esperado |
 |---|---|---|
-| 1 | Modelo de alumnos, padres, cursos, deportes y horarios | Estructura de datos inicial |
-| 2 | Catálogo de deportes y grupos | Actividades disponibles para consulta |
-| 3 | Inscripción deportiva y límite de dos deportes | Inscripción básica funcionando |
-| 4 | Conflictos horarios y consulta padre-hijo | Validaciones y acceso seguro |
-| 5 | Pruebas, integración y demostración | HU-01 y HU-02 listas para revisión |
+| 01/09 | Modelo de alumnos, padres, cursos, deportes y horarios | Estructura de datos inicial |
+| 02/09 | Catálogo de deportes y grupos | Actividades disponibles para consulta |
+| 03/09 | Inscripción deportiva y límite de dos deportes | Inscripción básica funcionando |
+| 04/09 | Conflictos horarios y consulta padre-hijo | Validaciones y acceso seguro |
+| 05/09 | Pruebas, integración y demostración | HU-01 y HU-02 listas para revisión |
 
-## Sprint 2 - Semana 2
+## Sprint 2 - Semana 2 (08/09/2026 - 14/09/2026)
 
 **Objetivo:** Implementar la actualización de contacto y la gestión segura de usuarios y roles.
 
@@ -590,13 +657,13 @@ La ruta crítica estimada es: planificación, requerimientos, modelado, diseño 
 
 | Día | Actividades | Resultado esperado |
 |---|---|---|
-| 1 | Formularios de contacto para alumnos y docentes | Edición de datos disponible |
-| 2 | Validaciones y persistencia | Datos válidos almacenados |
-| 3 | ABM de usuarios | Gestión de usuarios funcionando |
-| 4 | Roles, permisos y protección de endpoints | RBAC implementado |
-| 5 | Pruebas de seguridad, integración y demostración | HU-03 y HU-04 listas para revisión |
+| 08/09 | Formularios de contacto para alumnos y docentes | Edición de datos disponible |
+| 09/09 | Validaciones y persistencia | Datos válidos almacenados |
+| 10/09 | ABM de usuarios | Gestión de usuarios funcionando |
+| 11/09 | Roles, permisos y protección de endpoints | RBAC implementado |
+| 12/09 | Pruebas de seguridad, integración y demostración | HU-03 y HU-04 listas para revisión |
 
-## Sprint 3 - Semana 3
+## Sprint 3 - Semana 3 (15/09/2026 - 21/09/2026)
 
 **Objetivo:** Completar los reportes docentes, el transporte y la configuración de reportes institucionales.
 
@@ -604,11 +671,15 @@ La ruta crítica estimada es: planificación, requerimientos, modelado, diseño 
 
 | Día | Actividades | Resultado esperado |
 |---|---|---|
-| 1 | Listado de alumnos por materia | Reporte docente disponible |
-| 2 | Filtros y restricciones por docente | Información protegida |
-| 3 | Recorridos e inscripción al transporte | Transporte funcionando |
-| 4 | Plantillas y parámetros de reportes | Reportes de Dirección configurables |
-| 5 | Pruebas finales, correcciones y demostración | Versión candidata a entrega |
+| 15/09 | Listado de alumnos por materia | Reporte docente disponible |
+| 16/09 | Filtros y restricciones por docente | Información protegida |
+| 17/09 | Recorridos e inscripción al transporte | Transporte funcionando |
+| 18/09 | Plantillas y parámetros de reportes | Reportes de Dirección configurables |
+| 19/09 | Pruebas finales, correcciones y demostración | Versión candidata a entrega |
+
+## Cierre y Presentación (22/09/2026)
+
+El 22/09/2026 se realizará el despliegue final, la revisión de los criterios de aceptación, la actualización de la bitácora y la presentación del proyecto.
 
 ## Definición de Terminado
 
@@ -618,14 +689,54 @@ Una historia se considera terminada cuando cumple sus criterios de aceptación, 
 
 # 8. Entregables
 
-- Documento del plan de trabajo.
-- Requerimientos funcionales y no funcionales.
-- Historias de usuario y casos de uso.
-- Modelo de datos y diccionario de datos.
-- Diagramas de arquitectura de información y software.
-- Wireframes, mockups y prototipo.
-- Código fuente en el repositorio.
-- Tablero Kanban y bitácora del equipo e integrantes.
-- Casos y evidencias de pruebas.
-- Aplicación desplegada en un entorno de pruebas.
-- Presentación y demostración final.
+Los entregables se definirán según los resultados verificables de cada sprint y de la etapa de cierre.
+
+## 8.1 Entregables del Sprint 1 (01/09/2026 - 07/09/2026)
+
+- Catálogo de deportes, grupos y horarios disponibles.
+- Funcionalidad de inscripción a deportes.
+- Validación del límite de dos deportes por alumno.
+- Validación y bloqueo de conflictos de horarios.
+- Consulta de información académica y deportiva de los hijos asociados.
+- Control de acceso padre-hijo probado.
+- Casos de prueba y demostración de HU-01 y HU-02.
+
+## 8.2 Entregables del Sprint 2 (08/09/2026 - 14/09/2026)
+
+- Formularios de actualización de correo y teléfono para alumnos y docentes.
+- Validaciones de datos de contacto y persistencia en la base de datos.
+- Gestión de usuarios, estados, roles y permisos.
+- Protección de vistas y endpoints mediante RBAC.
+- Pruebas funcionales, de integración y de seguridad de HU-03 y HU-04.
+- Demostración de HU-03 y HU-04 integrada al repositorio.
+
+## 8.3 Entregables del Sprint 3 (15/09/2026 - 21/09/2026)
+
+- Listado de alumnos por materia para docentes, limitado a sus asignaciones.
+- Configuración de los cuatro recorridos de transporte.
+- Funcionalidad de inscripción a un único recorrido por alumno.
+- Prevención de inscripciones duplicadas en transporte.
+- Plantillas de reportes institucionales configurables por el Director.
+- Generación de reportes con sus parámetros autorizados.
+- Pruebas finales de HU-05, HU-06 y HU-07.
+
+## 8.4 Entregables de cierre (22/09/2026)
+
+- Versión estable desplegada en el entorno de pruebas.
+- Código fuente integrado en el repositorio de GitHub.
+- Modelo de datos y diccionario de datos actualizados.
+- Diagramas de arquitectura de la información y de la aplicación de software.
+- Wireframes, mockups y prototipo de los flujos principales.
+- Evidencias de pruebas y correcciones realizadas.
+- Tablero Kanban y bitácora del equipo y de cada integrante.
+- Documentación final del proyecto y presentación de cierre.
+
+# 9. Referencias
+
+<p class="reference">Centro Educativo EDUCAR PARA TRANSFORMAR. (2026). <em>Escenario del sistema de gestión</em> [Documento de trabajo].</p>
+
+<p class="reference">Cátedra de Metodología de Sistemas II. (2026). <em>Formato de plan de trabajo - Proyecto</em> [Consigna de trabajo].</p>
+
+<p class="reference">Hakanson, I., &amp; Morales, E. (2026). <em>Requerimientos, historias de usuario y casos de uso</em> [Documento de trabajo].</p>
+
+<p class="reference">Equipo de trabajo. (2026). <em>Planificación de sprints</em> [Documento de trabajo].</p>
