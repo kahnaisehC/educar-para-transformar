@@ -85,6 +85,21 @@ export async function createUser(
           [user.id, input.displayName],
         );
       }
+      if (user.role === "teacher") {
+        await client.query(
+          `INSERT INTO teachers
+             (user_id, record_number, dni, full_name, specialty, email, phone, status)
+           VALUES ($1, $2, $3, $4, 'Pendiente', $5, 'Pendiente', $6)`,
+          [
+            user.id,
+            `PEND-PR-${user.id}`,
+            `PEND-DNI-${user.id}`,
+            input.displayName,
+            `${user.username}@educar.local`,
+            input.status,
+          ],
+        );
+      }
       await writeAudit(client, actorUserId, "create_user", "success", {
         userId: user.id,
         username: user.username,

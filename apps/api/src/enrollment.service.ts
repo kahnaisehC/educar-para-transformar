@@ -9,6 +9,10 @@ interface StudentRow {
   record_number: string;
   dni: string;
   full_name: string;
+  birth_date: string | null;
+  address: string | null;
+  phone: string | null;
+  email: string | null;
   level: string;
   course: string;
   status: "active" | "inactive";
@@ -28,8 +32,27 @@ interface GroupRow {
 
 export interface StudentDashboard {
   student: StudentRow;
+  subjects: Array<{ subject: string; teacher: string }>;
   catalog: SportGroupView[];
   enrollments: EnrollmentView[];
+  transportRoutes: TransportRouteView[];
+  transportEnrollment: TransportEnrollmentView | null;
+  cafeteriaEnrollment: CafeteriaEnrollmentView | null;
+}
+
+export interface TransportRouteView {
+  id: number;
+  name: string;
+  description: string;
+}
+
+export interface TransportEnrollmentView extends TransportRouteView {
+  enrolledAt: string;
+}
+
+export interface CafeteriaEnrollmentView {
+  active: boolean;
+  enrolledAt: string;
 }
 
 export interface SportGroupView {
@@ -89,7 +112,8 @@ function mapGroup(row: GroupRow & { enrolled_at?: string }): SportGroupView & { 
 
 async function findStudent(pool: DatabasePool, userId: number): Promise<StudentRow> {
   const result = await pool.query<StudentRow>(
-    `SELECT id, record_number, dni, full_name, level, course, status
+    `SELECT id, record_number, dni, full_name, birth_date, address, phone, email,
+             level, course, status
      FROM students
      WHERE user_id = $1`,
     [userId],
@@ -106,21 +130,65 @@ export async function getStudentDashboard(
   userId: number,
 ): Promise<StudentDashboard> {
   const student = await findStudent(pool, userId);
-  const [catalogResult, enrollmentResult] = await Promise.all([
+  const [subjectsResult, catalogResult, enrollmentResult, routeResult, transportResult, cafeteriaResult] = await Promise.all([
+    pool.query<{ subject: string; teacher: string }>(
+      `SELECT sub.name AS subject, t.full_name AS teacher
+       FROM student_subjects ss
+       JOIN subjects sub ON sub.id = ss.subject_id
+       JOIN teachers t ON t.id = ss.teacher_id
+       WHERE ss.student_id = $1
+       ORDER BY sub.name`,
+      [student.id],
+    ),
     pool.query<GroupRow>(`${GROUP_SELECT} WHERE sg.active = TRUE ORDER BY sg.weekday, sg.start_time, s.name`),
     pool.query<GroupRow & { enrolled_at: string }>(
       `${GROUP_SELECT}
        JOIN sport_enrollments se ON se.group_id = sg.id
        WHERE se.student_id = $1
        ORDER BY sg.weekday, sg.start_time, s.name`,
+       [student.id],
+     ),
+    pool.query<TransportRouteView>(
+      `SELECT id, name, description
+       FROM transport_routes
+       WHERE active = TRUE
+       ORDER BY id`,
+    ),
+    pool.query<TransportRouteView & { enrolled_at: string }>(
+      `SELECT tr.id, tr.name, tr.description, te.created_at AS enrolled_at
+       FROM transport_enrollments te
+       JOIN transport_routes tr ON tr.id = te.route_id
+       WHERE te.student_id = $1`,
+      [student.id],
+    ),
+    pool.query<{ active: boolean; enrolled_at: string }>(
+      `SELECT active, created_at AS enrolled_at
+       FROM cafeteria_enrollments
+       WHERE student_id = $1 AND active = TRUE`,
       [student.id],
     ),
   ]);
 
   return {
     student,
+    subjects: subjectsResult.rows,
     catalog: catalogResult.rows.map(mapGroup),
     enrollments: enrollmentResult.rows.map(mapGroup),
+    transportRoutes: routeResult.rows,
+    transportEnrollment: transportResult.rows[0]
+      ? {
+          id: transportResult.rows[0].id,
+          name: transportResult.rows[0].name,
+          description: transportResult.rows[0].description,
+          enrolledAt: transportResult.rows[0].enrolled_at,
+        }
+      : null,
+    cafeteriaEnrollment: cafeteriaResult.rows[0]
+      ? {
+          active: cafeteriaResult.rows[0].active,
+          enrolledAt: cafeteriaResult.rows[0].enrolled_at,
+        }
+      : null,
   };
 }
 

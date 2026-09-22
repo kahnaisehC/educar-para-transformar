@@ -14,6 +14,10 @@ export interface Student {
   record_number: string;
   dni: string;
   full_name: string;
+  birth_date: string | null;
+  address: string | null;
+  phone: string | null;
+  email: string | null;
   level: string;
   course: string;
   status: UserStatus;
@@ -34,8 +38,36 @@ export interface SportGroup {
 
 export interface StudentDashboardData {
   student: Student;
+  subjects: Array<{ subject: string; teacher: string }>;
   catalog: SportGroup[];
   enrollments: SportGroup[];
+  transportRoutes: TransportRoute[];
+  transportEnrollment: TransportEnrollment | null;
+  cafeteriaEnrollment: CafeteriaEnrollment | null;
+}
+
+export interface TransportRoute {
+  id: number;
+  name: string;
+  description: string;
+}
+
+export interface TransportEnrollment extends TransportRoute {
+  enrolledAt: string;
+}
+
+export interface CafeteriaEnrollment {
+  active: boolean;
+  enrolledAt: string;
+}
+
+export interface StudentReport {
+  generatedAt: string;
+  profile: Student;
+  subjects: Array<{ subject: string; teacher: string }>;
+  sports: SportGroup[];
+  transport: TransportEnrollment | null;
+  cafeteria: CafeteriaEnrollment | null;
 }
 
 export interface Child {

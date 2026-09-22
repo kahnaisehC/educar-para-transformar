@@ -13,10 +13,10 @@ VALUES
     (7, 'director.demo', 'Direccion', '$2b$12$xmOZOKyNNvdyZqXdsBfXoOiKwUIjId7fFNDc2w4YXwqdarA4nYfa6', 'director', 'active')
 ON CONFLICT (id) DO NOTHING;
 
-INSERT INTO students (id, user_id, record_number, dni, full_name, level, course, status)
+INSERT INTO students (id, user_id, record_number, dni, full_name, birth_date, address, phone, email, level, course, status)
 VALUES
-    (1, 1, 'AL-0001', '40111222', 'Ana Alumna', 'Primario', '5to A', 'active'),
-    (2, 3, 'AL-0002', '40222333', 'Bruno Alumno', 'Secundario', '2do B', 'active')
+    (1, 1, 'AL-0001', '40111222', 'Ana Alumna', '2014-05-15', 'Av. Sarmiento 123', '3624-111111', 'ana.alumna@educar.local', 'Primario', '5to A', 'active'),
+    (2, 3, 'AL-0002', '40222333', 'Bruno Alumno', '2011-08-20', 'Av. Alberdi 456', '3624-222222', 'bruno.alumno@educar.local', 'Secundario', '2do B', 'active')
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO parents (id, user_id, full_name)
@@ -29,11 +29,11 @@ INSERT INTO parent_students (parent_id, student_id)
 VALUES (1, 1), (2, 2)
 ON CONFLICT DO NOTHING;
 
-INSERT INTO teachers (id, full_name, specialty)
+INSERT INTO teachers (id, user_id, record_number, dni, full_name, specialty, email, phone, status)
 VALUES
-    (1, 'Laura Docente', 'Educacion Primaria'),
-    (2, 'Diego Profesor', 'Educacion Fisica'),
-    (3, 'Sofia Entrenadora', 'Actividades deportivas')
+    (1, 5, 'PR-0001', '30111222', 'Laura Docente', 'Educacion Primaria', 'laura.docente@educar.local', '3624-100000', 'active'),
+    (2, NULL, 'PR-0002', '30222333', 'Diego Profesor', 'Educacion Fisica', 'diego.profesor@educar.local', '3624-200000', 'active'),
+    (3, NULL, 'PR-0003', '30333444', 'Sofia Entrenadora', 'Actividades deportivas', 'sofia.entrenadora@educar.local', '3624-300000', 'active')
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO subjects (id, name)
@@ -60,6 +60,14 @@ VALUES
     (6, 2, 2, 'Todos', 5, '16:00', '17:00')
 ON CONFLICT (id) DO NOTHING;
 
+INSERT INTO transport_routes (id, name, description, active)
+VALUES
+    (1, 'Recorrido Norte', 'Acceso norte y barrios cercanos', TRUE),
+    (2, 'Recorrido Centro', 'Centro y zona urbana central', TRUE),
+    (3, 'Recorrido Sur', 'Acceso sur y barrios cercanos', TRUE),
+    (4, 'Recorrido Oeste', 'Acceso oeste y zona rural', TRUE)
+ON CONFLICT (id) DO NOTHING;
+
 SELECT setval(pg_get_serial_sequence('users', 'id'), GREATEST((SELECT MAX(id) FROM users), 1));
 SELECT setval(pg_get_serial_sequence('students', 'id'), GREATEST((SELECT MAX(id) FROM students), 1));
 SELECT setval(pg_get_serial_sequence('parents', 'id'), GREATEST((SELECT MAX(id) FROM parents), 1));
@@ -67,5 +75,6 @@ SELECT setval(pg_get_serial_sequence('teachers', 'id'), GREATEST((SELECT MAX(id)
 SELECT setval(pg_get_serial_sequence('subjects', 'id'), GREATEST((SELECT MAX(id) FROM subjects), 1));
 SELECT setval(pg_get_serial_sequence('sports', 'id'), GREATEST((SELECT MAX(id) FROM sports), 1));
 SELECT setval(pg_get_serial_sequence('sport_groups', 'id'), GREATEST((SELECT MAX(id) FROM sport_groups), 1));
+SELECT setval(pg_get_serial_sequence('transport_routes', 'id'), GREATEST((SELECT MAX(id) FROM transport_routes), 1));
 
 COMMIT;

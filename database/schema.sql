@@ -19,6 +19,10 @@ CREATE TABLE IF NOT EXISTS students (
     record_number VARCHAR(30) NOT NULL UNIQUE,
     dni VARCHAR(30) NOT NULL UNIQUE,
     full_name VARCHAR(160) NOT NULL,
+    birth_date DATE,
+    address VARCHAR(200),
+    phone VARCHAR(40),
+    email VARCHAR(160),
     level VARCHAR(80) NOT NULL,
     course VARCHAR(80) NOT NULL,
     status VARCHAR(20) NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'inactive'))
@@ -44,8 +48,14 @@ CREATE INDEX IF NOT EXISTS idx_parent_students_student_id ON parent_students (st
 
 CREATE TABLE IF NOT EXISTS teachers (
     id SERIAL PRIMARY KEY,
+    user_id INTEGER UNIQUE REFERENCES users (id) ON DELETE SET NULL,
+    record_number VARCHAR(30) UNIQUE,
+    dni VARCHAR(30) UNIQUE,
     full_name VARCHAR(160) NOT NULL,
-    specialty VARCHAR(160) NOT NULL
+    specialty VARCHAR(160) NOT NULL,
+    email VARCHAR(160),
+    phone VARCHAR(40),
+    status VARCHAR(20) NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'inactive'))
 );
 
 CREATE TABLE IF NOT EXISTS subjects (
@@ -93,6 +103,27 @@ CREATE TABLE IF NOT EXISTS sport_enrollments (
 
 CREATE INDEX IF NOT EXISTS idx_sport_enrollments_student_id ON sport_enrollments (student_id);
 CREATE INDEX IF NOT EXISTS idx_sport_enrollments_group_id ON sport_enrollments (group_id);
+
+CREATE TABLE IF NOT EXISTS transport_routes (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(120) NOT NULL UNIQUE,
+    description VARCHAR(240) NOT NULL,
+    active BOOLEAN NOT NULL DEFAULT TRUE
+);
+
+CREATE TABLE IF NOT EXISTS transport_enrollments (
+    student_id INTEGER PRIMARY KEY REFERENCES students (id) ON DELETE CASCADE,
+    route_id INTEGER NOT NULL REFERENCES transport_routes (id) ON DELETE RESTRICT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_transport_enrollments_route_id ON transport_enrollments (route_id);
+
+CREATE TABLE IF NOT EXISTS cafeteria_enrollments (
+    student_id INTEGER PRIMARY KEY REFERENCES students (id) ON DELETE CASCADE,
+    active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
 
 CREATE TABLE IF NOT EXISTS audit_logs (
     id BIGSERIAL PRIMARY KEY,

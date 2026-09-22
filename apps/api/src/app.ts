@@ -18,6 +18,15 @@ import {
 } from "./enrollment.service.js";
 import { getChildSummary, listChildren } from "./parent.service.js";
 import type { AppConfig } from "./config.js";
+import {
+  cancelCafeteria,
+  cancelTransport,
+  enrollCafeteria,
+  enrollTransport,
+  getStudentReport,
+  updateStudentContact,
+} from "./student.service.js";
+import { updateTeacherContact } from "./teacher.service.js";
 
 export interface CreateAppOptions {
   pool: DatabasePool;
@@ -62,6 +71,29 @@ export function createApp(options: CreateAppOptions) {
     }),
   );
 
+  app.get(
+    "/api/student/report",
+    requireRoles("student"),
+    asyncRoute(async (request, response) => {
+      response.json({ report: await getStudentReport(options.pool, request.user!.id) });
+    }),
+  );
+
+  app.patch(
+    "/api/me/contact",
+    requireRoles("student", "teacher"),
+    asyncRoute(async (request, response) => {
+      const input = {
+        email: requiredEmail(request.body?.email),
+        phone: requiredPhone(request.body?.phone),
+      };
+      const contact = request.user!.role === "student"
+        ? await updateStudentContact(options.pool, request.user!.id, input)
+        : await updateTeacherContact(options.pool, request.user!.id, input);
+      response.json({ contact });
+    }),
+  );
+
   app.post(
     "/api/student/enrollments",
     requireRoles("student"),
@@ -86,6 +118,43 @@ export function createApp(options: CreateAppOptions) {
       const dashboard = await getStudentDashboard(options.pool, request.user!.id);
       await cancelEnrollment(options.pool, request.user!.id, dashboard.student.id, groupId);
       response.json({ message: "Inscripción cancelada correctamente" });
+    }),
+  );
+
+  app.post(
+    "/api/student/transport",
+    requireRoles("student"),
+    asyncRoute(async (request, response) => {
+      const routeId = positiveInteger(request.body?.routeId, "routeId");
+      const enrollment = await enrollTransport(options.pool, request.user!.id, routeId);
+      response.status(201).json({ enrollment });
+    }),
+  );
+
+  app.delete(
+    "/api/student/transport",
+    requireRoles("student"),
+    asyncRoute(async (request, response) => {
+      await cancelTransport(options.pool, request.user!.id);
+      response.json({ message: "Recorrido cancelado correctamente" });
+    }),
+  );
+
+  app.post(
+    "/api/student/cafeteria",
+    requireRoles("student"),
+    asyncRoute(async (request, response) => {
+      await enrollCafeteria(options.pool, request.user!.id);
+      response.status(201).json({ message: "Inscripción al comedor registrada correctamente" });
+    }),
+  );
+
+  app.delete(
+    "/api/student/cafeteria",
+    requireRoles("student"),
+    asyncRoute(async (request, response) => {
+      await cancelCafeteria(options.pool, request.user!.id);
+      response.json({ message: "Inscripción al comedor cancelada correctamente" });
     }),
   );
 
@@ -195,6 +264,22 @@ function requiredPassword(value: unknown): string {
     throw new AppError(400, "La contraseña debe tener al menos 8 caracteres", "VALIDATION_ERROR");
   }
   return value;
+}
+
+function requiredEmail(value: unknown): string {
+  const email = requiredString(value, "email").toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    throw new AppError(400, "El correo electrónico no tiene un formato válido", "INVALID_EMAIL");
+  }
+  return email;
+}
+
+function requiredPhone(value: unknown): string {
+  const phone = requiredString(value, "phone");
+  if (!/^[0-9+()\s-]{7,40}$/.test(phone)) {
+    throw new AppError(400, "El teléfono no tiene un formato válido", "INVALID_PHONE");
+  }
+  return phone;
 }
 
 function positiveInteger(value: unknown, field: string): number {

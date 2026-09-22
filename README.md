@@ -1,14 +1,16 @@
 # Educar para Transformar
 
-Aplicación Sprint 1 del sistema de gestión del Centro Educativo **EDUCAR PARA TRANSFORMAR**. Es un monorepo con React + TypeScript, API Node.js + TypeScript, PostgreSQL y autenticación JWT.
+Aplicación de los Sprints 1 y 2 del sistema de gestión del Centro Educativo **EDUCAR PARA TRANSFORMAR**. Es un monorepo con React + TypeScript, API Node.js + TypeScript, PostgreSQL y autenticación JWT.
 
-## Alcance de Sprint 1
+## Alcance de Sprints 1 y 2
 
 - Inicio de sesión real con usuario, contraseña, JWT y autorización por rol.
 - Portal Alumno: catálogo de deportes, grupos, docentes, horarios, inscripción y cancelación.
+- Módulo Alumno: perfil académico, actualización de contacto, transporte, comedor y reporte personal.
 - Reglas de inscripción: máximo dos deportes, sin superposición de horarios y sin duplicados.
 - Portal Padre: únicamente hijos asociados, materias, docentes y resumen deportivo.
-- Panel Administrador: listado, alta de usuarios y gestión de rol/estado.
+- Panel Administrador: listado, alta de usuarios y gestión de rol/estado, con perfiles iniciales para alumnos, padres y docentes.
+- Sprint 2: actualización de contacto para alumnos y docentes, con validación de correo y teléfono.
 - Roles Docente y Dirección autenticados con una pantalla clara de funcionalidad pendiente.
 - Auditoría de inscripciones, cancelaciones y operaciones administrativas.
 
@@ -46,7 +48,7 @@ podman rm -f educar-web educar-api educar-db
 
 La API queda disponible en `http://localhost:4000`.
 
-La base se inicializa con `database/schema.sql` y `database/seed.sql` al crear el volumen por primera vez. Para reinicializar los datos demo en un entorno local:
+La base se inicializa con `database/schema.sql` y `database/seed.sql`. El script aplica además `database/migrations/002_student_and_sprint2.sql` para actualizar volúmenes existentes. Para reinicializar los datos demo en un entorno local:
 
 ```bash
 podman rm -f educar-web educar-api educar-db
@@ -80,15 +82,21 @@ npm run typecheck
 npm run build
 ```
 
-Las pruebas del backend cubren autenticación y RBAC, aislamiento padre-hijo, límite de dos deportes, conflictos de horario, duplicados y auditoría de una operación rechazada. Se ejecutan con `pg-mem` y la misma estructura SQL del proyecto, sin necesitar una base PostgreSQL de test.
+Las pruebas del backend cubren autenticación y RBAC, aislamiento padre-hijo, límite de dos deportes, conflictos de horario, duplicados, perfiles iniciales, contacto, transporte, comedor, reportes y auditoría. Se ejecutan con `pg-mem` y la misma estructura SQL del proyecto, sin necesitar una base PostgreSQL de test.
 
 ## API principal
 
 - `POST /api/auth/login`
 - `GET /api/me`
 - `GET /api/student/dashboard`
+- `GET /api/student/report`
+- `PATCH /api/me/contact`
 - `POST /api/student/enrollments`
 - `DELETE /api/student/enrollments/:groupId`
+- `POST /api/student/transport`
+- `DELETE /api/student/transport`
+- `POST /api/student/cafeteria`
+- `DELETE /api/student/cafeteria`
 - `GET /api/parent/children`
 - `GET /api/parent/children/:studentId/summary`
 - `GET /api/admin/users`
