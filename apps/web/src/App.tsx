@@ -4,8 +4,13 @@ import type {
   AdminUser,
   Child,
   ChildSummary,
+  CourseStudent,
+  GeneratedReport,
+  ReportEntity,
+  ReportTemplate,
   StudentReport,
   StudentDashboardData,
+  TeacherCourse,
   User,
   UserRole,
 } from "./types";
@@ -220,8 +225,8 @@ function AppShell({ user, token, onLogout }: { user: User; token: string; onLogo
           {user.role === "student" && <StudentDashboard token={token} />}
           {user.role === "parent" && <ParentDashboard token={token} />}
           {user.role === "admin" && <AdminDashboard token={token} currentUser={user} />}
-          {user.role === "teacher" && <TeacherContactDashboard token={token} />}
-          {user.role === "director" && <RoleComingSoon role={user.role} />}
+          {user.role === "teacher" && <TeacherDashboard token={token} />}
+          {user.role === "director" && <DirectorDashboard token={token} />}
         </main>
         <footer className="app-footer">
           <span>EDUCAR PARA TRANSFORMAR</span>
@@ -760,11 +765,61 @@ function AdminDashboard({ token, currentUser }: { token: string; currentUser: Us
   );
 }
 
-function TeacherContactDashboard({ token }: { token: string }) {
+function TeacherDashboard({ token }: { token: string }) {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [saving, setSaving] = useState(false);
+  const [courses, setCourses] = useState<TeacherCourse[]>([]);
+  const [selectedCourse, setSelectedCourse] = useState<TeacherCourse | null>(null);
+  const [students, setStudents] = useState<CourseStudent[]>([]);
+  const [loadingCourses, setLoadingCourses] = useState(true);
+  const [loadingStudents, setLoadingStudents] = useState(false);
   const [notice, setNotice] = useState<{ tone: "success" | "error"; text: string } | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  async function loadCourses() {
+    setLoadingCourses(true);
+    setError(null);
+    try {
+      const result = await apiRequest<{ courses: TeacherCourse[] }>("/teacher/courses", { token });
+      setCourses(result.courses);
+      setSelectedCourse((current) => current ?? result.courses[0] ?? null);
+    } catch (requestError) {
+      setError(getErrorMessage(requestError));
+    } finally {
+      setLoadingCourses(false);
+    }
+  }
+
+  useEffect(() => {
+    void loadCourses();
+  }, [token]);
+
+  useEffect(() => {
+    if (!selectedCourse) {
+      setStudents([]);
+      return;
+    }
+    let active = true;
+    setLoadingStudents(true);
+    setError(null);
+    apiRequest<{ students: CourseStudent[] }>(
+      `/teacher/courses/students?subjectId=${selectedCourse.subjectId}&level=${encodeURIComponent(selectedCourse.level)}&course=${encodeURIComponent(selectedCourse.course)}`,
+      { token },
+    )
+      .then((result) => {
+        if (active) setStudents(result.students);
+      })
+      .catch((requestError) => {
+        if (active) setError(getErrorMessage(requestError));
+      })
+      .finally(() => {
+        if (active) setLoadingStudents(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [selectedCourse, token]);
 
   async function saveContact(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -780,9 +835,24 @@ function TeacherContactDashboard({ token }: { token: string }) {
     }
   }
 
+  function exportStudentsCsv() {
+    const header = ["Nivel", "Curso", "Materia", "Profesor", "Alumno", "Legajo", "DNI"];
+    const lines = students.map((student) => [
+      student.level,
+      student.course,
+      student.subject,
+      student.teacher,
+      student.fullName,
+      student.recordNumber,
+      student.dni,
+    ]);
+    downloadCsv(`alumnos-${selectedCourse?.subject ?? "materia"}.csv`, header, lines);
+  }
+
   return (
     <>
       {notice && <InlineMessage tone={notice.tone}>{notice.text}</InlineMessage>}
+      {error && !students.length && !courses.length && <ErrorState message={error} onRetry={() => void loadCourses()} />}
       <section className="surface-panel teacher-contact-panel">
         <PanelHeading eyebrow="Sprint 2 · HU-03" title="Actualizá tus datos de contacto" detail="Mantené actualizados tus medios de comunicación con la institución." />
         <form onSubmit={saveContact} className="teacher-contact-form form-stack">
@@ -791,21 +861,251 @@ function TeacherContactDashboard({ token }: { token: string }) {
           <button className="primary-button" type="submit" disabled={saving}>{saving ? "Guardando..." : "Guardar cambios"}</button>
         </form>
       </section>
-      <RoleComingSoon role="teacher" />
+      <section className="surface-panel teacher-courses-panel">
+        <div className="panel-heading report-heading">
+          <div><PanelHeading eyebrow="Sprint 3 · HU-05" title="Mis cursos" detail="Seleccioná una materia y curso para consultar los alumnos asignados." /></div>
+        </div>
+        {loadingCourses ? (
+          <div className="detail-loading"><span className="loading-dot" /> Cargando cursos...</div>
+        ) : courses.length === 0 ? (
+          <EmptyState title="No tenés cursos asignados" detail="Los cursos aparecerán cuando se cargue tu asignación académica." compact />
+        ) : (
+          <>
+            <div className="course-selector">
+              <label className="field">
+                <span>Materia y curso</span>
+                <select
+                  value={selectedCourse ? `${selectedCourse.subjectId}|${selectedCourse.level}|${selectedCourse.course}` : ""}
+                  onChange={(event) => {
+                    const [subjectId, level, course] = event.target.value.split("|");
+                    const next = courses.find((item) => String(item.subjectId) === subjectId && item.level === level && item.course === course) ?? null;
+                    setSelectedCourse(next);
+                  }}
+                >
+                  {courses.map((course) => (
+                    <option key={`${course.subjectId}-${course.level}-${course.course}`} value={`${course.subjectId}|${course.level}|${course.course}`}>
+                      {course.subject} · {course.level} · {course.course}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <button className="secondary-button" disabled={loadingStudents} onClick={exportStudentsCsv}>
+                Exportar CSV
+              </button>
+            </div>
+            <div className="user-table-wrap">
+              <table className="user-table">
+                <thead><tr><th>Alumno</th><th>Legajo</th><th>DNI</th><th>Nivel</th><th>Curso</th><th>Materia</th><th>Profesor</th></tr></thead>
+                <tbody>
+                  {loadingStudents ? (
+                    <tr><td colSpan={7}><div className="detail-loading"><span className="loading-dot" /> Cargando alumnos...</div></td></tr>
+                  ) : students.length === 0 ? (
+                    <tr><td colSpan={7}><EmptyState title="Sin alumnos en este curso" detail="No hay alumnos cargados para esta materia y curso." compact /></td></tr>
+                  ) : students.map((student) => (
+                    <tr key={student.recordNumber}>
+                      <td><div className="table-person"><span className="table-avatar">{student.fullName.slice(0, 1)}</span><span><strong>{student.fullName}</strong></span></div></td>
+                      <td>{student.recordNumber}</td>
+                      <td>{student.dni}</td>
+                      <td>{student.level}</td>
+                      <td>{student.course}</td>
+                      <td>{student.subject}</td>
+                      <td>{student.teacher}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
+      </section>
     </>
   );
 }
 
-function RoleComingSoon({ role }: { role: "teacher" | "director" }) {
-  const isTeacher = role === "teacher";
+function DirectorDashboard({ token }: { token: string }) {
+  const [entities, setEntities] = useState<ReportEntity[]>([]);
+  const [templates, setTemplates] = useState<ReportTemplate[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [notice, setNotice] = useState<{ tone: "success" | "error"; text: string } | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [form, setForm] = useState({
+    name: "",
+    entity: "",
+    fields: [] as string[],
+  });
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [generatingId, setGeneratingId] = useState<number | null>(null);
+  const [report, setReport] = useState<GeneratedReport | null>(null);
+
+  const selectedEntity = entities.find((entity) => entity.key === form.entity);
+
+  async function loadAll() {
+    setLoading(true);
+    setError(null);
+    try {
+      const [entitiesResult, templatesResult] = await Promise.all([
+        apiRequest<{ entities: ReportEntity[] }>("/director/report-entities", { token }),
+        apiRequest<{ templates: ReportTemplate[] }>("/director/report-templates", { token }),
+      ]);
+      setEntities(entitiesResult.entities);
+      setTemplates(templatesResult.templates);
+    } catch (requestError) {
+      setError(getErrorMessage(requestError));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    void loadAll();
+  }, [token]);
+
+  function toggleField(field: string) {
+    setForm((current) => ({
+      ...current,
+      fields: current.fields.includes(field)
+        ? current.fields.filter((item) => item !== field)
+        : [...current.fields, field],
+    }));
+  }
+
+  function selectEntity(entity: string) {
+    setForm((current) => ({ ...current, entity, fields: [] }));
+  }
+
+  function startEdit(template: ReportTemplate) {
+    setEditingId(template.id);
+    setForm({ name: template.name, entity: template.entity, fields: template.fields });
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+    setForm({ name: "", entity: "", fields: [] });
+  }
+
+  async function saveTemplate(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSaving(true);
+    setNotice(null);
+    try {
+      if (editingId !== null) {
+        const result = await apiRequest<{ template: ReportTemplate }>(`/director/report-templates/${editingId}`, {
+          method: "PATCH",
+          token,
+          body: JSON.stringify(form),
+        });
+        setTemplates((current) => current.map((item) => item.id === result.template.id ? result.template : item));
+        setNotice({ tone: "success", text: "La plantilla fue actualizada." });
+      } else {
+        const result = await apiRequest<{ template: ReportTemplate }>("/director/report-templates", {
+          method: "POST",
+          token,
+          body: JSON.stringify(form),
+        });
+        setTemplates((current) => [result.template, ...current]);
+        setNotice({ tone: "success", text: "La plantilla fue creada y quedó disponible para generar reportes." });
+      }
+      cancelEdit();
+    } catch (requestError) {
+      setNotice({ tone: "error", text: getErrorMessage(requestError) });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function toggleTemplate(template: ReportTemplate) {
+    setNotice(null);
+    try {
+      const result = await apiRequest<{ template: ReportTemplate }>(`/director/report-templates/${template.id}`, {
+        method: "PATCH",
+        token,
+        body: JSON.stringify({ active: !template.active }),
+      });
+      setTemplates((current) => current.map((item) => item.id === result.template.id ? result.template : item));
+      setNotice({ tone: "success", text: result.template.active ? "La plantilla fue activada." : "La plantilla fue desactivada." });
+    } catch (requestError) {
+      setNotice({ tone: "error", text: getErrorMessage(requestError) });
+    }
+  }
+
+  async function generate(template: ReportTemplate) {
+    setGeneratingId(template.id);
+    setNotice(null);
+    try {
+      const result = await apiRequest<{ report: GeneratedReport }>(
+        `/director/report-templates/${template.id}/generate`,
+        { method: "POST", token },
+      );
+      setReport(result.report);
+    } catch (requestError) {
+      setNotice({ tone: "error", text: getErrorMessage(requestError) });
+    } finally {
+      setGeneratingId(null);
+    }
+  }
+
+  function exportReportCsv() {
+    if (!report) return;
+    const header = report.columns.map((column) => column.label);
+    const lines = report.rows.map((row) => report.columns.map((column) => row[column.key] ?? ""));
+    downloadCsv("reporte-institucional.csv", header, lines);
+  }
+
+  if (loading) return <DashboardSkeleton />;
+  if (error && templates.length === 0) return <ErrorState message={error} onRetry={() => void loadAll()} />;
+
   return (
-    <section className="coming-soon surface-panel">
-      <div className="coming-icon">{isTeacher ? "D" : "R"}</div>
-      <span className="overline">Próximo sprint</span>
-      <h2>{isTeacher ? "Portal docente en preparación" : "Módulo de Dirección en preparación"}</h2>
-      <p>{isTeacher ? "Tu cuenta está autenticada correctamente. La consulta de carga horaria, alumnos y reportes se habilitará en los próximos incrementos." : "Tu cuenta está autenticada correctamente. Las plantillas y reportes institucionales se habilitarán en los próximos incrementos."}</p>
-      <span className="status-chip neutral-chip">Acceso autenticado · Sprint 1</span>
-    </section>
+    <>
+      {notice && <InlineMessage tone={notice.tone}>{notice.text}</InlineMessage>}
+      <section className="admin-summary-strip">
+        <div><span className="overline">Sprint 3 · HU-07</span><h2>Reportes institucionales.</h2><p>Definí plantillas y generá información para la toma de decisiones.</p></div>
+        <div className="admin-stat"><strong>{templates.length}</strong><span>plantillas creadas</span></div>
+        <div className="admin-stat"><strong>{templates.filter((item) => item.active).length}</strong><span>plantillas activas</span></div>
+      </section>
+      <div className="admin-layout">
+        <section className="surface-panel create-user-panel">
+          <PanelHeading eyebrow={editingId !== null ? "Edición" : "Nueva plantilla"} title={editingId !== null ? "Editar plantilla" : "Crear plantilla"} detail="El nombre y al menos un campo son obligatorios." />
+          <form onSubmit={saveTemplate} className="form-stack">
+            <label className="field"><span>Nombre de la plantilla</span><input value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} placeholder="Ej.: Listado de alumnos por curso" required /></label>
+            <label className="field"><span>Entidad base</span><select value={form.entity} onChange={(event) => selectEntity(event.target.value)} required>
+              <option value="" disabled>Seleccionar entidad</option>
+              {entities.map((entity) => <option key={entity.key} value={entity.key}>{entity.label}</option>)}
+            </select></label>
+            {selectedEntity && (
+              <fieldset className="fieldset-group">
+                <legend>Campos del reporte</legend>
+                <div className="checkbox-grid">
+                  {selectedEntity.fields.map((field) => (
+                    <label className="check-field" key={field.key}>
+                      <input type="checkbox" checked={form.fields.includes(field.key)} onChange={() => toggleField(field.key)} />
+                      <span>{field.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
+            )}
+            <div className="form-actions">
+              <button className="primary-button" type="submit" disabled={saving || !form.name || form.fields.length === 0}>{saving ? "Guardando..." : editingId !== null ? "Guardar cambios" : "Crear plantilla"}</button>
+              {editingId !== null && <button className="text-button" type="button" onClick={cancelEdit}>Cancelar edición</button>}
+            </div>
+          </form>
+        </section>
+        <section className="surface-panel users-panel">
+          <PanelHeading eyebrow="Directorio de plantillas" title="Plantillas de reportes" detail="Activá, editá o generá reportes desde cada plantilla." />
+          {templates.length === 0 ? <EmptyState title="Sin plantillas todavía" detail="Creá la primera plantilla con los campos que necesites." compact /> : <div className="user-table-wrap"><table className="user-table"><thead><tr><th>Plantilla</th><th>Entidad</th><th>Campos</th><th>Estado</th><th aria-label="Acciones" /></tr></thead><tbody>{templates.map((template) => <tr key={template.id}><td><div className="table-person"><span className="table-avatar">{template.name.slice(0, 1)}</span><span><strong>{template.name}</strong></span></div></td><td>{entities.find((entity) => entity.key === template.entity)?.label ?? template.entity}</td><td>{template.fields.length}</td><td><span className={`status-chip ${template.active ? "success-chip" : "inactive-chip"}`}>{template.active ? "Activa" : "Desactivada"}</span></td><td><div className="row-actions"><button className="text-button" disabled={generatingId === template.id} onClick={() => void generate(template)}>{generatingId === template.id ? "Generando..." : "Generar"}</button><button className="text-button" onClick={() => startEdit(template)}>Editar</button><button className="text-button" onClick={() => void toggleTemplate(template)}>{template.active ? "Desactivar" : "Activar"}</button></div></td></tr>)}</tbody></table></div>}
+        </section>
+      </div>
+      {report && (
+        <section className="surface-panel report-panel">
+          <div className="panel-heading report-heading">
+            <div><PanelHeading eyebrow="Reporte generado" title={report.columns.map((column) => column.label).join(" · ")} detail={`${report.rows.length} registros · ${new Date(report.generatedAt).toLocaleString("es-AR")}`} /></div>
+            <button className="secondary-button" onClick={exportReportCsv}>Exportar CSV</button>
+          </div>
+          {report.rows.length === 0 ? <EmptyState title="Sin datos para esta plantilla" detail="La entidad elegida todavía no tiene registros cargados." compact /> : <div className="user-table-wrap"><table className="user-table"><thead><tr>{report.columns.map((column) => <th key={column.key}>{column.label}</th>)}</tr></thead><tbody>{report.rows.map((row, index) => <tr key={index}>{report.columns.map((column) => <td key={column.key}>{row[column.key]}</td>)}</tr>)}</tbody></table></div>}
+        </section>
+      )}
+    </>
   );
 }
 
@@ -854,4 +1154,21 @@ function getErrorMessage(error: unknown) {
   if (error instanceof ApiError) return error.message;
   if (error instanceof Error) return error.message;
   return "Ocurrió un error inesperado. Intentá nuevamente.";
+}
+
+function downloadCsv(filename: string, header: string[], lines: string[][]) {
+  const escape = (value: string) => {
+    const text = String(value ?? "");
+    return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+  };
+  const rows = [header, ...lines].map((row) => row.map(escape).join(",")).join("\n");
+  const blob = new Blob([`\uFEFF${rows}\n`], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
 }

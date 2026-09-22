@@ -204,6 +204,119 @@ describe("complete student module and Sprint 2 contact", () => {
   });
 });
 
+describe("HU-05 teacher course lists", () => {
+  it("lists only courses assigned to the teacher", async () => {
+    const token = await loginAs("laura.docente");
+    const response = await request(app)
+      .get("/api/teacher/courses")
+      .set("Authorization", `Bearer ${token}`);
+    expect(response.status).toBe(200);
+    const courses = response.body.courses as Array<{ subject: string; level: string; course: string }>;
+    expect(courses.length).toBeGreaterThan(0);
+    expect(courses[0]).toMatchObject({ subject: "Matematica", level: "Primario", course: "5to A" });
+  });
+
+  it("returns the students of a course with access control and exports all required fields", async () => {
+    const token = await loginAs("laura.docente");
+    const coursesResponse = await request(app)
+      .get("/api/teacher/courses")
+      .set("Authorization", `Bearer ${token}`);
+    const course = coursesResponse.body.courses[0] as { subjectId: number; level: string; course: string };
+
+    const studentsResponse = await request(app)
+      .get(`/api/teacher/courses/students?subjectId=${course.subjectId}&level=${encodeURIComponent(course.level)}&course=${encodeURIComponent(course.course)}`)
+      .set("Authorization", `Bearer ${token}`);
+    expect(studentsResponse.status).toBe(200);
+    expect(studentsResponse.body.students.length).toBeGreaterThan(0);
+    expect(studentsResponse.body.students[0]).toEqual(
+      expect.objectContaining({
+        fullName: expect.any(String),
+        recordNumber: expect.any(String),
+        dni: expect.any(String),
+        subject: "Matematica",
+        teacher: "Laura Docente",
+      }),
+    );
+  });
+
+  it("does not leak other courses and restricts the module by role", async () => {
+    const token = await loginAs("laura.docente");
+    const forbidden = await request(app)
+      .get("/api/teacher/courses/students?subjectId=999&level=Primario&course=5to%20A")
+      .set("Authorization", `Bearer ${token}`);
+    expect(forbidden.status).toBe(200);
+    expect(forbidden.body.students).toEqual([]);
+
+    const studentToken = await loginAs("ana.alumna");
+    const roleDenied = await request(app)
+      .get("/api/teacher/courses")
+      .set("Authorization", `Bearer ${studentToken}`);
+    expect(roleDenied.status).toBe(403);
+  });
+});
+
+describe("HU-07 institutional report templates", () => {
+  it("denies the report module to non-director roles", async () => {
+    const teacherToken = await loginAs("laura.docente");
+    const denied = await request(app)
+      .get("/api/director/report-templates")
+      .set("Authorization", `Bearer ${teacherToken}`);
+    expect(denied.status).toBe(403);
+  });
+
+  it("validates that the template name and at least one field are required", async () => {
+    const token = await loginAs("director.demo");
+
+    const missingName = await request(app)
+      .post("/api/director/report-templates")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ name: "", entity: "students", fields: ["full_name"] });
+    expect(missingName.status).toBe(400);
+
+    const missingFields = await request(app)
+      .post("/api/director/report-templates")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ name: "Listado de alumnos", entity: "students", fields: [] });
+    expect(missingFields.status).toBe(400);
+    expect(missingFields.body.code).toBe("VALIDATION_ERROR");
+  });
+
+  it("creates, updates, activates and generates an institutional report", async () => {
+    const token = await loginAs("director.demo");
+
+    const created = await request(app)
+      .post("/api/director/report-templates")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ name: "Listado de alumnos", entity: "students", fields: ["full_name", "course"] });
+    expect(created.status).toBe(201);
+    expect(created.body.template.fields).toEqual(["full_name", "course"]);
+    expect(created.body.template.active).toBe(true);
+
+    const templateId = created.body.template.id as number;
+
+    const generated = await request(app)
+      .post(`/api/director/report-templates/${templateId}/generate`)
+      .set("Authorization", `Bearer ${token}`);
+    expect(generated.status).toBe(200);
+    expect(generated.body.report.columns.map((column: { key: string }) => column.key)).toEqual(["full_name", "course"]);
+    expect(generated.body.report.rows.length).toBeGreaterThan(0);
+    expect(generated.body.report.rows[0]).toEqual(expect.objectContaining({ full_name: "Ana Alumna" }));
+
+    const updated = await request(app)
+      .patch(`/api/director/report-templates/${templateId}`)
+      .set("Authorization", `Bearer ${token}`)
+      .send({ active: false });
+    expect(updated.status).toBe(200);
+    expect(updated.body.template.active).toBe(false);
+
+    const inactive = await request(app)
+      .post(`/api/director/report-templates/${templateId}/generate`)
+      .set("Authorization", `Bearer ${token}`);
+    expect(inactive.status).toBe(409);
+    expect(inactive.body.code).toBe("TEMPLATE_INACTIVE");
+  });
+});
+
 async function loginAs(username: string): Promise<string> {
   const response = await request(app)
     .post("/api/auth/login")
@@ -234,6 +347,7 @@ async function insertFixtures(database: DatabasePool): Promise<void> {
   const brunoUserId = await insertUser("bruno.alumno", "Bruno Alumno", "student");
   await insertUser("admin.demo", "Administracion", "admin");
   const teacherUserId = await insertUser("laura.docente", "Laura Docente", "teacher");
+  await insertUser("director.demo", "Direccion", "director");
 
   const insertStudent = async (userId: number, recordNumber: string, dni: string, name: string, email: string) => {
     const result = await database.query<{ id: number }>(
@@ -265,6 +379,17 @@ async function insertFixtures(database: DatabasePool): Promise<void> {
     [teacherUserId],
   );
   const teacherId = teacherResult.rows[0].id;
+
+  const subjectResult = await database.query<{ id: number }>(
+    "INSERT INTO subjects (name) VALUES ('Matematica') RETURNING id",
+  );
+  const matematicaId = subjectResult.rows[0].id;
+  await database.query(
+    `INSERT INTO student_subjects (student_id, subject_id, teacher_id)
+     VALUES ($1, $2, $3), ($4, $2, $3)
+     ON CONFLICT DO NOTHING`,
+    [anaStudentId, matematicaId, teacherId, brunoStudentId],
+  );
 
   const sportIds: number[] = [];
   for (const name of ["Futbol", "Natacion", "Atletismo", "Ajedrez"]) {

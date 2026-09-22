@@ -1,8 +1,8 @@
 # Educar para Transformar
 
-Aplicación de los Sprints 1 y 2 del sistema de gestión del Centro Educativo **EDUCAR PARA TRANSFORMAR**. Es un monorepo con React + TypeScript, API Node.js + TypeScript, PostgreSQL y autenticación JWT.
+Aplicación de los Sprints 1, 2 y 3 del sistema de gestión del Centro Educativo **EDUCAR PARA TRANSFORMAR**. Es un monorepo con React + TypeScript, API Node.js + TypeScript, PostgreSQL y autenticación JWT.
 
-## Alcance de Sprints 1 y 2
+## Alcance de Sprints 1, 2 y 3
 
 - Inicio de sesión real con usuario, contraseña, JWT y autorización por rol.
 - Portal Alumno: catálogo de deportes, grupos, docentes, horarios, inscripción y cancelación.
@@ -11,8 +11,8 @@ Aplicación de los Sprints 1 y 2 del sistema de gestión del Centro Educativo **
 - Portal Padre: únicamente hijos asociados, materias, docentes y resumen deportivo.
 - Panel Administrador: listado, alta de usuarios y gestión de rol/estado, con perfiles iniciales para alumnos, padres y docentes.
 - Sprint 2: actualización de contacto para alumnos y docentes, con validación de correo y teléfono.
-- Roles Docente y Dirección autenticados con una pantalla clara de funcionalidad pendiente.
-- Auditoría de inscripciones, cancelaciones y operaciones administrativas.
+- Sprint 3: listado de alumnos por materia para docentes (HU-05), inscripción al transporte (HU-06) y plantillas de reportes institucionales para la Dirección (HU-07) con exportación CSV.
+- Auditoría de inscripciones, cancelaciones, operaciones administrativas y generación de reportes.
 
 ## Estructura
 
@@ -48,7 +48,7 @@ podman rm -f educar-web educar-api educar-db
 
 La API queda disponible en `http://localhost:4000`.
 
-La base se inicializa con `database/schema.sql` y `database/seed.sql`. El script aplica además `database/migrations/002_student_and_sprint2.sql` para actualizar volúmenes existentes. Para reinicializar los datos demo en un entorno local:
+La base se inicializa con `database/schema.sql` y `database/seed.sql`. El script aplica además las migraciones de `database/migrations/` (`002_student_and_sprint2.sql`, `003_sprint3.sql`) para actualizar volúmenes existentes. Para reinicializar los datos demo en un entorno local:
 
 ```bash
 podman rm -f educar-web educar-api educar-db
@@ -82,7 +82,7 @@ npm run typecheck
 npm run build
 ```
 
-Las pruebas del backend cubren autenticación y RBAC, aislamiento padre-hijo, límite de dos deportes, conflictos de horario, duplicados, perfiles iniciales, contacto, transporte, comedor, reportes y auditoría. Se ejecutan con `pg-mem` y la misma estructura SQL del proyecto, sin necesitar una base PostgreSQL de test.
+Las pruebas del backend cubren autenticación y RBAC, aislamiento padre-hijo, límite de dos deportes, conflictos de horario, duplicados, perfiles iniciales, contacto, transporte, comedor, reportes, listado docente (HU-05) y plantillas de reportes institucionales (HU-07). Se ejecutan con `pg-mem` y la misma estructura SQL del proyecto, sin necesitar una base PostgreSQL de test.
 
 ## API principal
 
@@ -102,5 +102,12 @@ Las pruebas del backend cubren autenticación y RBAC, aislamiento padre-hijo, l�
 - `GET /api/admin/users`
 - `POST /api/admin/users`
 - `PATCH /api/admin/users/:userId`
+- `GET /api/teacher/courses`
+- `GET /api/teacher/courses/students`
+- `GET /api/director/report-entities`
+- `GET /api/director/report-templates`
+- `POST /api/director/report-templates`
+- `PATCH /api/director/report-templates/:templateId`
+- `POST /api/director/report-templates/:templateId/generate`
 
 Todas las rutas excepto login y health requieren `Authorization: Bearer <token>`. La API vuelve a consultar el usuario en cada request, por lo que una cuenta desactivada pierde acceso aunque conserve un JWT anterior.

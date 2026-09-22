@@ -482,7 +482,7 @@ La ruta crítica estimada es: planificación, requerimientos, modelado, diseño 
 
 | ID | Título / Historia de Usuario | Prioridad | Estado |
 |---|---|---|---|
-| HU-01 | Como Alumno, quiero inscribirme a actividades deportivas para participar en propuestas extracurriculares | Alta | To Do |
+| HU-01 | Como Alumno, quiero inscribirme a actividades deportivas para participar en propuestas extracurriculares | Alta | Done |
 
 **Tareas:**
 
@@ -505,7 +505,7 @@ La ruta crítica estimada es: planificación, requerimientos, modelado, diseño 
 
 | ID | Título / Historia de Usuario | Prioridad | Estado |
 |---|---|---|---|
-| HU-02 | Como Padre, quiero consultar la información académica y deportiva de mis hijos | Alta | To Do |
+| HU-02 | Como Padre, quiero consultar la información académica y deportiva de mis hijos | Alta | Done |
 
 **Tareas:**
 
@@ -526,7 +526,7 @@ La ruta crítica estimada es: planificación, requerimientos, modelado, diseño 
 
 | ID | Título / Historia de Usuario | Prioridad | Estado |
 |---|---|---|---|
-| HU-03 | Como Alumno o Docente, quiero modificar mi correo y teléfono | Media | To Do |
+| HU-03 | Como Alumno o Docente, quiero modificar mi correo y teléfono | Media | Done |
 
 **Tareas:**
 
@@ -548,7 +548,7 @@ La ruta crítica estimada es: planificación, requerimientos, modelado, diseño 
 
 | ID | Título / Historia de Usuario | Prioridad | Estado |
 |---|---|---|---|
-| HU-04 | Como Administrador, quiero gestionar usuarios y roles para controlar el acceso | Crítica | To Do |
+| HU-04 | Como Administrador, quiero gestionar usuarios y roles para controlar el acceso | Crítica | Done |
 
 **Tareas:**
 
@@ -570,7 +570,7 @@ La ruta crítica estimada es: planificación, requerimientos, modelado, diseño 
 
 | ID | Título / Historia de Usuario | Prioridad | Estado |
 |---|---|---|---|
-| HU-05 | Como Docente, quiero generar listados de alumnos de mis materias | Media | To Do |
+| HU-05 | Como Docente, quiero generar listados de alumnos de mis materias | Media | Done |
 
 **Tareas:**
 
@@ -591,7 +591,7 @@ La ruta crítica estimada es: planificación, requerimientos, modelado, diseño 
 
 | ID | Título / Historia de Usuario | Prioridad | Estado |
 |---|---|---|---|
-| HU-06 | Como Alumno, quiero seleccionar un recorrido de transporte | Alta | To Do |
+| HU-06 | Como Alumno, quiero seleccionar un recorrido de transporte | Alta | Done |
 
 **Tareas:**
 
@@ -613,7 +613,7 @@ La ruta crítica estimada es: planificación, requerimientos, modelado, diseño 
 
 | ID | Título / Historia de Usuario | Prioridad | Estado |
 |---|---|---|---|
-| HU-07 | Como Director, quiero configurar plantillas de reportes institucionales | Media | To Do |
+| HU-07 | Como Director, quiero configurar plantillas de reportes institucionales | Media | Done |
 
 **Tareas:**
 

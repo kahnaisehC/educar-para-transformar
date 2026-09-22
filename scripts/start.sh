@@ -50,7 +50,7 @@ podman run --detach \
   --volume "$VOLUME_NAME:/var/lib/postgresql/data" \
   --volume "$ROOT_DIR/database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro,Z" \
   --volume "$ROOT_DIR/database/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro,Z" \
-  --volume "$ROOT_DIR/database/migrations/002_student_and_sprint2.sql:/migrations/002_student_and_sprint2.sql:ro,Z" \
+  --volume "$ROOT_DIR/database/migrations:/migrations:ro,Z" \
   docker.io/library/postgres:16-alpine >/dev/null
 
 database_ready=false
@@ -68,8 +68,10 @@ if [[ "$database_ready" != true ]]; then
   exit 1
 fi
 
-podman exec "$DB_CONTAINER" psql -v ON_ERROR_STOP=1 -U educar -d educar \
-  -f /migrations/002_student_and_sprint2.sql >/dev/null
+for migration in "$ROOT_DIR"/database/migrations/*.sql; do
+  podman exec "$DB_CONTAINER" psql -v ON_ERROR_STOP=1 -U educar -d educar \
+    -f "/migrations/$(basename "$migration")" >/dev/null
+done
 
 printf '%s\n' "Iniciando API y frontend..."
 podman run --detach \

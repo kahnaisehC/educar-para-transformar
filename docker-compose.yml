@@ -12,7 +12,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
       - ./database/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro
-      - ./database/migrations/002_student_and_sprint2.sql:/docker-entrypoint-initdb.d/03-student-and-sprint2.sql:ro
+      - ./database/migrations:/docker-entrypoint-initdb.d/03-migrations:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U educar -d educar"]
       interval: 5s

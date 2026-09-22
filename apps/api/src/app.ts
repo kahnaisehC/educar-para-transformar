@@ -26,7 +26,19 @@ import {
   getStudentReport,
   updateStudentContact,
 } from "./student.service.js";
-import { updateTeacherContact } from "./teacher.service.js";
+import {
+  listCourseStudents,
+  listTeacherCourses,
+  updateTeacherContact,
+} from "./teacher.service.js";
+import {
+  REPORT_ENTITIES,
+  createReportTemplate,
+  generateReport,
+  getReportTemplate,
+  listReportTemplates,
+  updateReportTemplate,
+} from "./report.service.js";
 
 export interface CreateAppOptions {
   pool: DatabasePool;
@@ -217,6 +229,91 @@ export function createApp(options: CreateAppOptions) {
     }),
   );
 
+  app.get(
+    "/api/teacher/courses",
+    requireRoles("teacher"),
+    asyncRoute(async (request, response) => {
+      response.json({ courses: await listTeacherCourses(options.pool, request.user!.id) });
+    }),
+  );
+
+  app.get(
+    "/api/teacher/courses/students",
+    requireRoles("teacher"),
+    asyncRoute(async (request, response) => {
+      const subjectId = positiveInteger(request.query.subjectId, "subjectId");
+      const level = requiredString(request.query.level, "level");
+      const course = requiredString(request.query.course, "course");
+      response.json({
+        students: await listCourseStudents(options.pool, request.user!.id, subjectId, level, course),
+      });
+    }),
+  );
+
+  app.get(
+    "/api/director/report-entities",
+    requireRoles("director"),
+    asyncRoute(async (_request, response) => {
+      response.json({ entities: REPORT_ENTITIES });
+    }),
+  );
+
+  app.get(
+    "/api/director/report-templates",
+    requireRoles("director"),
+    asyncRoute(async (_request, response) => {
+      response.json({ templates: await listReportTemplates(options.pool) });
+    }),
+  );
+
+  app.post(
+    "/api/director/report-templates",
+    requireRoles("director"),
+    asyncRoute(async (request, response) => {
+      const input = {
+        name: requiredString(request.body?.name, "name"),
+        entity: requiredReportEntity(request.body?.entity),
+        fields: request.body?.fields,
+      };
+      const template = await createReportTemplate(options.pool, request.user!.id, input);
+      response.status(201).json({ template });
+    }),
+  );
+
+  app.patch(
+    "/api/director/report-templates/:templateId",
+    requireRoles("director"),
+    asyncRoute(async (request, response) => {
+      const templateId = positiveInteger(request.params.templateId, "templateId");
+      const input: Record<string, unknown> = {};
+      if (request.body?.name !== undefined) {
+        input.name = requiredString(request.body.name, "name");
+      }
+      if (request.body?.entity !== undefined) {
+        input.entity = requiredReportEntity(request.body.entity);
+      }
+      if (request.body?.fields !== undefined) {
+        input.fields = request.body.fields;
+      }
+      if (request.body?.active !== undefined) {
+        input.active = requiredBoolean(request.body.active);
+      }
+      const template = await updateReportTemplate(options.pool, request.user!.id, templateId, input);
+      response.json({ template });
+    }),
+  );
+
+  app.post(
+    "/api/director/report-templates/:templateId/generate",
+    requireRoles("director"),
+    asyncRoute(async (request, response) => {
+      const templateId = positiveInteger(request.params.templateId, "templateId");
+      response.json({
+        report: await generateReport(options.pool, request.user!.id, templateId),
+      });
+    }),
+  );
+
   app.use((_request, _response, next) => {
     next(new AppError(404, "Ruta inexistente", "NOT_FOUND"));
   });
@@ -306,4 +403,20 @@ function requiredStatus(value: unknown): "active" | "inactive" {
 
 function optionalStatus(value: unknown): "active" | "inactive" {
   return value === undefined ? "active" : requiredStatus(value);
+}
+
+const REPORT_ENTITY_KEYS = new Set(REPORT_ENTITIES.map((entity) => entity.key));
+
+function requiredReportEntity(value: unknown) {
+  if (typeof value !== "string" || !REPORT_ENTITY_KEYS.has(value as never)) {
+    throw new AppError(400, "La entidad indicada no es válida", "VALIDATION_ERROR");
+  }
+  return value as (typeof REPORT_ENTITIES)[number]["key"];
+}
+
+function requiredBoolean(value: unknown): boolean {
+  if (typeof value !== "boolean") {
+    throw new AppError(400, "El campo activo debe ser un valor booleano", "VALIDATION_ERROR");
+  }
+  return value;
 }

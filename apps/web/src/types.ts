@@ -100,3 +100,49 @@ export interface ChildSummary {
 export interface AdminUser extends User {
   createdAt: string;
 }
+
+export interface TeacherCourse {
+  subjectId: number;
+  subject: string;
+  level: string;
+  course: string;
+}
+
+export interface CourseStudent {
+  recordNumber: string;
+  dni: string;
+  fullName: string;
+  level: string;
+  course: string;
+  subject: string;
+  teacher: string;
+}
+
+export interface ReportField {
+  key: string;
+  label: string;
+}
+
+export interface ReportEntity {
+  key: string;
+  label: string;
+  description: string;
+  fields: ReportField[];
+}
+
+export interface ReportTemplate {
+  id: number;
+  name: string;
+  entity: string;
+  fields: string[];
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface GeneratedReport {
+  entity: string;
+  columns: ReportField[];
+  rows: Array<Record<string, string>>;
+  generatedAt: string;
+}

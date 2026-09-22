@@ -32,8 +32,8 @@ Implementar las funcionalidades principales de autogestión extracurricular y co
 
 | ID | Título | Prioridad | Estimación | Estado |
 |---|---|---|---:|---|
-| HU-01 | Inscripción a deportes | Alta | 5 puntos | To Do |
-| HU-02 | Consulta de información académica | Alta | 3 puntos | To Do |
+| HU-01 | Inscripción a deportes | Alta | 5 puntos | Done |
+| HU-02 | Consulta de información académica | Alta | 3 puntos | Done |
 
 **Total:** 8 puntos de historia.
 
@@ -65,8 +65,8 @@ Implementar la autogestión de datos de contacto y la administración de usuario
 
 | ID | Título | Prioridad | Estimación | Estado |
 |---|---|---|---:|---|
-| HU-03 | Actualización de datos de contacto | Media | 3 puntos | To Do |
-| HU-04 | Gestión de usuarios y roles | Crítica | 8 puntos | To Do |
+| HU-03 | Actualización de datos de contacto | Media | 3 puntos | Done |
+| HU-04 | Gestión de usuarios y roles | Crítica | 8 puntos | Done |
 
 **Total:** 11 puntos de historia.
 
@@ -97,10 +97,10 @@ Completar los reportes operativos y la gestión del servicio de transporte, inco
 ### Historias incluidas
 
 | ID | Título | Prioridad | Estimación | Estado |
-|---|---|---|---:|---|
-| HU-05 | Generación del listado de alumnos por materia | Media | 3 puntos | To Do |
-| HU-06 | Inscripción al servicio de transporte | Alta | 5 puntos | To Do |
-| HU-07 | Configuración de reportes institucionales | Media | 5 puntos | To Do |
+|---|---|---:|---:|---|
+| HU-05 | Generación del listado de alumnos por materia | Media | 3 puntos | Done |
+| HU-06 | Inscripción al servicio de transporte | Alta | 5 puntos | Done |
+| HU-07 | Configuración de reportes institucionales | Media | 5 puntos | Done |
 
 **Total:** 13 puntos de historia.
 
