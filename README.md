@@ -111,3 +111,59 @@ Las pruebas del backend cubren autenticación y RBAC, aislamiento padre-hijo, l�
 - `POST /api/director/report-templates/:templateId/generate`
 
 Todas las rutas excepto login y health requieren `Authorization: Bearer <token>`. La API vuelve a consultar el usuario en cada request, por lo que una cuenta desactivada pierde acceso aunque conserve un JWT anterior.
+
+## Patrones de Diseño
+
+Los tres patrones de diseño clásicos (GoF) se implementaron en la capa de API del backend. A continuación se detalla el archivo exacto y las líneas donde se encuentran.
+
+### Singleton — Pool de conexiones único
+
+**Archivo:** `apps/api/src/db.ts` — **líneas 17–49**
+
+Garantiza que durante todo el ciclo de vida del proceso exista una sola instancia del `Pool` de conexiones de PostgreSQL. La primera llamada a `getPool(connectionString)` crea el pool; las llamadas siguientes devuelven la misma instancia sin importar cuántas veces se invoque.
+
+```
+apps/api/src/db.ts
+  L17  let _poolInstance: DatabasePool | null = null;   ← estado singleton
+  L28  export function getPool(...)                      ← punto de acceso único
+  L44  export async function destroyPool()               ← limpieza (tests)
+```
+
+**Motivación:** evita que múltiples módulos abran conjuntos de conexiones independientes, saturando el límite de conexiones de PostgreSQL.
+
+---
+
+### Proxy — Auditoría transparente de sentencias SQL
+
+**Archivo:** `apps/api/src/audit.proxy.ts` — **líneas 51–99**
+
+`AuditingQueryProxy` implementa la interfaz `Queryable` y envuelve otro `Queryable` (el sujeto real: un `Pool` o `PoolClient`). Intercepta cada llamada a `query()` y, cuando detecta una sentencia de escritura (`INSERT`, `UPDATE`, `DELETE`, `TRUNCATE`), emite de forma no bloqueante un registro en `audit_logs`.
+
+```
+apps/api/src/audit.proxy.ts
+  L51  export class AuditingQueryProxy implements Queryable  ← clase Proxy
+  L72  async query(...)                                       ← interceptor
+  L81  this._recordAudit(...)                                ← delegación + auditoría
+  L90  private async _recordAudit(...)                       ← escritura en audit_logs
+```
+
+**Motivación:** añade auditoría automática de escrituras sin modificar los servicios existentes ni la interfaz real del Pool.
+
+---
+
+### Iterator — Recorrido uniforme de filas de reporte
+
+**Archivo:** `apps/api/src/report.service.ts` — **líneas 254–324**
+
+`ReportRowIterator` implementa `Iterator<Record<string,string>>` e `Iterable<Record<string,string>>`. Encapsula el estado de recorrido interno (`_index`) y expone la interfaz estándar de JavaScript, permitiendo iterar las filas de un `GeneratedReport` con `for...of` o con llamadas manuales a `.next()`. La función auxiliar `iterateReport(report)` (línea 324) construye el iterador directamente a partir de un reporte generado.
+
+```
+apps/api/src/report.service.ts
+  L284  export class ReportRowIterator implements Iterator<...>, Iterable<...>
+  L295  next(): IteratorResult<...>                   ← avance del cursor
+  L305  reset(): void                                 ← reinicio
+  L311  [Symbol.iterator]()                           ← soporte for...of
+  L322  export function iterateReport(report)         ← función de conveniencia
+```
+
+**Motivación:** desacopla al consumidor de la estructura interna del array de filas, facilita la paginación o el filtrado futuro sin modificar `GeneratedReport`.

@@ -251,6 +251,80 @@ export interface GeneratedReport {
   generatedAt: string;
 }
 
+// ---------------------------------------------------------------------------
+// Patrón Iterator: recorrido uniforme sobre las filas de un reporte generado
+// ---------------------------------------------------------------------------
+// Problema:
+//   El tipo `GeneratedReport` expone sus filas como un array plano. Acceder
+//   directamente al array acopla al cliente con la estructura interna del
+//   reporte y dificulta añadir lógica de recorrido (paginación, filtrado,
+//   transformación) sin modificar el servicio.
+//
+// Solución — Iterator:
+//   `ReportRowIterator` encapsula el estado de recorrido (_index) y expone
+//   la interfaz estándar de JavaScript (`Iterator` + `Iterable`) para que
+//   cualquier consumidor pueda iterar con `for...of` o llamar a `.next()`
+//   sin conocer la estructura interna del reporte.
+// ---------------------------------------------------------------------------
+
+/**
+ * Iterator — recorre las filas de un `GeneratedReport` una a una.
+ *
+ * Implementa tanto `Iterator<Row>` como `Iterable<Row>`, por lo que puede
+ * usarse con `for...of`, destructuring o llamadas manuales a `.next()`.
+ *
+ * @example
+ * ```ts
+ * const iter = new ReportRowIterator(report);
+ * for (const row of iter) {
+ *   console.log(row.full_name);
+ * }
+ * ```
+ */
+export class ReportRowIterator
+  implements Iterator<Record<string, string>>, Iterable<Record<string, string>>
+{
+  private _index = 0;
+  private readonly _rows: Array<Record<string, string>>;
+
+  constructor(report: GeneratedReport) {
+    this._rows = report.rows;
+  }
+
+  /** Avanza al siguiente elemento y lo devuelve. */
+  next(): IteratorResult<Record<string, string>> {
+    if (this._index < this._rows.length) {
+      return { value: this._rows[this._index++], done: false };
+    }
+    return { value: undefined as unknown as Record<string, string>, done: true };
+  }
+
+  /** Reinicia el iterador al primer elemento. */
+  reset(): void {
+    this._index = 0;
+  }
+
+  /** Número total de filas disponibles. */
+  get length(): number {
+    return this._rows.length;
+  }
+
+  /** Hace que la instancia sea iterable con `for...of`. */
+  [Symbol.iterator](): Iterator<Record<string, string>> {
+    this.reset();
+    return this;
+  }
+}
+
+/**
+ * Conveniencia: construye un {@link ReportRowIterator} a partir de un reporte
+ * ya generado, de modo que los controladores puedan recorrer las filas sin
+ * depender de la implementación interna del array.
+ */
+export function iterateReport(report: GeneratedReport): ReportRowIterator {
+  return new ReportRowIterator(report);
+}
+
 export async function generateReport(
   pool: DatabasePool,
   actorUserId: number,
