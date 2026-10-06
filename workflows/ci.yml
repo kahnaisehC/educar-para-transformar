@@ -1,0 +1,67 @@
+name: CI
+
+# Pipeline de Integración Continua.
+# Se dispara en cada push y en cada Pull Request dirigidos a main,
+# de forma que ningún cambio llega a la rama principal sin pasar
+# por build + typecheck + tests automatizados.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch: {}
+
+jobs:
+  build-and-test:
+    name: Build, typecheck y test
+    runs-on: ubuntu-latest
+
+    # Variables de entorno necesarias para que la API levante durante
+    # el job. Son valores de prueba, no sensibles: nunca se guardan
+    # secretos reales en el workflow, solo en GitHub Secrets.
+    env:
+      NODE_ENV: test
+      JWT_SECRET: ci-only-test-secret-not-for-production
+      DATABASE_URL: postgres://educar:educar_dev_password@localhost:5432/educar
+      CORS_ORIGIN: http://localhost:5173
+
+    steps:
+      # 1. Obtener el código (Source)
+      - name: Checkout del repositorio
+        uses: actions/checkout@v4
+
+      # 2. Configurar el entorno
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      # 3. Instalar dependencias
+      - name: Instalar dependencias
+        run: npm install
+
+      # 4. Verificación de tipos (quality gate temprano)
+      - name: Typecheck
+        run: npm run typecheck
+
+      # 5. Pruebas automatizadas (unitarias / integración con pg-mem)
+      - name: Ejecutar tests
+        run: npm test
+
+      # 6. Build (genera los artefactos: dist/ de la API y del frontend)
+      - name: Build
+        run: npm run build
+
+      # 7. Gestión de artefactos: se publican los resultados del build
+      #    para que puedan reutilizarse en una etapa posterior (deploy)
+      #    sin necesidad de reconstruir el software.
+      - name: Publicar artefactos de build
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-${{ github.sha }}
+          path: |
+            apps/api/dist
+            apps/web/dist
+          retention-days: 7
