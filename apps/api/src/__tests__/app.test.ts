@@ -10,7 +10,6 @@ import { closeDatabasePool, getDatabasePool } from "../database.js";
 import { RowIterator } from "../rowIterator.js";
 import { withAuditProxy } from "../auditProxy.js";
 import { AppError } from "../errors.js";
-import { createPool } from "../db.js";
 
 const schema = readFileSync(
   fileURLToPath(new URL("../../../../database/schema.sql", import.meta.url)),
@@ -322,6 +321,155 @@ describe("HU-07 institutional report templates", () => {
   });
 });
 
+describe("session and health", () => {
+  it("exposes health publicly and requires a token for the session endpoint", async () => {
+    const health = await request(app).get("/api/health");
+    expect(health.status).toBe(200);
+    expect(health.body.status).toBe("ok");
+
+    const anonymous = await request(app).get("/api/me");
+    expect(anonymous.status).toBe(401);
+
+    const token = await loginAs("ana.alumna");
+    const session = await request(app)
+      .get("/api/me")
+      .set("Authorization", `Bearer ${token}`);
+    expect(session.status).toBe(200);
+    expect(session.body.user).toMatchObject({ username: "ana.alumna", role: "student" });
+  });
+
+  it("rejects invalid credentials and inactive accounts", async () => {
+    const wrongPassword = await request(app)
+      .post("/api/auth/login")
+      .send({ username: "ana.alumna", password: "incorrecta" });
+    expect(wrongPassword.status).toBe(401);
+    expect(wrongPassword.body.code).toBe("INVALID_CREDENTIALS");
+
+    const adminId = await userId("admin.demo");
+    await pool.query("UPDATE users SET status = 'inactive' WHERE id = $1", [adminId]);
+    const inactive = await request(app)
+      .post("/api/auth/login")
+      .send({ username: "admin.demo", password: PASSWORD });
+    expect(inactive.status).toBe(401);
+  });
+});
+
+describe("student cancellations and duplicates", () => {
+  it("cancels a sport enrollment and reports missing ones", async () => {
+    const token = await loginAs("ana.alumna");
+    expect((await enroll(token, 1)).status).toBe(201);
+
+    const cancelled = await request(app)
+      .delete("/api/student/enrollments/1")
+      .set("Authorization", `Bearer ${token}`);
+    expect(cancelled.status).toBe(200);
+
+    const missing = await request(app)
+      .delete("/api/student/enrollments/1")
+      .set("Authorization", `Bearer ${token}`);
+    expect(missing.status).toBe(404);
+    expect(missing.body.code).toBe("ENROLLMENT_NOT_FOUND");
+  });
+
+  it("blocks duplicate transport enrollment and allows cancellation", async () => {
+    const token = await loginAs("ana.alumna");
+    const first = await request(app)
+      .post("/api/student/transport")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ routeId: 1 });
+    expect(first.status).toBe(201);
+
+    const duplicate = await request(app)
+      .post("/api/student/transport")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ routeId: 2 });
+    expect(duplicate.status).toBe(409);
+    expect(duplicate.body.code).toBe("TRANSPORT_ALREADY_ENROLLED");
+
+    const cancelled = await request(app)
+      .delete("/api/student/transport")
+      .set("Authorization", `Bearer ${token}`);
+    expect(cancelled.status).toBe(200);
+
+    const missing = await request(app)
+      .delete("/api/student/transport")
+      .set("Authorization", `Bearer ${token}`);
+    expect(missing.status).toBe(404);
+    expect(missing.body.code).toBe("TRANSPORT_NOT_ENROLLED");
+  });
+
+  it("blocks duplicate cafeteria enrollment and allows cancellation", async () => {
+    const token = await loginAs("ana.alumna");
+    const first = await request(app)
+      .post("/api/student/cafeteria")
+      .set("Authorization", `Bearer ${token}`);
+    expect(first.status).toBe(201);
+
+    const duplicate = await request(app)
+      .post("/api/student/cafeteria")
+      .set("Authorization", `Bearer ${token}`);
+    expect(duplicate.status).toBe(409);
+    expect(duplicate.body.code).toBe("CAFETERIA_ALREADY_ENROLLED");
+
+    const cancelled = await request(app)
+      .delete("/api/student/cafeteria")
+      .set("Authorization", `Bearer ${token}`);
+    expect(cancelled.status).toBe(200);
+
+    const missing = await request(app)
+      .delete("/api/student/cafeteria")
+      .set("Authorization", `Bearer ${token}`);
+    expect(missing.status).toBe(404);
+    expect(missing.body.code).toBe("CAFETERIA_NOT_ENROLLED");
+  });
+});
+
+describe("parent child summary", () => {
+  it("returns the academic and sport summary of an associated child", async () => {
+    const token = await loginAs("marta.madre");
+    const response = await request(app)
+      .get("/api/parent/children/1/summary")
+      .set("Authorization", `Bearer ${token}`);
+
+    expect(response.status).toBe(200);
+    expect(response.body.student).toMatchObject({
+      fullName: "Ana Alumna",
+      level: "Primario",
+      course: "5to A",
+    });
+    expect(response.body.student.subjects).toEqual([
+      { subject: "Matematica", teacher: "Laura Docente" },
+    ]);
+    expect(response.body.student.sports).toEqual([]);
+  });
+});
+
+describe("admin user safeguards", () => {
+  it("prevents self-deactivation and duplicate usernames", async () => {
+    const token = await loginAs("admin.demo");
+    const adminId = await userId("admin.demo");
+
+    const selfDeactivation = await request(app)
+      .patch(`/api/admin/users/${adminId}`)
+      .set("Authorization", `Bearer ${token}`)
+      .send({ status: "inactive" });
+    expect(selfDeactivation.status).toBe(400);
+    expect(selfDeactivation.body.code).toBe("SELF_DEACTIVATION");
+
+    const duplicate = await request(app)
+      .post("/api/admin/users")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        username: "ana.alumna",
+        displayName: "Duplicada",
+        password: PASSWORD,
+        role: "student",
+      });
+    expect(duplicate.status).toBe(409);
+    expect(duplicate.body.code).toBe("DUPLICATE_USERNAME");
+  });
+});
+
 describe("design patterns evidence", () => {
   it("uses a database-pool proxy that authorizes the requested role and audits success and rejection", async () => {
     const studentToken = await loginAs("ana.alumna");
@@ -389,6 +537,14 @@ async function loginAs(username: string): Promise<string> {
     .send({ username, password: PASSWORD });
   expect(response.status).toBe(200);
   return response.body.token as string;
+}
+
+async function userId(username: string): Promise<number> {
+  const result = await pool.query<{ id: number }>(
+    "SELECT id FROM users WHERE username = $1",
+    [username],
+  );
+  return result.rows[0].id;
 }
 
 function enroll(token: string, groupId: number) {

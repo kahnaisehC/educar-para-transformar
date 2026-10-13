@@ -10,7 +10,7 @@ ALTER TABLE teachers ADD COLUMN IF NOT EXISTS record_number VARCHAR(30);
 ALTER TABLE teachers ADD COLUMN IF NOT EXISTS dni VARCHAR(30);
 ALTER TABLE teachers ADD COLUMN IF NOT EXISTS email VARCHAR(160);
 ALTER TABLE teachers ADD COLUMN IF NOT EXISTS phone VARCHAR(40);
-ALTER TABLE teachers ADD COLUMN IF NOT EXISTS status VARCHAR(20) NOT NULL DEFAULT 'active';
+ALTER TABLE teachers ADD COLUMN IF NOT EXISTS status VARCHAR(20) NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'inactive'));
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_teachers_user_id ON teachers (user_id) WHERE user_id IS NOT NULL;
 CREATE UNIQUE INDEX IF NOT EXISTS idx_teachers_record_number ON teachers (record_number) WHERE record_number IS NOT NULL;

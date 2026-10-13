@@ -60,6 +60,7 @@ docker run --detach \
   --volume "$VOLUME_NAME:/var/lib/postgresql/data" \
   --volume "$ROOT_DIR/database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro" \
   --volume "$ROOT_DIR/database/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro" \
+  --volume "$ROOT_DIR/database/migrations:/migrations:ro" \
   postgres:16-alpine >/dev/null
 
 database_ready=false
@@ -76,6 +77,11 @@ if [[ "$database_ready" != true ]]; then
   docker logs "$DB_CONTAINER" >&2
   exit 1
 fi
+
+for migration in "$ROOT_DIR"/database/migrations/*.sql; do
+  docker exec "$DB_CONTAINER" psql -v ON_ERROR_STOP=1 -U educar -d educar \
+    -f "/migrations/$(basename "$migration")" >/dev/null
+done
 
 printf '%s\n' "Iniciando API y frontend..."
 docker run --detach \

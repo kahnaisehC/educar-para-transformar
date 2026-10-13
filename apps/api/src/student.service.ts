@@ -135,15 +135,24 @@ export async function enrollCafeteria(pool: DatabasePool, actorUserId: number, a
         if (!student.rows[0]) {
           throw new AppError(404, "No existe un perfil de alumno activo", "STUDENT_NOT_FOUND");
         }
-        const result = await client.query(
-          `INSERT INTO cafeteria_enrollments (student_id, active)
-           VALUES ($1, TRUE)
-           ON CONFLICT (student_id) DO UPDATE SET active = TRUE
-           WHERE cafeteria_enrollments.active = FALSE`,
-          [student.rows[0].id],
+        const studentId = student.rows[0].id;
+        const existing = await client.query<{ active: boolean }>(
+          "SELECT active FROM cafeteria_enrollments WHERE student_id = $1 FOR UPDATE",
+          [studentId],
         );
-        if (!result.rowCount) {
+        if (existing.rows[0]?.active) {
           throw new AppError(409, "El alumno ya está inscripto al comedor", "CAFETERIA_ALREADY_ENROLLED");
+        }
+        if (existing.rows[0]) {
+          await client.query(
+            "UPDATE cafeteria_enrollments SET active = TRUE WHERE student_id = $1",
+            [studentId],
+          );
+        } else {
+          await client.query(
+            "INSERT INTO cafeteria_enrollments (student_id, active) VALUES ($1, TRUE)",
+            [studentId],
+          );
         }
       }),
   });
