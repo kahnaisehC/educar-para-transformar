@@ -368,6 +368,16 @@ export interface ReportEntity {
   fields: ReportField[];
 }
 
+export interface ReportFilterOptions {
+  levels: Array<{ id: number; name: string }>;
+  courses: Array<{ id: number; levelId: number; level: string; name: string }>;
+  subjects: Array<{ id: number; name: string }>;
+  sports: Array<{ id: number; name: string }>;
+  teachers: Array<{ id: number; name: string }>;
+  transportRoutes: Array<{ id: number; name: string }>;
+  schoolYears: Array<{ id: number; year: number; active: boolean }>;
+}
+
 export interface ReportTemplate {
   id: number;
   name: string;

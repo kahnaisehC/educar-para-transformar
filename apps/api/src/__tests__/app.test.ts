@@ -940,6 +940,92 @@ describe("admin academic and services management", () => {
   });
 });
 
+describe("report parameters and access (RF-DI-02/03, RF-AD-04)", () => {
+  it("applies query parameters when generating reports", async () => {
+    const token = await loginAs("director.demo");
+    const created = await request(app)
+      .post("/api/director/report-templates")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ name: "Alumnos por nivel", entity: "students", fields: ["full_name", "level", "course"] });
+    const templateId = created.body.template.id as number;
+
+    const unfiltered = await request(app)
+      .post(`/api/director/report-templates/${templateId}/generate`)
+      .set("Authorization", `Bearer ${token}`)
+      .send({});
+    expect(unfiltered.status).toBe(200);
+    expect(unfiltered.body.report.rows).toHaveLength(2);
+
+    const filtered = await request(app)
+      .post(`/api/director/report-templates/${templateId}/generate`)
+      .set("Authorization", `Bearer ${token}`)
+      .send({ filters: { levelId: 1, courseId: 1 } });
+    expect(filtered.status).toBe(200);
+    expect(filtered.body.report.rows).toHaveLength(2);
+
+    const empty = await request(app)
+      .post(`/api/director/report-templates/${templateId}/generate`)
+      .set("Authorization", `Bearer ${token}`)
+      .send({ filters: { levelId: 99 } });
+    expect(empty.status).toBe(200);
+    expect(empty.body.report.rows).toHaveLength(0);
+  });
+
+  it("returns filter options and lets the admin consult reports", async () => {
+    const directorToken = await loginAs("director.demo");
+    const created = await request(app)
+      .post("/api/director/report-templates")
+      .set("Authorization", `Bearer ${directorToken}`)
+      .send({ name: "Matriculas", entity: "matriculas", fields: ["student_name", "year"] });
+
+    const options = await request(app)
+      .get("/api/director/report-filters")
+      .set("Authorization", `Bearer ${directorToken}`);
+    expect(options.status).toBe(200);
+    expect(options.body.filters.levels.length).toBeGreaterThan(0);
+    expect(options.body.filters.schoolYears[0].year).toBe(2026);
+
+    const adminToken = await loginAs("admin.demo");
+    const list = await request(app)
+      .get("/api/director/report-templates")
+      .set("Authorization", `Bearer ${adminToken}`);
+    expect(list.status).toBe(200);
+
+    const generated = await request(app)
+      .post(`/api/director/report-templates/${created.body.template.id}/generate`)
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({});
+    expect(generated.status).toBe(200);
+    expect(generated.body.report.rows).toHaveLength(2);
+
+    const adminCantCreate = await request(app)
+      .post("/api/director/report-templates")
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({ name: "No permitido", entity: "students", fields: ["full_name"] });
+    expect(adminCantCreate.status).toBe(403);
+  });
+
+  it("deletes templates", async () => {
+    const token = await loginAs("director.demo");
+    const created = await request(app)
+      .post("/api/director/report-templates")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ name: "Para eliminar", entity: "teachers", fields: ["full_name"] });
+    const templateId = created.body.template.id as number;
+
+    const deleted = await request(app)
+      .delete(`/api/director/report-templates/${templateId}`)
+      .set("Authorization", `Bearer ${token}`);
+    expect(deleted.status).toBe(200);
+
+    const missing = await request(app)
+      .delete(`/api/director/report-templates/${templateId}`)
+      .set("Authorization", `Bearer ${token}`);
+    expect(missing.status).toBe(404);
+    expect(missing.body.code).toBe("TEMPLATE_NOT_FOUND");
+  });
+});
+
 describe("design patterns evidence", () => {
   it("uses a database-pool proxy that authorizes the requested role and audits success and rejection", async () => {
     const studentToken = await loginAs("ana.alumna");

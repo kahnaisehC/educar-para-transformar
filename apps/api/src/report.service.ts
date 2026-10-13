@@ -357,6 +357,7 @@ export async function generateReport(
   actorUserId: number,
   actorRole: UserRole,
   templateId: number,
+  filters: ReportFilters = {},
 ): Promise<GeneratedReport> {
   const template = await getReportTemplate(pool, templateId);
   if (!template.active) {
@@ -372,16 +373,17 @@ export async function generateReport(
     operation: "generate_report",
     actorUserId,
     actorRole,
-    allowedRoles: ["director"],
+    allowedRoles: ["director", "admin"],
     normalizeError: normalizeReportError,
     onSuccess: (report) => ({
       templateId,
       entity: report.entity,
       rows: report.rows.length,
+      filters,
     }),
     onError: (error) => ({ templateId, reason: getErrorMessage(error) }),
     handler: async () => {
-      const rawRows = await runEntityQuery(pool, template.entity);
+      const rawRows = await runEntityQuery(pool, template.entity, filters);
       const rows = new RowIterator(rawRows, (row) => projectRow(row, columns)).toArray();
       return {
         entity: template.entity,
@@ -389,6 +391,29 @@ export async function generateReport(
         rows,
         generatedAt: new Date().toISOString(),
       };
+    },
+  });
+}
+
+export async function deleteReportTemplate(
+  pool: DatabasePool,
+  actorUserId: number,
+  actorRole: UserRole,
+  templateId: number,
+): Promise<void> {
+  await withAuditProxy(pool, {
+    operation: "delete_report_template",
+    actorUserId,
+    actorRole,
+    allowedRoles: ["director"],
+    normalizeError: normalizeReportError,
+    onSuccess: () => ({ templateId }),
+    onError: (error) => ({ templateId, reason: getErrorMessage(error) }),
+    handler: async () => {
+      const result = await pool.query("DELETE FROM report_templates WHERE id = $1", [templateId]);
+      if (!result.rowCount) {
+        throw new AppError(404, "La plantilla de reporte no existe", "TEMPLATE_NOT_FOUND");
+      }
     },
   });
 }
@@ -411,162 +436,271 @@ function projectRow(
   return projected;
 }
 
+export interface ReportFilters {
+  levelId?: number;
+  courseId?: number;
+  subjectId?: number;
+  sportId?: number;
+  teacherId?: number;
+  routeId?: number;
+  weekday?: number;
+  schoolYear?: number;
+}
+
+export interface ReportFilterOptions {
+  levels: Array<{ id: number; name: string }>;
+  courses: Array<{ id: number; levelId: number; level: string; name: string }>;
+  subjects: Array<{ id: number; name: string }>;
+  sports: Array<{ id: number; name: string }>;
+  teachers: Array<{ id: number; name: string }>;
+  transportRoutes: Array<{ id: number; name: string }>;
+  schoolYears: Array<{ id: number; year: number; active: boolean }>;
+}
+
+export async function getReportFilterOptions(pool: DatabasePool): Promise<ReportFilterOptions> {
+  const [levels, courses, subjects, sports, teachers, routes, years] = await Promise.all([
+    pool.query<{ id: number; name: string }>("SELECT id, name FROM levels ORDER BY name"),
+    pool.query<{ id: number; level_id: number; level: string; name: string }>(
+      `SELECT c.id, c.level_id, l.name AS level, c.name
+       FROM courses c JOIN levels l ON l.id = c.level_id
+       ORDER BY l.name, c.name`,
+    ),
+    pool.query<{ id: number; name: string }>("SELECT id, name FROM subjects ORDER BY name"),
+    pool.query<{ id: number; name: string }>("SELECT id, name FROM sports ORDER BY name"),
+    pool.query<{ id: number; name: string }>(
+      "SELECT id, full_name AS name FROM teachers ORDER BY full_name",
+    ),
+    pool.query<{ id: number; name: string }>(
+      "SELECT id, name FROM transport_routes ORDER BY name",
+    ),
+    pool.query<{ id: number; year: number; active: boolean }>(
+      "SELECT id, year, active FROM school_years ORDER BY year DESC",
+    ),
+  ]);
+  return {
+    levels: levels.rows,
+    courses: courses.rows.map((row) => ({
+      id: row.id,
+      levelId: row.level_id,
+      level: row.level,
+      name: row.name,
+    })),
+    subjects: subjects.rows,
+    sports: sports.rows,
+    teachers: teachers.rows,
+    transportRoutes: routes.rows,
+    schoolYears: years.rows,
+  };
+}
+
+interface EntityQuery {
+  select: string;
+  from: string;
+  orderBy: string;
+  filters: Array<{ key: keyof ReportFilters; column: string }>;
+  stringify: (row: Record<string, unknown>) => Record<string, string>;
+}
+
+const ENTITY_QUERIES: Record<ReportEntityKey, EntityQuery> = {
+  students: {
+    select: `st.record_number, st.dni, st.full_name,
+             COALESCE(l.name, 'Pendiente') AS level,
+             COALESCE(c.name, 'Pendiente') AS course,
+             st.status`,
+    from: `FROM students st
+           LEFT JOIN courses c ON c.id = st.course_id
+           LEFT JOIN levels l ON l.id = c.level_id`,
+    orderBy: "ORDER BY l.name, c.name, st.full_name",
+    filters: [
+      { key: "levelId", column: "l.id" },
+      { key: "courseId", column: "c.id" },
+    ],
+    stringify: (row) => ({
+      record_number: String(row.record_number ?? ""),
+      dni: String(row.dni ?? ""),
+      full_name: String(row.full_name ?? ""),
+      level: String(row.level ?? ""),
+      course: String(row.course ?? ""),
+      status: String(row.status ?? ""),
+    }),
+  },
+  teachers: {
+    select: "t.record_number, t.dni, t.full_name, t.specialty, t.status",
+    from: "FROM teachers t",
+    orderBy: "ORDER BY t.full_name",
+    filters: [{ key: "teacherId", column: "t.id" }],
+    stringify: (row) => ({
+      record_number: String(row.record_number ?? ""),
+      dni: String(row.dni ?? ""),
+      full_name: String(row.full_name ?? ""),
+      specialty: String(row.specialty ?? ""),
+      status: String(row.status ?? ""),
+    }),
+  },
+  sports: {
+    select: `st.full_name AS student_name, s.name AS sport,
+             COALESCE(l.name, 'Todos') AS level,
+             CASE sg.weekday
+               WHEN 1 THEN 'Lunes'
+               WHEN 2 THEN 'Martes'
+               WHEN 3 THEN 'Miercoles'
+               WHEN 4 THEN 'Jueves'
+               WHEN 5 THEN 'Viernes'
+               WHEN 6 THEN 'Sabado'
+               ELSE 'Domingo'
+             END AS weekday,
+             sg.start_time, sg.end_time,
+             t.full_name AS teacher`,
+    from: `FROM sport_enrollments se
+           JOIN students st ON st.id = se.student_id
+           JOIN sport_groups sg ON sg.id = se.group_id
+           JOIN sports s ON s.id = sg.sport_id
+           JOIN teachers t ON t.id = sg.teacher_id
+           LEFT JOIN levels l ON l.id = sg.level_id`,
+    orderBy: "ORDER BY s.name, st.full_name",
+    filters: [
+      { key: "sportId", column: "s.id" },
+      { key: "levelId", column: "l.id" },
+      { key: "teacherId", column: "t.id" },
+      { key: "weekday", column: "sg.weekday" },
+    ],
+    stringify: (row) => ({
+      student_name: String(row.student_name ?? ""),
+      sport: String(row.sport ?? ""),
+      level: String(row.level ?? ""),
+      weekday: String(row.weekday ?? ""),
+      schedule: timeRange(row.start_time, row.end_time),
+      teacher: String(row.teacher ?? ""),
+    }),
+  },
+  transport: {
+    select: "st.full_name AS student_name, tr.name AS route, te.created_at",
+    from: `FROM transport_enrollments te
+           JOIN students st ON st.id = te.student_id
+           JOIN transport_routes tr ON tr.id = te.route_id
+           LEFT JOIN courses c ON c.id = st.course_id
+           LEFT JOIN levels l ON l.id = c.level_id`,
+    orderBy: "ORDER BY tr.name, st.full_name",
+    filters: [
+      { key: "routeId", column: "tr.id" },
+      { key: "levelId", column: "l.id" },
+      { key: "courseId", column: "c.id" },
+    ],
+    stringify: (row) => ({
+      student_name: String(row.student_name ?? ""),
+      route: String(row.route ?? ""),
+      enrolled_at: String(row.created_at ?? ""),
+    }),
+  },
+  cafeteria: {
+    select: `st.full_name AS student_name,
+             CASE WHEN ce.active THEN 'Inscripto' ELSE 'No inscripto' END AS status,
+             ce.created_at AS enrolled_at`,
+    from: `FROM cafeteria_enrollments ce
+           JOIN students st ON st.id = ce.student_id
+           LEFT JOIN courses c ON c.id = st.course_id
+           LEFT JOIN levels l ON l.id = c.level_id`,
+    orderBy: "ORDER BY st.full_name",
+    filters: [
+      { key: "levelId", column: "l.id" },
+      { key: "courseId", column: "c.id" },
+    ],
+    stringify: (row) => ({
+      student_name: String(row.student_name ?? ""),
+      status: String(row.status ?? ""),
+      enrolled_at: String(row.enrolled_at ?? ""),
+    }),
+  },
+  cursado: {
+    select: `st.full_name AS student_name, st.record_number,
+             COALESCE(l.name, 'Pendiente') AS level,
+             COALESCE(c.name, 'Pendiente') AS course,
+             sub.name AS subject, t.full_name AS teacher,
+             CASE cs.weekday
+               WHEN 1 THEN 'Lunes'
+               WHEN 2 THEN 'Martes'
+               WHEN 3 THEN 'Miercoles'
+               WHEN 4 THEN 'Jueves'
+               WHEN 5 THEN 'Viernes'
+               WHEN 6 THEN 'Sabado'
+               WHEN 7 THEN 'Domingo'
+             END AS weekday,
+             cs.start_time, cs.end_time`,
+    from: `FROM student_subjects ss
+           JOIN students st ON st.id = ss.student_id
+           JOIN subjects sub ON sub.id = ss.subject_id
+           JOIN teachers t ON t.id = ss.teacher_id
+           LEFT JOIN courses c ON c.id = st.course_id
+           LEFT JOIN levels l ON l.id = c.level_id
+           LEFT JOIN course_subjects cs
+             ON cs.course_id = st.course_id
+            AND cs.subject_id = ss.subject_id
+            AND cs.teacher_id = ss.teacher_id`,
+    orderBy: "ORDER BY l.name, c.name, sub.name, st.full_name",
+    filters: [
+      { key: "levelId", column: "l.id" },
+      { key: "courseId", column: "c.id" },
+      { key: "subjectId", column: "sub.id" },
+      { key: "teacherId", column: "t.id" },
+      { key: "weekday", column: "cs.weekday" },
+    ],
+    stringify: (row) => ({
+      student_name: String(row.student_name ?? ""),
+      record_number: String(row.record_number ?? ""),
+      level: String(row.level ?? ""),
+      course: String(row.course ?? ""),
+      subject: String(row.subject ?? ""),
+      teacher: String(row.teacher ?? ""),
+      weekday: String(row.weekday ?? ""),
+      schedule: timeRange(row.start_time, row.end_time),
+    }),
+  },
+  matriculas: {
+    select: `st.full_name AS student_name, st.record_number,
+             l.name AS level, c.name AS course,
+             sy.year, sye.status, sye.created_at`,
+    from: `FROM school_year_enrollments sye
+           JOIN students st ON st.id = sye.student_id
+           JOIN courses c ON c.id = sye.course_id
+           JOIN levels l ON l.id = c.level_id
+           JOIN school_years sy ON sy.id = sye.school_year_id`,
+    orderBy: "ORDER BY sy.year DESC, l.name, c.name, st.full_name",
+    filters: [
+      { key: "levelId", column: "l.id" },
+      { key: "courseId", column: "c.id" },
+      { key: "schoolYear", column: "sy.year" },
+    ],
+    stringify: (row) => ({
+      student_name: String(row.student_name ?? ""),
+      record_number: String(row.record_number ?? ""),
+      level: String(row.level ?? ""),
+      course: String(row.course ?? ""),
+      year: String(row.year ?? ""),
+      status: String(row.status ?? ""),
+      enrolled_at: String(row.created_at ?? ""),
+    }),
+  },
+};
+
 async function runEntityQuery(
   pool: DatabasePool,
   entity: ReportEntityKey,
+  filters: ReportFilters = {},
 ): Promise<Array<Record<string, string>>> {
-  type Row = Record<string, unknown>;
-  interface QuerySpec {
-    sql: string;
-    stringify: (row: Row) => Record<string, string>;
+  const spec = ENTITY_QUERIES[entity];
+  const conditions: string[] = [];
+  const params: unknown[] = [];
+  for (const filter of spec.filters) {
+    const value = filters[filter.key];
+    if (value === undefined || value === null) {
+      continue;
+    }
+    params.push(value);
+    conditions.push(`${filter.column} = $${params.length}`);
   }
-  const queries: Record<ReportEntityKey, QuerySpec> = {
-    students: {
-      sql: `SELECT st.record_number, st.dni, st.full_name,
-                   COALESCE(l.name, 'Pendiente') AS level,
-                   COALESCE(c.name, 'Pendiente') AS course,
-                   st.status
-            FROM students st
-            LEFT JOIN courses c ON c.id = st.course_id
-            LEFT JOIN levels l ON l.id = c.level_id
-            ORDER BY l.name, c.name, st.full_name`,
-      stringify: (row) => ({
-        record_number: String(row.record_number ?? ""),
-        dni: String(row.dni ?? ""),
-        full_name: String(row.full_name ?? ""),
-        level: String(row.level ?? ""),
-        course: String(row.course ?? ""),
-        status: String(row.status ?? ""),
-      }),
-    },
-    teachers: {
-      sql: `SELECT t.record_number, t.dni, t.full_name, t.specialty, t.status
-            FROM teachers t
-            ORDER BY t.full_name`,
-      stringify: (row) => ({
-        record_number: String(row.record_number ?? ""),
-        dni: String(row.dni ?? ""),
-        full_name: String(row.full_name ?? ""),
-        specialty: String(row.specialty ?? ""),
-        status: String(row.status ?? ""),
-      }),
-    },
-    sports: {
-      sql: `SELECT st.full_name AS student_name, s.name AS sport,
-                   COALESCE(l.name, 'Todos') AS level,
-                   CASE sg.weekday
-                     WHEN 1 THEN 'Lunes'
-                     WHEN 2 THEN 'Martes'
-                     WHEN 3 THEN 'Miercoles'
-                     WHEN 4 THEN 'Jueves'
-                     WHEN 5 THEN 'Viernes'
-                     WHEN 6 THEN 'Sabado'
-                     ELSE 'Domingo'
-                   END AS weekday,
-                   sg.start_time, sg.end_time,
-                   t.full_name AS teacher
-            FROM sport_enrollments se
-            JOIN students st ON st.id = se.student_id
-            JOIN sport_groups sg ON sg.id = se.group_id
-            JOIN sports s ON s.id = sg.sport_id
-            JOIN teachers t ON t.id = sg.teacher_id
-            LEFT JOIN levels l ON l.id = sg.level_id
-            ORDER BY s.name, st.full_name`,
-      stringify: (row) => ({
-        student_name: String(row.student_name ?? ""),
-        sport: String(row.sport ?? ""),
-        level: String(row.level ?? ""),
-        weekday: String(row.weekday ?? ""),
-        schedule: timeRange(row.start_time, row.end_time),
-        teacher: String(row.teacher ?? ""),
-      }),
-    },
-    transport: {
-      sql: `SELECT st.full_name AS student_name, tr.name AS route, te.created_at
-            FROM transport_enrollments te
-            JOIN students st ON st.id = te.student_id
-            JOIN transport_routes tr ON tr.id = te.route_id
-            ORDER BY tr.name, st.full_name`,
-      stringify: (row) => ({
-        student_name: String(row.student_name ?? ""),
-        route: String(row.route ?? ""),
-        enrolled_at: String(row.created_at ?? ""),
-      }),
-    },
-    cafeteria: {
-      sql: `SELECT st.full_name AS student_name,
-                   CASE WHEN ce.active THEN 'Inscripto' ELSE 'No inscripto' END AS status,
-                   ce.created_at AS enrolled_at
-            FROM cafeteria_enrollments ce
-            JOIN students st ON st.id = ce.student_id
-            ORDER BY st.full_name`,
-      stringify: (row) => ({
-        student_name: String(row.student_name ?? ""),
-        status: String(row.status ?? ""),
-        enrolled_at: String(row.enrolled_at ?? ""),
-      }),
-    },
-    cursado: {
-      sql: `SELECT st.full_name AS student_name, st.record_number,
-                   COALESCE(l.name, 'Pendiente') AS level,
-                   COALESCE(c.name, 'Pendiente') AS course,
-                   sub.name AS subject, t.full_name AS teacher,
-                   CASE cs.weekday
-                     WHEN 1 THEN 'Lunes'
-                     WHEN 2 THEN 'Martes'
-                     WHEN 3 THEN 'Miercoles'
-                     WHEN 4 THEN 'Jueves'
-                     WHEN 5 THEN 'Viernes'
-                     WHEN 6 THEN 'Sabado'
-                     WHEN 7 THEN 'Domingo'
-                   END AS weekday,
-                   cs.start_time, cs.end_time
-            FROM student_subjects ss
-            JOIN students st ON st.id = ss.student_id
-            JOIN subjects sub ON sub.id = ss.subject_id
-            JOIN teachers t ON t.id = ss.teacher_id
-            LEFT JOIN courses c ON c.id = st.course_id
-            LEFT JOIN levels l ON l.id = c.level_id
-            LEFT JOIN course_subjects cs
-              ON cs.course_id = st.course_id
-             AND cs.subject_id = ss.subject_id
-             AND cs.teacher_id = ss.teacher_id
-            ORDER BY l.name, c.name, sub.name, st.full_name`,
-      stringify: (row) => ({
-        student_name: String(row.student_name ?? ""),
-        record_number: String(row.record_number ?? ""),
-        level: String(row.level ?? ""),
-        course: String(row.course ?? ""),
-        subject: String(row.subject ?? ""),
-        teacher: String(row.teacher ?? ""),
-        weekday: String(row.weekday ?? ""),
-        schedule: timeRange(row.start_time, row.end_time),
-      }),
-    },
-    matriculas: {
-      sql: `SELECT st.full_name AS student_name, st.record_number,
-                   l.name AS level, c.name AS course,
-                   sy.year, sye.status, sye.created_at
-            FROM school_year_enrollments sye
-            JOIN students st ON st.id = sye.student_id
-            JOIN courses c ON c.id = sye.course_id
-            JOIN levels l ON l.id = c.level_id
-            JOIN school_years sy ON sy.id = sye.school_year_id
-            ORDER BY sy.year DESC, l.name, c.name, st.full_name`,
-      stringify: (row) => ({
-        student_name: String(row.student_name ?? ""),
-        record_number: String(row.record_number ?? ""),
-        level: String(row.level ?? ""),
-        course: String(row.course ?? ""),
-        year: String(row.year ?? ""),
-        status: String(row.status ?? ""),
-        enrolled_at: String(row.created_at ?? ""),
-      }),
-    },
-  };
-
-  const spec = queries[entity];
-  const result = await pool.query<Row>(spec.sql);
+  const where = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
+  const sql = `SELECT ${spec.select} ${spec.from} ${where} ${spec.orderBy}`;
+  const result = await pool.query(sql, params);
   return new RowIterator(result.rows, (row) => spec.stringify(row)).toArray();
 }
 

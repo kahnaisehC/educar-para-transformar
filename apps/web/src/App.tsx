@@ -11,6 +11,7 @@ import type {
   EnrollmentsOverview,
   GeneratedReport,
   ReportEntity,
+  ReportFilterOptions,
   ReportTemplate,
   ServicesOverview,
   StudentReport,
@@ -782,13 +783,14 @@ function ChildEnrollmentPanel({ studentId, token }: { studentId: number; token: 
   );
 }
 
-type AdminTab = "users" | "academic" | "services" | "enrollments";
+type AdminTab = "users" | "academic" | "services" | "enrollments" | "reports";
 
 const ADMIN_TABS: Array<{ key: AdminTab; label: string }> = [
   { key: "users", label: "Usuarios" },
   { key: "academic", label: "Académico" },
   { key: "services", label: "Deportes y servicios" },
   { key: "enrollments", label: "Inscripciones" },
+  { key: "reports", label: "Reportes" },
 ];
 
 const WEEKDAY_OPTIONS = [
@@ -827,6 +829,117 @@ function AdminDashboard({ token, currentUser }: { token: string; currentUser: Us
       {tab === "academic" && <AdminAcademicTab token={token} />}
       {tab === "services" && <AdminServicesTab token={token} />}
       {tab === "enrollments" && <AdminEnrollmentsTab token={token} />}
+      {tab === "reports" && <AdminReportsTab token={token} />}
+    </>
+  );
+}
+
+function AdminReportsTab({ token }: { token: string }) {
+  const [entities, setEntities] = useState<ReportEntity[]>([]);
+  const [templates, setTemplates] = useState<ReportTemplate[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<{ tone: "success" | "error"; text: string } | null>(null);
+  const [selectedId, setSelectedId] = useState("");
+  const [generating, setGenerating] = useState(false);
+  const [report, setReport] = useState<GeneratedReport | null>(null);
+
+  async function loadAll() {
+    setLoading(true);
+    setError(null);
+    try {
+      const [entitiesResult, templatesResult] = await Promise.all([
+        apiRequest<{ entities: ReportEntity[] }>("/director/report-entities", { token }),
+        apiRequest<{ templates: ReportTemplate[] }>("/director/report-templates", { token }),
+      ]);
+      setEntities(entitiesResult.entities);
+      setTemplates(templatesResult.templates);
+    } catch (requestError) {
+      setError(getErrorMessage(requestError));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    void loadAll();
+  }, [token]);
+
+  async function generate() {
+    if (!selectedId) return;
+    setGenerating(true);
+    setNotice(null);
+    try {
+      const result = await apiRequest<{ report: GeneratedReport }>(
+        `/director/report-templates/${selectedId}/generate`,
+        { method: "POST", token, body: JSON.stringify({}) },
+      );
+      setReport(result.report);
+    } catch (requestError) {
+      setNotice({ tone: "error", text: getErrorMessage(requestError) });
+    } finally {
+      setGenerating(false);
+    }
+  }
+
+  function exportCsv() {
+    if (!report) return;
+    const header = report.columns.map((column) => column.label);
+    const lines = report.rows.map((row) => report.columns.map((column) => row[column.key] ?? ""));
+    downloadCsv("reporte-institucional.csv", header, lines);
+  }
+
+  if (loading) return <DashboardSkeleton />;
+  if (error && templates.length === 0) return <ErrorState message={error} onRetry={() => void loadAll()} />;
+
+  return (
+    <>
+      {notice && <InlineMessage tone={notice.tone}>{notice.text}</InlineMessage>}
+      <div className="admin-grid">
+        <section className="surface-panel">
+          <PanelHeading eyebrow="RF-AD-04" title="Reportes institucionales" detail="Plantillas autorizadas por Dirección para consulta y generación." />
+          {templates.length === 0 ? (
+            <EmptyState title="Sin plantillas disponibles" detail="Dirección todavía no configuró plantillas de reportes." compact />
+          ) : (
+            <>
+              <div className="inline-form">
+                <select value={selectedId} onChange={(event) => setSelectedId(event.target.value)}>
+                  <option value="">Seleccionar plantilla</option>
+                  {templates.map((template) => (
+                    <option key={template.id} value={template.id}>
+                      {template.name} · {entities.find((entity) => entity.key === template.entity)?.label ?? template.entity}
+                      {template.active ? "" : " (desactivada)"}
+                    </option>
+                  ))}
+                </select>
+                <button className="primary-button" disabled={!selectedId || generating} onClick={() => void generate()}>
+                  {generating ? "Generando..." : "Generar"}
+                </button>
+              </div>
+            </>
+          )}
+        </section>
+        <section className="surface-panel">
+          <PanelHeading eyebrow="Plantillas" title="Catálogo autorizado" detail="Solo lectura para el rol administrador." />
+          <ul className="admin-list">
+            {templates.map((template) => (
+              <li key={template.id}>
+                <span>{template.name} · {template.fields.length} campos</span>
+                <span className={`status-chip ${template.active ? "success-chip" : "inactive-chip"}`}>{template.active ? "Activa" : "Desactivada"}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      </div>
+      {report && (
+        <section className="surface-panel report-panel">
+          <div className="panel-heading report-heading">
+            <div><PanelHeading eyebrow="Reporte generado" title={report.columns.map((column) => column.label).join(" · ")} detail={`${report.rows.length} registros · ${new Date(report.generatedAt).toLocaleString("es-AR")}`} /></div>
+            <button className="secondary-button" onClick={exportCsv}>Exportar CSV</button>
+          </div>
+          {report.rows.length === 0 ? <EmptyState title="Sin datos para esta plantilla" detail="La entidad elegida todavía no tiene registros cargados." compact /> : <div className="user-table-wrap"><table className="user-table"><thead><tr>{report.columns.map((column) => <th key={column.key}>{column.label}</th>)}</tr></thead><tbody>{report.rows.map((row, index) => <tr key={index}>{report.columns.map((column) => <td key={column.key}>{row[column.key]}</td>)}</tr>)}</tbody></table></div>}
+        </section>
+      )}
     </>
   );
 }
@@ -1799,6 +1912,17 @@ function DirectorDashboard({ token }: { token: string }) {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [generatingId, setGeneratingId] = useState<number | null>(null);
   const [report, setReport] = useState<GeneratedReport | null>(null);
+  const [filterOptions, setFilterOptions] = useState<ReportFilterOptions | null>(null);
+  const [filters, setFilters] = useState({
+    levelId: "",
+    courseId: "",
+    subjectId: "",
+    sportId: "",
+    teacherId: "",
+    routeId: "",
+    weekday: "",
+    schoolYear: "",
+  });
 
   const selectedEntity = entities.find((entity) => entity.key === form.entity);
 
@@ -1806,12 +1930,14 @@ function DirectorDashboard({ token }: { token: string }) {
     setLoading(true);
     setError(null);
     try {
-      const [entitiesResult, templatesResult] = await Promise.all([
+      const [entitiesResult, templatesResult, filtersResult] = await Promise.all([
         apiRequest<{ entities: ReportEntity[] }>("/director/report-entities", { token }),
         apiRequest<{ templates: ReportTemplate[] }>("/director/report-templates", { token }),
+        apiRequest<{ filters: ReportFilterOptions }>("/director/report-filters", { token }),
       ]);
       setEntities(entitiesResult.entities);
       setTemplates(templatesResult.templates);
+      setFilterOptions(filtersResult.filters);
     } catch (requestError) {
       setError(getErrorMessage(requestError));
     } finally {
@@ -1891,19 +2017,37 @@ function DirectorDashboard({ token }: { token: string }) {
     }
   }
 
+  function activeFilters() {
+    const entries = Object.entries(filters).filter(([, value]) => value !== "");
+    return Object.fromEntries(entries.map(([key, value]) => [key, Number(value)]));
+  }
+
   async function generate(template: ReportTemplate) {
     setGeneratingId(template.id);
     setNotice(null);
     try {
       const result = await apiRequest<{ report: GeneratedReport }>(
         `/director/report-templates/${template.id}/generate`,
-        { method: "POST", token },
+        { method: "POST", token, body: JSON.stringify({ filters: activeFilters() }) },
       );
       setReport(result.report);
     } catch (requestError) {
       setNotice({ tone: "error", text: getErrorMessage(requestError) });
     } finally {
       setGeneratingId(null);
+    }
+  }
+
+  async function removeTemplate(template: ReportTemplate) {
+    if (!window.confirm(`¿Eliminar la plantilla "${template.name}"?`)) return;
+    setNotice(null);
+    try {
+      await apiRequest(`/director/report-templates/${template.id}`, { method: "DELETE", token });
+      setTemplates((current) => current.filter((item) => item.id !== template.id));
+      if (report && editingId === template.id) setReport(null);
+      setNotice({ tone: "success", text: "La plantilla fue eliminada." });
+    } catch (requestError) {
+      setNotice({ tone: "error", text: getErrorMessage(requestError) });
     }
   }
 
@@ -1955,9 +2099,27 @@ function DirectorDashboard({ token }: { token: string }) {
         </section>
         <section className="surface-panel users-panel">
           <PanelHeading eyebrow="Directorio de plantillas" title="Plantillas de reportes" detail="Activá, editá o generá reportes desde cada plantilla." />
-          {templates.length === 0 ? <EmptyState title="Sin plantillas todavía" detail="Creá la primera plantilla con los campos que necesites." compact /> : <div className="user-table-wrap"><table className="user-table"><thead><tr><th>Plantilla</th><th>Entidad</th><th>Campos</th><th>Estado</th><th aria-label="Acciones" /></tr></thead><tbody>{templates.map((template) => <tr key={template.id}><td><div className="table-person"><span className="table-avatar">{template.name.slice(0, 1)}</span><span><strong>{template.name}</strong></span></div></td><td>{entities.find((entity) => entity.key === template.entity)?.label ?? template.entity}</td><td>{template.fields.length}</td><td><span className={`status-chip ${template.active ? "success-chip" : "inactive-chip"}`}>{template.active ? "Activa" : "Desactivada"}</span></td><td><div className="row-actions"><button className="text-button" disabled={generatingId === template.id} onClick={() => void generate(template)}>{generatingId === template.id ? "Generando..." : "Generar"}</button><button className="text-button" onClick={() => startEdit(template)}>Editar</button><button className="text-button" onClick={() => void toggleTemplate(template)}>{template.active ? "Desactivar" : "Activar"}</button></div></td></tr>)}</tbody></table></div>}
+          {templates.length === 0 ? <EmptyState title="Sin plantillas todavía" detail="Creá la primera plantilla con los campos que necesites." compact /> : <div className="user-table-wrap"><table className="user-table"><thead><tr><th>Plantilla</th><th>Entidad</th><th>Campos</th><th>Estado</th><th aria-label="Acciones" /></tr></thead><tbody>{templates.map((template) => <tr key={template.id}><td><div className="table-person"><span className="table-avatar">{template.name.slice(0, 1)}</span><span><strong>{template.name}</strong></span></div></td><td>{entities.find((entity) => entity.key === template.entity)?.label ?? template.entity}</td><td>{template.fields.length}</td><td><span className={`status-chip ${template.active ? "success-chip" : "inactive-chip"}`}>{template.active ? "Activa" : "Desactivada"}</span></td><td><div className="row-actions"><button className="text-button" disabled={generatingId === template.id} onClick={() => void generate(template)}>{generatingId === template.id ? "Generando..." : "Generar"}</button><button className="text-button" onClick={() => startEdit(template)}>Editar</button><button className="text-button" onClick={() => void toggleTemplate(template)}>{template.active ? "Desactivar" : "Activar"}</button><button className="text-button danger-text" onClick={() => void removeTemplate(template)}>Eliminar</button></div></td></tr>)}</tbody>              </table></div>}
         </section>
       </div>
+      <section className="surface-panel filter-panel">
+        <PanelHeading eyebrow="RF-DI-02/03 · Parámetros de consulta" title="Filtros del reporte" detail="Se aplican al generar cada plantilla según la entidad consultada." />
+        {filterOptions && (
+          <div className="filter-grid">
+            <label className="field"><span>Nivel</span><select value={filters.levelId} onChange={(event) => setFilters({ ...filters, levelId: event.target.value, courseId: "" })}><option value="">Todos</option>{filterOptions.levels.map((level) => <option key={level.id} value={level.id}>{level.name}</option>)}</select></label>
+            <label className="field"><span>Curso</span><select value={filters.courseId} onChange={(event) => setFilters({ ...filters, courseId: event.target.value })}><option value="">Todos</option>{filterOptions.courses.filter((course) => !filters.levelId || String(course.levelId) === filters.levelId).map((course) => <option key={course.id} value={course.id}>{course.level} · {course.name}</option>)}</select></label>
+            <label className="field"><span>Materia</span><select value={filters.subjectId} onChange={(event) => setFilters({ ...filters, subjectId: event.target.value })}><option value="">Todas</option>{filterOptions.subjects.map((subject) => <option key={subject.id} value={subject.id}>{subject.name}</option>)}</select></label>
+            <label className="field"><span>Deporte</span><select value={filters.sportId} onChange={(event) => setFilters({ ...filters, sportId: event.target.value })}><option value="">Todos</option>{filterOptions.sports.map((sport) => <option key={sport.id} value={sport.id}>{sport.name}</option>)}</select></label>
+            <label className="field"><span>Docente</span><select value={filters.teacherId} onChange={(event) => setFilters({ ...filters, teacherId: event.target.value })}><option value="">Todos</option>{filterOptions.teachers.map((teacher) => <option key={teacher.id} value={teacher.id}>{teacher.name}</option>)}</select></label>
+            <label className="field"><span>Recorrido</span><select value={filters.routeId} onChange={(event) => setFilters({ ...filters, routeId: event.target.value })}><option value="">Todos</option>{filterOptions.transportRoutes.map((route) => <option key={route.id} value={route.id}>{route.name}</option>)}</select></label>
+            <label className="field"><span>Día</span><select value={filters.weekday} onChange={(event) => setFilters({ ...filters, weekday: event.target.value })}><option value="">Todos</option>{WEEKDAY_OPTIONS.map((day) => <option key={day.value} value={day.value}>{day.label}</option>)}</select></label>
+            <label className="field"><span>Año lectivo</span><select value={filters.schoolYear} onChange={(event) => setFilters({ ...filters, schoolYear: event.target.value })}><option value="">Todos</option>{filterOptions.schoolYears.map((year) => <option key={year.id} value={year.year}>{year.year}</option>)}</select></label>
+          </div>
+        )}
+        <div className="form-actions">
+          <button className="secondary-button" type="button" onClick={() => setFilters({ levelId: "", courseId: "", subjectId: "", sportId: "", teacherId: "", routeId: "", weekday: "", schoolYear: "" })}>Limpiar filtros</button>
+        </div>
+      </section>
       {report && (
         <section className="surface-panel report-panel">
           <div className="panel-heading report-heading">

@@ -86,10 +86,12 @@ import {
 import {
   REPORT_ENTITIES,
   createReportTemplate,
+  deleteReportTemplate,
   generateReport,
-  getReportTemplate,
+  getReportFilterOptions,
   listReportTemplates,
   updateReportTemplate,
+  type ReportFilters,
 } from "./report.service.js";
 
 export interface CreateAppOptions {
@@ -803,15 +805,23 @@ export function createApp(options: CreateAppOptions) {
 
   app.get(
     "/api/director/report-entities",
-    requireRoles("director"),
+    requireRoles("director", "admin"),
     asyncRoute(async (_request, response) => {
       response.json({ entities: REPORT_ENTITIES });
     }),
   );
 
   app.get(
+    "/api/director/report-filters",
+    requireRoles("director", "admin"),
+    asyncRoute(async (_request, response) => {
+      response.json({ filters: await getReportFilterOptions(options.pool) });
+    }),
+  );
+
+  app.get(
     "/api/director/report-templates",
-    requireRoles("director"),
+    requireRoles("director", "admin"),
     asyncRoute(async (_request, response) => {
       response.json({ templates: await listReportTemplates(options.pool) });
     }),
@@ -856,12 +866,29 @@ export function createApp(options: CreateAppOptions) {
 
   app.post(
     "/api/director/report-templates/:templateId/generate",
+    requireRoles("director", "admin"),
+    asyncRoute(async (request, response) => {
+      const templateId = positiveInteger(request.params.templateId, "templateId");
+      const filters = parseReportFilters(request.body?.filters);
+      response.json({
+        report: await generateReport(
+          options.pool,
+          request.user!.id,
+          request.user!.role,
+          templateId,
+          filters,
+        ),
+      });
+    }),
+  );
+
+  app.delete(
+    "/api/director/report-templates/:templateId",
     requireRoles("director"),
     asyncRoute(async (request, response) => {
       const templateId = positiveInteger(request.params.templateId, "templateId");
-      response.json({
-        report: await generateReport(options.pool, request.user!.id, request.user!.role, templateId),
-      });
+      await deleteReportTemplate(options.pool, request.user!.id, request.user!.role, templateId);
+      response.json({ message: "Plantilla eliminada correctamente" });
     }),
   );
 
@@ -1048,4 +1075,36 @@ function requiredMatriculaStatus(value: unknown): "enrolled" | "cancelled" {
     throw new AppError(400, "El estado de la matrícula no es válido", "VALIDATION_ERROR");
   }
   return value;
+}
+
+const REPORT_FILTER_KEYS = [
+  "levelId",
+  "courseId",
+  "subjectId",
+  "sportId",
+  "teacherId",
+  "routeId",
+  "weekday",
+  "schoolYear",
+] as const;
+
+function parseReportFilters(value: unknown): ReportFilters {
+  if (value === undefined || value === null) {
+    return {};
+  }
+  if (typeof value !== "object") {
+    throw new AppError(400, "Los parámetros de consulta no son válidos", "VALIDATION_ERROR");
+  }
+  const input = value as Record<string, unknown>;
+  const filters: ReportFilters = {};
+  for (const key of REPORT_FILTER_KEYS) {
+    const entry = input[key];
+    if (entry === undefined || entry === null || entry === "") {
+      continue;
+    }
+    filters[key] = key === "weekday"
+      ? requiredWeekday(entry)
+      : positiveInteger(entry, key);
+  }
+  return filters;
 }
