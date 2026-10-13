@@ -2,25 +2,29 @@
 
 Aplicación de los Sprints 1, 2 y 3 del sistema de gestión del Centro Educativo **EDUCAR PARA TRANSFORMAR**. Es un monorepo con React + TypeScript, API Node.js + TypeScript, PostgreSQL y autenticación JWT.
 
-## Alcance de Sprints 1, 2 y 3
+## Alcance del sistema completo
 
 - Inicio de sesión real con usuario, contraseña, JWT y autorización por rol.
 - Portal Alumno: catálogo de deportes, grupos, docentes, horarios, inscripción y cancelación.
 - Módulo Alumno: perfil académico, actualización de contacto, transporte, comedor y reporte personal.
 - Reglas de inscripción: máximo dos deportes, sin superposición de horarios y sin duplicados.
-- Portal Padre: únicamente hijos asociados, materias, docentes y resumen deportivo.
-- Panel Administrador: listado, alta de usuarios y gestión de rol/estado, con perfiles iniciales para alumnos, padres y docentes.
+- Portal Padre: hijos asociados, materias, docentes, resumen deportivo y matrícula anual del cursado.
+- Panel Administrador: usuarios y roles, estructura académica (niveles, cursos, materias, asignaciones), alumnos, docentes, padres, deportes y grupos, transporte, comedor, inscripciones y años lectivos.
 - Sprint 2: actualización de contacto para alumnos y docentes, con validación de correo y teléfono.
-- Sprint 3: listado de alumnos por materia para docentes (HU-05), inscripción al transporte (HU-06) y plantillas de reportes institucionales para la Dirección (HU-07) con exportación CSV.
+- Sprint 3: listado de alumnos por materia para docentes (HU-05), inscripción al transporte (HU-06), plantillas de reportes institucionales para la Dirección (HU-07) con filtros por parámetros y exportación CSV, y acceso del administrador a los reportes autorizados.
+- Reporte docente (cursos a cargo por nivel, materias y horarios), parámetros de consulta para la Dirección (RF-DI-02/03) y borrado de plantillas.
 - Auditoría de inscripciones, cancelaciones, operaciones administrativas y generación de reportes.
+- Panel de alertas y notificaciones: confirmaciones, rechazos, cambios de cuenta y matrículas.
 
 ## Estructura
 
 ```text
-apps/api/       API Express, servicios de negocio, JWT y pruebas Vitest
-apps/web/       Frontend React/Vite responsive
-database/       Esquema y datos demo PostgreSQL
-docs/           Documentación existente del proyecto, preservada
+apps/api/              API Express, servicios de negocio, JWT y pruebas Vitest
+apps/web/src/pages/    Vistas por rol (React/Vite) con rutas reales
+apps/web/src/components/ Componentes compartidos (notificaciones, UI)
+apps/web/src/ui.tsx    Helpers y componentes de interfaz reutilizables
+database/              Esquema, datos demo y migraciones PostgreSQL
+docs/                  Documentación existente del proyecto, preservada
 ```
 
 ## Requisitos
@@ -82,7 +86,7 @@ npm run typecheck
 npm run build
 ```
 
-Las pruebas del backend cubren autenticación y RBAC, aislamiento padre-hijo, límite de dos deportes, conflictos de horario, duplicados, perfiles iniciales, contacto, transporte, comedor, reportes, listado docente (HU-05) y plantillas de reportes institucionales (HU-07). Se ejecutan con `pg-mem` y la misma estructura SQL del proyecto, sin necesitar una base PostgreSQL de test. También incluyen la evidencia de la aplicación de los patrones Singleton, Proxy e Iterator.
+Las pruebas del backend (Vitest + `pg-mem`) cubren autenticación y RBAC, aislamiento padre-hijo, límite de dos deportes, conflictos de horario, duplicados, perfiles iniciales, contacto, transporte, comedor, cancellations, reportes, listado docente (HU-05), plantillas de reportes institucionales (HU-07) con filtros, matrículas del padre (RF-PA-02), gestión académica del administrador (RF-AD-01/02, HU-04), reporte docente (RF-PR-01/03), parámetros de consulta (RF-DI-02/03), notificaciones y la evidencia de los patrones Singleton, Proxy e Iterator.
 
 ## Patrones de diseño
 
@@ -99,29 +103,38 @@ Los patrones se implementaron en el código real del Sprint 3 y se aplican en la
 
 - `POST /api/auth/login`
 - `GET /api/me`
+- `GET /api/notifications` · `PATCH /api/notifications/:id/read` · `PATCH /api/notifications/read-all`
 - `GET /api/student/dashboard`
 - `GET /api/student/report`
 - `PATCH /api/me/contact`
-- `POST /api/student/enrollments`
-- `DELETE /api/student/enrollments/:groupId`
-- `POST /api/student/transport`
-- `DELETE /api/student/transport`
-- `POST /api/student/cafeteria`
-- `DELETE /api/student/cafeteria`
-- `GET /api/parent/children`
-- `GET /api/parent/children/:studentId/summary`
-- `GET /api/admin/users`
-- `POST /api/admin/users`
-- `PATCH /api/admin/users/:userId`
-- `GET /api/teacher/courses`
-- `GET /api/teacher/courses/students`
-- `GET /api/director/report-entities`
-- `GET /api/director/report-templates`
-- `POST /api/director/report-templates`
-- `PATCH /api/director/report-templates/:templateId`
-- `POST /api/director/report-templates/:templateId/generate`
+- `POST /api/student/enrollments` · `DELETE /api/student/enrollments/:groupId`
+- `POST /api/student/transport` · `DELETE /api/student/transport`
+- `POST /api/student/cafeteria` · `DELETE /api/student/cafeteria`
+- `GET /api/parent/children` · `GET /api/parent/children/:studentId/summary`
+- `GET /api/parent/children/:studentId/enrollment` · `POST /api/parent/children/:studentId/enrollment`
+- `GET /api/admin/users` · `POST /api/admin/users` · `PATCH /api/admin/users/:userId`
+- `GET /api/admin/academic` · `GET /api/admin/services` · `GET /api/admin/enrollments`
+- Catálogos (admin): `levels`, `courses`, `subjects`, `course-subjects`, `school-years`, `students`, `teachers`, `parents`, `sports`, `sport-groups`, `transport-routes` con CRUD bajo `/api/admin/*`
+- Gestión de vínculos: `POST/DELETE /api/admin/students/:studentId/parents(/:parentId)`
+- Inscripciones (admin): cancelar deportes/transporte, activar comedor y cambiar matrículas bajo `/api/admin/enrollments/*`
+- `GET /api/teacher/profile` · `GET /api/teacher/report` · `GET /api/teacher/courses` · `GET /api/teacher/courses/students`
+- `GET /api/director/report-entities` · `GET /api/director/report-filters`
+- `GET /api/director/report-templates` · `POST/PATCH/DELETE /api/director/report-templates(/:id)`
+- `POST /api/director/report-templates/:templateId/generate` (con `filters`)
 
-Todas las rutas excepto login y health requieren `Authorization: Bearer <token>`. La API vuelve a consultar el usuario en cada request, por lo que una cuenta desactivada pierde acceso aunque conserve un JWT anterior.
+Todas las rutas excepto login y health requieren `Authorization: Bearer <token>`. La API vuelve a consultar el usuario en cada request, por lo que una cuenta desactivada pierde acceso aunque conserve un JWT anterior. El rol administrador puede consultar y generar los reportes institucionales autorizados; la creación y edición de plantillas es exclusiva de Dirección.
+
+## Cobertura de requerimientos
+
+| Requerimiento | Estado |
+|---|---|
+| RF-AL-01 a RF-AL-06 (alumno) | Implementado |
+| RF-PA-01, RF-PA-02 (matrícula anual), RF-PA-03 (aislamiento) | Implementado |
+| RF-PR-01 (perfil/carga horaria), RF-PR-02 (contacto), RF-PR-03 (reporte docente), RF-PR-04 (listados) | Implementado |
+| RF-AD-01 (gestión académica), RF-AD-02 (transporte y comedor), RF-AD-03 (usuarios y roles), RF-AD-04 (reportes autorizados) | Implementado |
+| RF-DI-01 (plantillas), RF-DI-02 (parámetros de consulta), RF-DI-03 (listados por nivel/curso/materia/deporte/horario/profesor/recorrido) | Implementado |
+| Panel de alertas y notificaciones | Implementado (in-app) |
+| App móvil (PARTE-3 de la consigna) | Planificada por separado en `docs/planDeTrabajoMovil.md` |
 
 ## Patrones de Diseño
 
