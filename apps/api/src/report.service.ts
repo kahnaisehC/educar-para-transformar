@@ -1,7 +1,9 @@
 import type { DatabasePool } from "./db.js";
 import { withTransaction } from "./db.js";
-import { tryWriteAudit, writeAudit } from "./audit.js";
+import { withAuditProxy } from "./auditProxy.js";
+import { RowIterator } from "./rowIterator.js";
 import { AppError, isAppError } from "./errors.js";
+import type { UserRole } from "./auth.js";
 
 export const REPORT_ENTITIES = [
   {
@@ -168,35 +170,34 @@ export async function getReportTemplate(
 export async function createReportTemplate(
   pool: DatabasePool,
   actorUserId: number,
+  actorRole: UserRole,
   input: ReportInput,
 ): Promise<ReportTemplate> {
   validateInput(input);
-  try {
-    return await withTransaction(pool, async (client) => {
-      const result = await client.query<ReportTemplateRow>(
-        `INSERT INTO report_templates (name, entity, fields, active, created_by)
-         VALUES ($1, $2, $3::jsonb, TRUE, $4)
-         RETURNING id, name, entity, fields, active, created_at, updated_at`,
-        [input.name, input.entity, JSON.stringify(input.fields), actorUserId],
-      );
-      await writeAudit(client, actorUserId, "create_report_template", "success", {
-        templateId: result.rows[0].id,
-        entity: input.entity,
-      });
-      return mapTemplate(result.rows[0]);
-    });
-  } catch (error) {
-    const normalized = normalizeReportError(error);
-    await tryWriteAudit(pool, actorUserId, "create_report_template", "rejected", {
-      reason: normalized.message,
-    });
-    throw normalized;
-  }
+  return withAuditProxy(pool, {
+    operation: "create_report_template",
+    actorUserId,
+    actorRole,
+    allowedRoles: ["director"],
+    normalizeError: normalizeReportError,
+    onSuccess: (template) => ({ templateId: template.id, entity: template.entity }),
+    handler: () =>
+      withTransaction(pool, async (client) => {
+        const result = await client.query<ReportTemplateRow>(
+          `INSERT INTO report_templates (name, entity, fields, active, created_by)
+           VALUES ($1, $2, $3::jsonb, TRUE, $4)
+           RETURNING id, name, entity, fields, active, created_at, updated_at`,
+          [input.name, input.entity, JSON.stringify(input.fields), actorUserId],
+        );
+        return mapTemplate(result.rows[0]);
+      }),
+  });
 }
 
 export async function updateReportTemplate(
   pool: DatabasePool,
   actorUserId: number,
+  actorRole: UserRole,
   templateId: number,
   input: Partial<ReportInput> & { active?: boolean },
 ): Promise<ReportTemplate> {
@@ -208,40 +209,37 @@ export async function updateReportTemplate(
       fields: input.fields ?? current.fields,
     });
   }
-  try {
-    return await withTransaction(pool, async (client) => {
-      const fields = input.fields ?? current.fields;
-      const result = await client.query<ReportTemplateRow>(
-        `UPDATE report_templates
-         SET name = $1, entity = $2, fields = $3::jsonb, active = $4, updated_at = NOW()
-         WHERE id = $5
-         RETURNING id, name, entity, fields, active, created_at, updated_at`,
-        [
-          input.name ?? current.name,
-          input.entity ?? current.entity,
-          JSON.stringify(fields),
-          input.active ?? current.active,
-          templateId,
-        ],
-      );
-      const template = result.rows[0];
-      if (!template) {
-        throw new AppError(404, "La plantilla de reporte no existe", "TEMPLATE_NOT_FOUND");
-      }
-      await writeAudit(client, actorUserId, "update_report_template", "success", {
-        templateId,
-        changes: input,
-      });
-      return mapTemplate(template);
-    });
-  } catch (error) {
-    const normalized = normalizeReportError(error);
-    await tryWriteAudit(pool, actorUserId, "update_report_template", "rejected", {
-      templateId,
-      reason: normalized.message,
-    });
-    throw normalized;
-  }
+  return withAuditProxy(pool, {
+    operation: "update_report_template",
+    actorUserId,
+    actorRole,
+    allowedRoles: ["director"],
+    normalizeError: normalizeReportError,
+    onSuccess: (template) => ({ templateId, changes: input }),
+    onError: (error) => ({ templateId, reason: getErrorMessage(error) }),
+    handler: () =>
+      withTransaction(pool, async (client) => {
+        const fields = input.fields ?? current.fields;
+        const result = await client.query<ReportTemplateRow>(
+          `UPDATE report_templates
+           SET name = $1, entity = $2, fields = $3::jsonb, active = $4, updated_at = NOW()
+           WHERE id = $5
+           RETURNING id, name, entity, fields, active, created_at, updated_at`,
+          [
+            input.name ?? current.name,
+            input.entity ?? current.entity,
+            JSON.stringify(fields),
+            input.active ?? current.active,
+            templateId,
+          ],
+        );
+        const template = result.rows[0];
+        if (!template) {
+          throw new AppError(404, "La plantilla de reporte no existe", "TEMPLATE_NOT_FOUND");
+        }
+        return mapTemplate(template);
+      }),
+  });
 }
 
 export interface GeneratedReport {
@@ -328,6 +326,7 @@ export function iterateReport(report: GeneratedReport): ReportRowIterator {
 export async function generateReport(
   pool: DatabasePool,
   actorUserId: number,
+  actorRole: UserRole,
   templateId: number,
 ): Promise<GeneratedReport> {
   const template = await getReportTemplate(pool, templateId);
@@ -340,37 +339,40 @@ export async function generateReport(
   }
   const columns = entityCatalog.fields.filter((field) => template.fields.includes(field.key));
 
-  let rows: Array<Record<string, string>>;
-  try {
-    rows = await runEntityQuery(pool, template.entity);
-    rows = rows.map((row) => {
-      const projected: Record<string, string> = {};
-      for (const column of columns) {
-        projected[column.key] = row[column.key] ?? "";
-      }
-      return projected;
-    });
-  } catch (error) {
-    const normalized = isAppError(error) ? error : new Error("No se pudo generar el reporte");
-    await tryWriteAudit(pool, actorUserId, "generate_report", "rejected", {
+  return withAuditProxy(pool, {
+    operation: "generate_report",
+    actorUserId,
+    actorRole,
+    allowedRoles: ["director"],
+    normalizeError: normalizeReportError,
+    onSuccess: (report) => ({
       templateId,
-      reason: normalized.message,
-    });
-    throw normalized;
-  }
-
-  await tryWriteAudit(pool, actorUserId, "generate_report", "success", {
-    templateId,
-    entity: template.entity,
-    rows: rows.length,
+      entity: report.entity,
+      rows: report.rows.length,
+    }),
+    onError: (error) => ({ templateId, reason: getErrorMessage(error) }),
+    handler: async () => {
+      const rawRows = await runEntityQuery(pool, template.entity);
+      const rows = new RowIterator(rawRows, (row) => projectRow(row, columns)).toArray();
+      return {
+        entity: template.entity,
+        columns,
+        rows,
+        generatedAt: new Date().toISOString(),
+      };
+    },
   });
+}
 
-  return {
-    entity: template.entity,
-    columns,
-    rows,
-    generatedAt: new Date().toISOString(),
-  };
+function projectRow(
+  row: Record<string, string>,
+  columns: Array<{ key: string; label: string }>,
+): Record<string, string> {
+  const projected: Record<string, string> = {};
+  for (const column of columns) {
+    projected[column.key] = row[column.key] ?? "";
+  }
+  return projected;
 }
 
 async function runEntityQuery(
@@ -465,7 +467,11 @@ async function runEntityQuery(
 
   const spec = queries[entity];
   const result = await pool.query<Row>(spec.sql);
-  return result.rows.map(spec.stringify);
+  return new RowIterator(result.rows, (row) => spec.stringify(row)).toArray();
+}
+
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : "No se pudo completar la operación";
 }
 
 function normalizeReportError(error: unknown): Error {

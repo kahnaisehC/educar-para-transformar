@@ -1,9 +1,9 @@
 import { createAppFromConfig } from "./app.js";
 import { loadConfig } from "./config.js";
-import { createPool } from "./db.js";
+import { closeDatabasePool, getDatabasePool } from "./database.js";
 
 const config = loadConfig();
-const pool = createPool(config.databaseUrl);
+const pool = getDatabasePool(config.databaseUrl);
 const app = createAppFromConfig(pool, config);
 
 const server = app.listen(config.port, () => {
@@ -13,7 +13,7 @@ const server = app.listen(config.port, () => {
 async function shutdown(signal: string): Promise<void> {
   console.log(`${signal} received, shutting down`);
   server.close(async () => {
-    await pool.end();
+    await closeDatabasePool();
     process.exit(0);
   });
 }

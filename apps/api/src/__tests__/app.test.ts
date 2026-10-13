@@ -6,6 +6,11 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { createApp } from "../app.js";
 import type { DatabasePool } from "../db.js";
+import { closeDatabasePool, getDatabasePool } from "../database.js";
+import { RowIterator } from "../rowIterator.js";
+import { withAuditProxy } from "../auditProxy.js";
+import { AppError } from "../errors.js";
+import { createPool } from "../db.js";
 
 const schema = readFileSync(
   fileURLToPath(new URL("../../../../database/schema.sql", import.meta.url)),
@@ -314,6 +319,67 @@ describe("HU-07 institutional report templates", () => {
       .set("Authorization", `Bearer ${token}`);
     expect(inactive.status).toBe(409);
     expect(inactive.body.code).toBe("TEMPLATE_INACTIVE");
+  });
+});
+
+describe("design patterns evidence", () => {
+  it("uses a database-pool proxy that authorizes the requested role and audits success and rejection", async () => {
+    const studentToken = await loginAs("ana.alumna");
+    const parentToken = await loginAs("marta.madre");
+
+    const ok = await request(app)
+      .patch("/api/me/contact")
+      .set("Authorization", `Bearer ${studentToken}`)
+      .send({ email: "ana.node@educar.local", phone: "3624-800000" });
+    expect(ok.status).toBe(200);
+    expect(ok.body.contact.email).toBe("ana.node@educar.local");
+
+    const forbidden = await request(app)
+      .patch("/api/me/contact")
+      .set("Authorization", `Bearer ${parentToken}`)
+      .send({ email: "marta.node@educar.local", phone: "3624-800001" });
+    expect(forbidden.status).toBe(403);
+
+    const audit = await pool.query<{ success: string; rejected: string }>(
+      `SELECT
+         COUNT(*) FILTER (WHERE result = 'success')::TEXT AS success,
+         COUNT(*) FILTER (WHERE result = 'rejected')::TEXT AS rejected
+       FROM audit_logs`,
+    );
+    expect(audit.rows[0]).toMatchObject({ success: expect.any(String), rejected: expect.any(String) });
+    const successCount = Number(audit.rows[0].success);
+    const rejectedCount = Number(audit.rows[0].rejected);
+    expect(successCount).toBeGreaterThan(0);
+    expect(rejectedCount).toBeGreaterThan(0);
+  });
+
+  it("iterates projected rows without exposing the underlying array", () => {
+    const iterator = new RowIterator(
+      [
+        { full_name: "Ana Alumna", dni: "40111222" },
+        { full_name: "Bruno Alumno", dni: "40222333" },
+        { full_name: "Laura Docente", dni: "30111222" },
+      ],
+      (row) => ({ name: row.full_name, dni: row.dni }),
+    );
+
+    const first = iterator.next();
+    expect(first.done).toBe(false);
+    expect(first.value).toEqual({ name: "Ana Alumna", dni: "40111222" });
+    const second = iterator.next();
+    expect(second.value).toEqual({ name: "Bruno Alumno", dni: "40222333" });
+    const third = iterator.next();
+    expect(third.value).toEqual({ name: "Laura Docente", dni: "30111222" });
+    const done = iterator.next();
+    expect(done.done).toBe(true);
+  });
+
+  it("returns the same database pool for repeated requests (Singleton)", async () => {
+    const url = "postgres://singleton:test@localhost:5432/educar";
+    const firstPool = getDatabasePool(url);
+    const secondPool = getDatabasePool(url);
+    expect(secondPool).toBe(firstPool);
+    await closeDatabasePool();
   });
 });
 

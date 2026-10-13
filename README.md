@@ -82,7 +82,18 @@ npm run typecheck
 npm run build
 ```
 
-Las pruebas del backend cubren autenticación y RBAC, aislamiento padre-hijo, límite de dos deportes, conflictos de horario, duplicados, perfiles iniciales, contacto, transporte, comedor, reportes, listado docente (HU-05) y plantillas de reportes institucionales (HU-07). Se ejecutan con `pg-mem` y la misma estructura SQL del proyecto, sin necesitar una base PostgreSQL de test.
+Las pruebas del backend cubren autenticación y RBAC, aislamiento padre-hijo, límite de dos deportes, conflictos de horario, duplicados, perfiles iniciales, contacto, transporte, comedor, reportes, listado docente (HU-05) y plantillas de reportes institucionales (HU-07). Se ejecutan con `pg-mem` y la misma estructura SQL del proyecto, sin necesitar una base PostgreSQL de test. También incluyen la evidencia de la aplicación de los patrones Singleton, Proxy e Iterator.
+
+## Patrones de diseño
+
+Los patrones se implementaron en el código real del Sprint 3 y se aplican en la capa donde aportan mayor beneficio:
+
+| Patrón | Implementación | Problema que resuelve | Evidencia en tests |
+|---|---|---|---|
+| **MVC** | Arquitectura de tres capas: rutas de Express (`app.ts`) como controladores, servicios (`*.service.ts`) como modelo/lógica de negocio, y React (`apps/web`) como vista. | Separar presentación, lógica y acceso a datos. | - |
+| **Iterator** | `apps/api/src/rowIterator.ts` (clase `RowIterator`) usada por `report.service.ts` y `teacher.service.ts` para recorrer resultados de consultas. | Iterar registros sin exponer la estructura interna de la colección. | Test "iterates projected rows without exposing the underlying array" |
+| **Proxy** | `apps/api/src/auditProxy.ts` (`withAuditProxy`), aplicado en servicios de inscripción, transporte, administración y reportes; autoriza por rol y registra auditoría de éxito y rechazo. | Agregar autorización y auditar operaciones sin modificar los servicios. | Test "uses a database-pool proxy that authorizes the requested role and audits success and rejection" |
+| **Singleton** | `apps/api/src/database.ts` (`getDatabasePool`/`closeDatabasePool`), pool de conexiones único usado por `server.ts` y los tests. | Evitar múltiples instancias de acceso a la base de datos. | Test "returns the same database pool for repeated requests (Singleton)" |
 
 ## API principal
 

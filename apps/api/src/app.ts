@@ -100,8 +100,8 @@ export function createApp(options: CreateAppOptions) {
         phone: requiredPhone(request.body?.phone),
       };
       const contact = request.user!.role === "student"
-        ? await updateStudentContact(options.pool, request.user!.id, input)
-        : await updateTeacherContact(options.pool, request.user!.id, input);
+        ? await updateStudentContact(options.pool, request.user!.id, request.user!.role, input)
+        : await updateTeacherContact(options.pool, request.user!.id, request.user!.role, input);
       response.json({ contact });
     }),
   );
@@ -115,6 +115,7 @@ export function createApp(options: CreateAppOptions) {
       const enrollment = await enrollStudent(
         options.pool,
         request.user!.id,
+        request.user!.role,
         dashboard.student.id,
         groupId,
       );
@@ -128,7 +129,7 @@ export function createApp(options: CreateAppOptions) {
     asyncRoute(async (request, response) => {
       const groupId = positiveInteger(request.params.groupId, "groupId");
       const dashboard = await getStudentDashboard(options.pool, request.user!.id);
-      await cancelEnrollment(options.pool, request.user!.id, dashboard.student.id, groupId);
+      await cancelEnrollment(options.pool, request.user!.id, request.user!.role, dashboard.student.id, groupId);
       response.json({ message: "Inscripción cancelada correctamente" });
     }),
   );
@@ -138,7 +139,7 @@ export function createApp(options: CreateAppOptions) {
     requireRoles("student"),
     asyncRoute(async (request, response) => {
       const routeId = positiveInteger(request.body?.routeId, "routeId");
-      const enrollment = await enrollTransport(options.pool, request.user!.id, routeId);
+      const enrollment = await enrollTransport(options.pool, request.user!.id, request.user!.role, routeId);
       response.status(201).json({ enrollment });
     }),
   );
@@ -147,7 +148,7 @@ export function createApp(options: CreateAppOptions) {
     "/api/student/transport",
     requireRoles("student"),
     asyncRoute(async (request, response) => {
-      await cancelTransport(options.pool, request.user!.id);
+      await cancelTransport(options.pool, request.user!.id, request.user!.role);
       response.json({ message: "Recorrido cancelado correctamente" });
     }),
   );
@@ -156,7 +157,7 @@ export function createApp(options: CreateAppOptions) {
     "/api/student/cafeteria",
     requireRoles("student"),
     asyncRoute(async (request, response) => {
-      await enrollCafeteria(options.pool, request.user!.id);
+      await enrollCafeteria(options.pool, request.user!.id, request.user!.role);
       response.status(201).json({ message: "Inscripción al comedor registrada correctamente" });
     }),
   );
@@ -165,7 +166,7 @@ export function createApp(options: CreateAppOptions) {
     "/api/student/cafeteria",
     requireRoles("student"),
     asyncRoute(async (request, response) => {
-      await cancelCafeteria(options.pool, request.user!.id);
+      await cancelCafeteria(options.pool, request.user!.id, request.user!.role);
       response.json({ message: "Inscripción al comedor cancelada correctamente" });
     }),
   );
@@ -207,7 +208,7 @@ export function createApp(options: CreateAppOptions) {
         role: requiredRole(request.body?.role),
         status: optionalStatus(request.body?.status),
       };
-      const user = await createUser(options.pool, request.user!.id, input);
+      const user = await createUser(options.pool, request.user!.id, request.user!.role, input);
       response.status(201).json({ user });
     }),
   );
@@ -224,7 +225,7 @@ export function createApp(options: CreateAppOptions) {
       if (request.body?.status !== undefined) {
         input.status = requiredStatus(request.body.status);
       }
-      const user = await updateUser(options.pool, request.user!.id, userId, input);
+      const user = await updateUser(options.pool, request.user!.id, request.user!.role, userId, input);
       response.json({ user });
     }),
   );
@@ -275,7 +276,7 @@ export function createApp(options: CreateAppOptions) {
         entity: requiredReportEntity(request.body?.entity),
         fields: request.body?.fields,
       };
-      const template = await createReportTemplate(options.pool, request.user!.id, input);
+      const template = await createReportTemplate(options.pool, request.user!.id, request.user!.role, input);
       response.status(201).json({ template });
     }),
   );
@@ -298,7 +299,7 @@ export function createApp(options: CreateAppOptions) {
       if (request.body?.active !== undefined) {
         input.active = requiredBoolean(request.body.active);
       }
-      const template = await updateReportTemplate(options.pool, request.user!.id, templateId, input);
+      const template = await updateReportTemplate(options.pool, request.user!.id, request.user!.role, templateId, input);
       response.json({ template });
     }),
   );
@@ -309,7 +310,7 @@ export function createApp(options: CreateAppOptions) {
     asyncRoute(async (request, response) => {
       const templateId = positiveInteger(request.params.templateId, "templateId");
       response.json({
-        report: await generateReport(options.pool, request.user!.id, templateId),
+        report: await generateReport(options.pool, request.user!.id, request.user!.role, templateId),
       });
     }),
   );

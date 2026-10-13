@@ -288,6 +288,8 @@ Se incorporarán los patrones Iterator, Proxy y Singleton para resolver problema
 | Proxy | Servicios de inscripción y operaciones administrativas | Agrega autorización y registra logs después de ejecutar la operación. |
 | Singleton | Cliente o pool de conexiones a PostgreSQL | Evita crear múltiples instancias de configuración de acceso a la base de datos. |
 
+**Estado de implementación:** los cuatro patrones fueron implementados en el código real del Sprint 3 y se evidencia su uso en `apps/api/src` (ver sección "Patrones de diseño" del README).
+
 ### Tecnologías Previstas
 
 Las tecnologías definitivas se seleccionarán durante la etapa de diseño. La propuesta inicial es:
