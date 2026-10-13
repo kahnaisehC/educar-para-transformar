@@ -735,6 +735,42 @@ describe("admin academic and services management", () => {
     expect(forbidden.status).toBe(403);
   });
 
+  it("blocks overlapping schedules inside a course and allows adjacent slots", async () => {
+    const token = await loginAs("admin.demo");
+
+    const subject = await request(app)
+      .post("/api/admin/subjects")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ name: "Lengua" });
+    const subjectId = subject.body.subject.id as number;
+
+    const first = await request(app)
+      .post("/api/admin/course-subjects")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ courseId: 1, subjectId: 1, teacherId: 1, weekday: 3, startTime: "08:00", endTime: "10:00" });
+    expect(first.status).toBe(201);
+
+    const conflict = await request(app)
+      .post("/api/admin/course-subjects")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ courseId: 1, subjectId, teacherId: 1, weekday: 3, startTime: "09:00", endTime: "11:00" });
+    expect(conflict.status).toBe(409);
+    expect(conflict.body.code).toBe("SCHEDULE_CONFLICT");
+
+    const adjacent = await request(app)
+      .post("/api/admin/course-subjects")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ courseId: 1, subjectId, teacherId: 1, weekday: 3, startTime: "10:00", endTime: "11:00" });
+    expect(adjacent.status).toBe(201);
+
+    const moved = await request(app)
+      .patch(`/api/admin/course-subjects/${adjacent.body.courseSubject.id}`)
+      .set("Authorization", `Bearer ${token}`)
+      .send({ startTime: "09:30", endTime: "10:30" });
+    expect(moved.status).toBe(409);
+    expect(moved.body.code).toBe("SCHEDULE_CONFLICT");
+  });
+
   it("updates student and teacher profiles and links parents", async () => {
     const token = await loginAs("admin.demo");
 

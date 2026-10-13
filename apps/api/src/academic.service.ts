@@ -575,6 +575,7 @@ export async function createCourseSubject(
     () =>
       withTransaction(pool, async (client) => {
         await assertReferences(client, input);
+        await assertNoScheduleOverlap(client, input);
         const result = await client.query<{ id: number }>(
           `INSERT INTO course_subjects (course_id, subject_id, teacher_id, weekday, start_time, end_time)
            VALUES ($1, $2, $3, $4, $5, $6)
@@ -616,6 +617,7 @@ export async function updateCourseSubject(
           endTime: input.endTime ?? current.endTime,
         };
         await assertReferences(client, merged);
+        await assertNoScheduleOverlap(client, merged, courseSubjectId);
         await client.query(
           `UPDATE course_subjects
            SET course_id = $1, subject_id = $2, teacher_id = $3,
@@ -675,6 +677,27 @@ async function assertReferences(
   const teacher = await client.query("SELECT 1 FROM teachers WHERE id = $1", [input.teacherId]);
   if (!teacher.rowCount) {
     throw new AppError(404, "El docente indicado no existe", "TEACHER_NOT_FOUND");
+  }
+}
+
+// Dentro de un curso los horarios no pueden superponerse (materias o docentes
+// distintos en el mismo bloque impedirían el cursado de los alumnos).
+async function assertNoScheduleOverlap(
+  client: PoolClient,
+  input: CourseSubjectInput,
+  excludeId?: number,
+): Promise<void> {
+  const params: unknown[] = [input.courseId, input.weekday, input.startTime, input.endTime];
+  let sql = `SELECT 1 FROM course_subjects
+             WHERE course_id = $1 AND weekday = $2 AND active = TRUE
+               AND start_time < $4 AND $3 < end_time`;
+  if (excludeId !== undefined) {
+    params.push(excludeId);
+    sql += " AND id <> $5";
+  }
+  const result = await client.query(sql, params);
+  if (result.rowCount) {
+    throw new AppError(409, "En un mismo curso los horarios no pueden superponerse", "SCHEDULE_CONFLICT");
   }
 }
 
