@@ -525,6 +525,73 @@ describe("academic model", () => {
   });
 });
 
+describe("parent yearly enrollment (RF-PA-02)", () => {
+  it("shows the child enrollment and allows re-enrolling after cancellation", async () => {
+    const token = await loginAs("marta.madre");
+    const enrollment = await request(app)
+      .get("/api/parent/children/1/enrollment")
+      .set("Authorization", `Bearer ${token}`);
+
+    expect(enrollment.status).toBe(200);
+    expect(enrollment.body.enrollment.schoolYear.year).toBe(2026);
+    expect(enrollment.body.enrollment.matricula).toMatchObject({
+      level: "Primario",
+      course: "5to A",
+      status: "enrolled",
+    });
+    expect(enrollment.body.enrollment.courses).toHaveLength(1);
+    expect(enrollment.body.enrollment.subjects[0]).toMatchObject({
+      subject: "Matematica",
+      startTime: "08:00",
+      endTime: "09:00",
+    });
+
+    const adminToken = await loginAs("admin.demo");
+    const overview = await request(app)
+      .get("/api/admin/enrollments")
+      .set("Authorization", `Bearer ${adminToken}`);
+    const matriculaId = overview.body.matriculas.find(
+      (entry: { studentId: number }) => entry.studentId === 1,
+    ).id as number;
+    await request(app)
+      .patch(`/api/admin/enrollments/matriculas/${matriculaId}`)
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({ status: "cancelled" });
+
+    const again = await request(app)
+      .post("/api/parent/children/1/enrollment")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ courseId: 1 });
+    expect(again.status).toBe(201);
+    expect(again.body.enrollment.matricula.status).toBe("enrolled");
+
+    const duplicate = await request(app)
+      .post("/api/parent/children/1/enrollment")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ courseId: 1 });
+    expect(duplicate.status).toBe(409);
+    expect(duplicate.body.code).toBe("ALREADY_ENROLLED");
+  });
+
+  it("rejects unassociated children and invalid courses", async () => {
+    const token = await loginAs("marta.madre");
+
+    const forbidden = await request(app)
+      .post("/api/parent/children/2/enrollment")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ courseId: 1 });
+    expect(forbidden.status).toBe(403);
+    expect(forbidden.body.code).toBe("CHILD_NOT_ASSOCIATED");
+
+    const invalidCourse = await request(app)
+      .post("/api/parent/children/1/enrollment")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ courseId: 999 });
+    expect(invalidCourse.status).toBe(404);
+    expect(invalidCourse.body.code).toBe("COURSE_NOT_FOUND");
+  });
+});
+
 describe("teacher profile and report (RF-PR-01/03)", () => {
   it("returns the teacher profile with workload and contact data", async () => {
     const token = await loginAs("laura.docente");

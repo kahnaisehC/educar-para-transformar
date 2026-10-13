@@ -108,6 +108,27 @@ export interface TeacherCourse {
   course: string;
 }
 
+export interface ChildEnrollmentView {
+  studentId: number;
+  schoolYear: { id: number; year: number } | null;
+  matricula: {
+    id: number;
+    courseId: number;
+    level: string;
+    course: string;
+    status: "enrolled" | "cancelled";
+    createdAt: string;
+  } | null;
+  courses: Array<{ id: number; level: string; name: string }>;
+  subjects: Array<{
+    subject: string;
+    teacher: string;
+    weekdayName: string;
+    startTime: string;
+    endTime: string;
+  }>;
+}
+
 export interface TeacherProfileView {
   id: number;
   recordNumber: string | null;

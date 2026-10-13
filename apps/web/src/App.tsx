@@ -5,6 +5,7 @@ import type {
   AcademicOverview,
   AdminUser,
   Child,
+  ChildEnrollmentView,
   ChildSummary,
   CourseStudent,
   EnrollmentsOverview,
@@ -593,6 +594,7 @@ function ParentDashboard({ token }: { token: string }) {
     let active = true;
     setLoadingSummary(true);
     setError(null);
+    setSummary(null);
     apiRequest<{ student: ChildSummary }>(`/parent/children/${selectedId}/summary`, { token })
       .then((result) => {
         if (active) setSummary(result.student);
@@ -653,7 +655,7 @@ function ParentDashboard({ token }: { token: string }) {
           ) : !summary ? (
             <EmptyState title="Seleccioná un hijo" detail="La ficha académica aparecerá aquí." />
           ) : (
-            <ChildDetail summary={summary} />
+            <ChildDetail summary={summary} token={token} />
           )}
         </section>
       </div>
@@ -661,7 +663,7 @@ function ParentDashboard({ token }: { token: string }) {
   );
 }
 
-function ChildDetail({ summary }: { summary: ChildSummary }) {
+function ChildDetail({ summary, token }: { summary: ChildSummary; token: string }) {
   return (
     <>
       <div className="detail-heading">
@@ -681,7 +683,102 @@ function ChildDetail({ summary }: { summary: ChildSummary }) {
           {summary.sports.length === 0 ? <EmptyState title="Sin deportes inscriptos" detail="Este alumno todavía no tiene actividades activas." compact /> : <div className="fact-list">{summary.sports.map((item, index) => <div className="fact-row sport-fact" key={`${item.sport}-${index}`}><span><b>{getSportInitial(item.sport)}</b>{item.sport}</span><small>{item.weekdayName} · {item.startTime}-{item.endTime}<br />{item.teacher}</small></div>)}</div>}
         </div>
       </div>
+      <ChildEnrollmentPanel studentId={summary.id} token={token} />
     </>
+  );
+}
+
+function ChildEnrollmentPanel({ studentId, token }: { studentId: number; token: string }) {
+  const [enrollment, setEnrollment] = useState<ChildEnrollmentView | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [courseId, setCourseId] = useState("");
+  const [notice, setNotice] = useState<{ tone: "success" | "error"; text: string } | null>(null);
+
+  async function load() {
+    setLoading(true);
+    setNotice(null);
+    try {
+      const result = await apiRequest<{ enrollment: ChildEnrollmentView }>(
+        `/parent/children/${studentId}/enrollment`,
+        { token },
+      );
+      setEnrollment(result.enrollment);
+    } catch (requestError) {
+      setNotice({ tone: "error", text: getErrorMessage(requestError) });
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    void load();
+  }, [studentId, token]);
+
+  async function enroll(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!courseId) return;
+    setSaving(true);
+    setNotice(null);
+    try {
+      await apiRequest(`/parent/children/${studentId}/enrollment`, {
+        method: "POST",
+        token,
+        body: JSON.stringify({ courseId: Number(courseId) }),
+      });
+      setCourseId("");
+      setNotice({ tone: "success", text: "La matrícula fue registrada correctamente." });
+      await load();
+    } catch (requestError) {
+      setNotice({ tone: "error", text: getErrorMessage(requestError) });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (loading) {
+    return <div className="student-subjects"><div className="detail-loading"><span className="loading-dot" /> Cargando cursado...</div></div>;
+  }
+
+  return (
+    <div className="student-subjects">
+      <div className="section-title"><span className="section-icon">03</span><h3>Cursado {enrollment?.schoolYear ? `· año lectivo ${enrollment.schoolYear.year}` : ""}</h3></div>
+      {notice && <InlineMessage tone={notice.tone}>{notice.text}</InlineMessage>}
+      {!enrollment?.schoolYear ? (
+        <p className="muted-note">La institución todavía no habilitó el año lectivo.</p>
+      ) : enrollment.matricula?.status === "enrolled" ? (
+        <>
+          <div className="fact-row">
+            <span>Matrícula confirmada</span>
+            <small>{enrollment.matricula.level} · {enrollment.matricula.course}</small>
+          </div>
+          {enrollment.subjects.length === 0 ? (
+            <p className="muted-note">El curso todavía no tiene materias con horario asignado.</p>
+          ) : (
+            <div className="fact-list">
+              {enrollment.subjects.map((subject) => (
+                <div className="fact-row" key={`${subject.subject}-${subject.weekdayName}-${subject.startTime}`}>
+                  <span>{subject.subject}</span>
+                  <small>{subject.weekdayName} {subject.startTime}-{subject.endTime} · {subject.teacher}</small>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      ) : (
+        <form className="inline-form inline-form-wrap" onSubmit={enroll}>
+          <select value={courseId} onChange={(event) => setCourseId(event.target.value)} required>
+            <option value="">Seleccionar curso</option>
+            {enrollment.courses.map((course) => (
+              <option key={course.id} value={course.id}>{course.level} · {course.name}</option>
+            ))}
+          </select>
+          <button className="primary-button" type="submit" disabled={saving || !courseId}>
+            {saving ? "Matriculando..." : `Inscribir al año lectivo ${enrollment.schoolYear.year}`}
+          </button>
+        </form>
+      )}
+    </div>
   );
 }
 

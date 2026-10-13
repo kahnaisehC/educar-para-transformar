@@ -61,7 +61,12 @@ import {
   enrollStudent,
   getStudentDashboard,
 } from "./enrollment.service.js";
-import { getChildSummary, listChildren } from "./parent.service.js";
+import {
+  enrollChild,
+  getChildEnrollment,
+  getChildSummary,
+  listChildren,
+} from "./parent.service.js";
 import type { AppConfig } from "./config.js";
 import {
   cancelCafeteria,
@@ -233,6 +238,33 @@ export function createApp(options: CreateAppOptions) {
       const studentId = positiveInteger(request.params.studentId, "studentId");
       const student = await getChildSummary(options.pool, request.user!.id, studentId);
       response.json({ student });
+    }),
+  );
+
+  app.get(
+    "/api/parent/children/:studentId/enrollment",
+    requireRoles("parent"),
+    asyncRoute(async (request, response) => {
+      const studentId = positiveInteger(request.params.studentId, "studentId");
+      const enrollment = await getChildEnrollment(options.pool, request.user!.id, studentId);
+      response.json({ enrollment });
+    }),
+  );
+
+  app.post(
+    "/api/parent/children/:studentId/enrollment",
+    requireRoles("parent"),
+    asyncRoute(async (request, response) => {
+      const studentId = positiveInteger(request.params.studentId, "studentId");
+      const courseId = positiveInteger(request.body?.courseId, "courseId");
+      const enrollment = await enrollChild(
+        options.pool,
+        request.user!.id,
+        request.user!.role,
+        studentId,
+        courseId,
+      );
+      response.status(201).json({ enrollment });
     }),
   );
 
