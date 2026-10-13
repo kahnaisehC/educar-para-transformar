@@ -525,6 +525,303 @@ describe("academic model", () => {
   });
 });
 
+describe("admin academic and services management", () => {
+  it("manages levels, courses, subjects, offerings and school years", async () => {
+    const token = await loginAs("admin.demo");
+
+    const overview = await request(app)
+      .get("/api/admin/academic")
+      .set("Authorization", `Bearer ${token}`);
+    expect(overview.status).toBe(200);
+    expect(overview.body.levels.length).toBeGreaterThan(0);
+    expect(overview.body.courses[0]).toMatchObject({ level: "Primario", name: "5to A" });
+
+    const level = await request(app)
+      .post("/api/admin/levels")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ name: "Terciario" });
+    expect(level.status).toBe(201);
+
+    const course = await request(app)
+      .post("/api/admin/courses")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ levelId: level.body.level.id, name: "1ro" });
+    expect(course.status).toBe(201);
+
+    const subject = await request(app)
+      .post("/api/admin/subjects")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ name: "Programacion" });
+    expect(subject.status).toBe(201);
+
+    const offering = await request(app)
+      .post("/api/admin/course-subjects")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        courseId: course.body.course.id,
+        subjectId: subject.body.subject.id,
+        teacherId: 1,
+        weekday: 2,
+        startTime: "09:00",
+        endTime: "10:00",
+      });
+    expect(offering.status).toBe(201);
+    expect(offering.body.courseSubject).toMatchObject({
+      weekdayName: "Martes",
+      startTime: "09:00",
+      endTime: "10:00",
+    });
+
+    const levelInUse = await request(app)
+      .delete(`/api/admin/levels/${level.body.level.id}`)
+      .set("Authorization", `Bearer ${token}`);
+    expect(levelInUse.status).toBe(409);
+    expect(levelInUse.body.code).toBe("LEVEL_IN_USE");
+
+    const deletedOffering = await request(app)
+      .delete(`/api/admin/course-subjects/${offering.body.courseSubject.id}`)
+      .set("Authorization", `Bearer ${token}`);
+    expect(deletedOffering.status).toBe(200);
+
+    const renamedSubject = await request(app)
+      .patch(`/api/admin/subjects/${subject.body.subject.id}`)
+      .set("Authorization", `Bearer ${token}`)
+      .send({ name: "Programacion II" });
+    expect(renamedSubject.status).toBe(200);
+    expect(renamedSubject.body.subject.name).toBe("Programacion II");
+
+    const year = await request(app)
+      .post("/api/admin/school-years")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ year: 2027 });
+    expect(year.status).toBe(201);
+
+    const activated = await request(app)
+      .patch(`/api/admin/school-years/${year.body.schoolYear.id}`)
+      .set("Authorization", `Bearer ${token}`)
+      .send({ active: true });
+    expect(activated.status).toBe(200);
+    expect(activated.body.schoolYear.active).toBe(true);
+
+    const refreshed = await request(app)
+      .get("/api/admin/academic")
+      .set("Authorization", `Bearer ${token}`);
+    expect(
+      refreshed.body.schoolYears.filter((entry: { active: boolean }) => entry.active),
+    ).toHaveLength(1);
+
+    const studentToken = await loginAs("ana.alumna");
+    const forbidden = await request(app)
+      .get("/api/admin/academic")
+      .set("Authorization", `Bearer ${studentToken}`);
+    expect(forbidden.status).toBe(403);
+  });
+
+  it("updates student and teacher profiles and links parents", async () => {
+    const token = await loginAs("admin.demo");
+
+    const student = await request(app)
+      .patch("/api/admin/students/2")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ courseId: 1, phone: "3624-555555", birthDate: "2011-09-01" });
+    expect(student.status).toBe(200);
+    expect(student.body.student).toMatchObject({ courseId: 1, level: "Primario", course: "5to A" });
+
+    const teacher = await request(app)
+      .patch("/api/admin/teachers/1")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ specialty: "Matematica", phone: "3624-777777" });
+    expect(teacher.status).toBe(200);
+    expect(teacher.body.teacher.specialty).toBe("Matematica");
+
+    const parent = await request(app)
+      .patch("/api/admin/parents/1")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ fullName: "Marta M. Madre" });
+    expect(parent.status).toBe(200);
+    expect(parent.body.parent.fullName).toBe("Marta M. Madre");
+
+    const link = await request(app)
+      .post("/api/admin/students/2/parents")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ parentId: 1 });
+    expect(link.status).toBe(201);
+
+    const duplicate = await request(app)
+      .post("/api/admin/students/2/parents")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ parentId: 1 });
+    expect(duplicate.status).toBe(409);
+    expect(duplicate.body.code).toBe("ALREADY_LINKED");
+
+    const unlink = await request(app)
+      .delete("/api/admin/students/2/parents/1")
+      .set("Authorization", `Bearer ${token}`);
+    expect(unlink.status).toBe(200);
+  });
+
+  it("manages sports, groups and keeps exactly four transport routes", async () => {
+    const token = await loginAs("admin.demo");
+
+    const services = await request(app)
+      .get("/api/admin/services")
+      .set("Authorization", `Bearer ${token}`);
+    expect(services.status).toBe(200);
+    expect(services.body.sports).toHaveLength(4);
+    expect(services.body.transportRoutes).toHaveLength(4);
+
+    const fifthRoute = await request(app)
+      .post("/api/admin/transport-routes")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ name: "Recorrido Quinto", description: "No permitido" });
+    expect(fifthRoute.status).toBe(409);
+    expect(fifthRoute.body.code).toBe("ROUTE_LIMIT_REACHED");
+
+    const routeId = services.body.transportRoutes[0].id as number;
+    const deactivated = await request(app)
+      .patch(`/api/admin/transport-routes/${routeId}`)
+      .set("Authorization", `Bearer ${token}`)
+      .send({ active: false });
+    expect(deactivated.status).toBe(200);
+    expect(deactivated.body.route.active).toBe(false);
+
+    const deleteRoute = await request(app)
+      .delete(`/api/admin/transport-routes/${routeId}`)
+      .set("Authorization", `Bearer ${token}`);
+    expect(deleteRoute.status).toBe(409);
+    expect(deleteRoute.body.code).toBe("ROUTE_MINIMUM_REQUIRED");
+
+    const sport = await request(app)
+      .post("/api/admin/sports")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ name: "Handball" });
+    expect(sport.status).toBe(201);
+
+    const group = await request(app)
+      .post("/api/admin/sport-groups")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        sportId: sport.body.sport.id,
+        teacherId: 1,
+        levelId: null,
+        weekday: 5,
+        startTime: "18:00",
+        endTime: "19:00",
+      });
+    expect(group.status).toBe(201);
+    expect(group.body.sportGroup).toMatchObject({ level: "Todos", weekdayName: "Viernes" });
+
+    const sportInUse = await request(app)
+      .delete(`/api/admin/sports/${sport.body.sport.id}`)
+      .set("Authorization", `Bearer ${token}`);
+    expect(sportInUse.status).toBe(409);
+
+    const deleteGroup = await request(app)
+      .delete(`/api/admin/sport-groups/${group.body.sportGroup.id}`)
+      .set("Authorization", `Bearer ${token}`);
+    expect(deleteGroup.status).toBe(200);
+
+    const deleteSport = await request(app)
+      .delete(`/api/admin/sports/${sport.body.sport.id}`)
+      .set("Authorization", `Bearer ${token}`);
+    expect(deleteSport.status).toBe(200);
+  });
+
+  it("administers enrollments across every service", async () => {
+    const studentToken = await loginAs("ana.alumna");
+    await request(app)
+      .post("/api/student/enrollments")
+      .set("Authorization", `Bearer ${studentToken}`)
+      .send({ groupId: 1 });
+    await request(app)
+      .post("/api/student/transport")
+      .set("Authorization", `Bearer ${studentToken}`)
+      .send({ routeId: 1 });
+    await request(app)
+      .post("/api/student/cafeteria")
+      .set("Authorization", `Bearer ${studentToken}`);
+
+    const token = await loginAs("admin.demo");
+    const overview = await request(app)
+      .get("/api/admin/enrollments")
+      .set("Authorization", `Bearer ${token}`);
+    expect(overview.status).toBe(200);
+    expect(overview.body.sportEnrollments).toHaveLength(1);
+    expect(overview.body.transportEnrollments).toHaveLength(1);
+    expect(overview.body.cafeteria).toHaveLength(1);
+    expect(overview.body.matriculas).toHaveLength(2);
+
+    const cancelledSport = await request(app)
+      .delete(`/api/admin/enrollments/sports/${overview.body.sportEnrollments[0].id}`)
+      .set("Authorization", `Bearer ${token}`);
+    expect(cancelledSport.status).toBe(200);
+
+    const cancelledTransport = await request(app)
+      .delete("/api/admin/enrollments/transport/1")
+      .set("Authorization", `Bearer ${token}`);
+    expect(cancelledTransport.status).toBe(200);
+
+    const cafeteria = await request(app)
+      .patch("/api/admin/enrollments/cafeteria/1")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ active: false });
+    expect(cafeteria.status).toBe(200);
+    expect(cafeteria.body.enrollment.active).toBe(false);
+
+    const matriculaId = overview.body.matriculas[0].id as number;
+    const cancelledMatricula = await request(app)
+      .patch(`/api/admin/enrollments/matriculas/${matriculaId}`)
+      .set("Authorization", `Bearer ${token}`)
+      .send({ status: "cancelled" });
+    expect(cancelledMatricula.status).toBe(200);
+    expect(cancelledMatricula.body.matricula.status).toBe("cancelled");
+  });
+
+  it("renames users, resets passwords and creates profiles on role change", async () => {
+    const token = await loginAs("admin.demo");
+
+    const created = await request(app)
+      .post("/api/admin/users")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        username: "nueva.docente",
+        displayName: "Nueva Docente",
+        password: PASSWORD,
+        role: "teacher",
+      });
+    expect(created.status).toBe(201);
+    const userId = created.body.user.id as number;
+
+    const renamed = await request(app)
+      .patch(`/api/admin/users/${userId}`)
+      .set("Authorization", `Bearer ${token}`)
+      .send({ displayName: "Docente Renombrada" });
+    expect(renamed.status).toBe(200);
+    expect(renamed.body.user.displayName).toBe("Docente Renombrada");
+
+    const changed = await request(app)
+      .patch(`/api/admin/users/${userId}`)
+      .set("Authorization", `Bearer ${token}`)
+      .send({ role: "student" });
+    expect(changed.status).toBe(200);
+    expect(changed.body.user.role).toBe("student");
+
+    const profile = await pool.query("SELECT 1 FROM students WHERE user_id = $1", [userId]);
+    expect(profile.rowCount).toBe(1);
+
+    const reset = await request(app)
+      .patch(`/api/admin/users/${userId}`)
+      .set("Authorization", `Bearer ${token}`)
+      .send({ password: "NuevaClave2027!" });
+    expect(reset.status).toBe(200);
+
+    const login = await request(app)
+      .post("/api/auth/login")
+      .send({ username: "nueva.docente", password: "NuevaClave2027!" });
+    expect(login.status).toBe(200);
+  });
+});
+
 describe("design patterns evidence", () => {
   it("uses a database-pool proxy that authorizes the requested role and audits success and rejection", async () => {
     const studentToken = await loginAs("ana.alumna");

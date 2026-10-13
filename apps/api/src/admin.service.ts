@@ -1,4 +1,5 @@
 import bcrypt from "bcryptjs";
+import type { PoolClient } from "pg";
 import type { DatabasePool } from "./db.js";
 import { withTransaction } from "./db.js";
 import { AppError, isAppError } from "./errors.js";
@@ -23,6 +24,8 @@ export interface CreateUserInput {
 }
 
 export interface UpdateUserInput {
+  displayName?: string;
+  password?: string;
   role?: UserRole;
   status?: "active" | "inactive";
 }
@@ -148,8 +151,25 @@ export async function updateUser(
           throw new AppError(400, "No puede desactivar su propia cuenta", "SELF_DEACTIVATION");
         }
 
+        const current = await client.query<{ role: UserRole }>(
+          "SELECT role FROM users WHERE id = $1",
+          [userId],
+        );
+        if (!current.rows[0]) {
+          throw new AppError(404, "El usuario no existe", "USER_NOT_FOUND");
+        }
+
         const assignments: string[] = [];
         const values: unknown[] = [];
+        if (input.displayName !== undefined) {
+          values.push(input.displayName);
+          assignments.push(`display_name = $${values.length}`);
+        }
+        if (input.password !== undefined) {
+          const passwordHash = await bcrypt.hash(input.password, 12);
+          values.push(passwordHash);
+          assignments.push(`password_hash = $${values.length}`);
+        }
         if (input.role) {
           values.push(input.role);
           assignments.push(`role = $${values.length}`);
@@ -159,7 +179,11 @@ export async function updateUser(
           assignments.push(`status = $${values.length}`);
         }
         if (!assignments.length) {
-          throw new AppError(400, "Debe indicar un rol o estado para actualizar", "EMPTY_UPDATE");
+          throw new AppError(
+            400,
+            "Debe indicar al menos un campo para actualizar",
+            "EMPTY_UPDATE",
+          );
         }
         values.push(userId);
         const result = await client.query<AdminUserRow>(
@@ -173,9 +197,57 @@ export async function updateUser(
         if (!user) {
           throw new AppError(404, "El usuario no existe", "USER_NOT_FOUND");
         }
+        if (input.role && input.role !== current.rows[0].role) {
+          await ensureRoleProfile(client, user.id, user.username, user.display_name, user.role);
+        }
         return mapUser(user);
       }),
   });
+}
+
+async function ensureRoleProfile(
+  client: PoolClient,
+  userId: number,
+  username: string,
+  displayName: string,
+  role: UserRole,
+): Promise<void> {
+  if (role === "student") {
+    const existing = await client.query("SELECT 1 FROM students WHERE user_id = $1", [userId]);
+    if (!existing.rowCount) {
+      await client.query(
+        `INSERT INTO students (user_id, record_number, dni, full_name, status)
+         VALUES ($1, $2, $3, $4, 'active')`,
+        [userId, `PEND-${userId}`, `PEND-DNI-${userId}`, displayName],
+      );
+    }
+  }
+  if (role === "parent") {
+    const existing = await client.query("SELECT 1 FROM parents WHERE user_id = $1", [userId]);
+    if (!existing.rowCount) {
+      await client.query(
+        "INSERT INTO parents (user_id, full_name) VALUES ($1, $2)",
+        [userId, displayName],
+      );
+    }
+  }
+  if (role === "teacher") {
+    const existing = await client.query("SELECT 1 FROM teachers WHERE user_id = $1", [userId]);
+    if (!existing.rowCount) {
+      await client.query(
+        `INSERT INTO teachers
+           (user_id, record_number, dni, full_name, specialty, email, phone, status)
+         VALUES ($1, $2, $3, $4, 'Pendiente', $5, 'Pendiente', 'active')`,
+        [
+          userId,
+          `PEND-PR-${userId}`,
+          `PEND-DNI-${userId}`,
+          displayName,
+          `${username}@educar.local`,
+        ],
+      );
+    }
+  }
 }
 
 function normalizeAdminError(error: unknown): Error {

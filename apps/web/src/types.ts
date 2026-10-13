@@ -118,6 +118,169 @@ export interface CourseStudent {
   teacher: string;
 }
 
+export interface AcademicLevel {
+  id: number;
+  name: string;
+}
+
+export interface AcademicCourse {
+  id: number;
+  levelId: number;
+  level: string;
+  name: string;
+}
+
+export interface AcademicSubject {
+  id: number;
+  name: string;
+}
+
+export interface TeacherProfile {
+  id: number;
+  userId: number | null;
+  username: string | null;
+  recordNumber: string | null;
+  dni: string | null;
+  fullName: string;
+  specialty: string;
+  email: string | null;
+  phone: string | null;
+  status: UserStatus;
+}
+
+export interface StudentProfile {
+  id: number;
+  userId: number;
+  recordNumber: string;
+  dni: string;
+  fullName: string;
+  birthDate: string | null;
+  address: string | null;
+  phone: string | null;
+  email: string | null;
+  courseId: number | null;
+  level: string;
+  course: string;
+  status: UserStatus;
+}
+
+export interface ParentProfile {
+  id: number;
+  userId: number;
+  username: string;
+  fullName: string;
+  children: Array<{ id: number; fullName: string }>;
+}
+
+export interface CourseSubjectOffering {
+  id: number;
+  courseId: number;
+  course: string;
+  level: string;
+  subjectId: number;
+  subject: string;
+  teacherId: number;
+  teacher: string;
+  weekday: number;
+  weekdayName: string;
+  startTime: string;
+  endTime: string;
+  active: boolean;
+}
+
+export interface SchoolYear {
+  id: number;
+  year: number;
+  active: boolean;
+  enrollmentCount: number;
+}
+
+export interface AcademicOverview {
+  levels: AcademicLevel[];
+  courses: AcademicCourse[];
+  subjects: AcademicSubject[];
+  teachers: TeacherProfile[];
+  students: StudentProfile[];
+  parents: ParentProfile[];
+  courseSubjects: CourseSubjectOffering[];
+  schoolYears: SchoolYear[];
+}
+
+export interface SportAdmin {
+  id: number;
+  name: string;
+  groupCount: number;
+}
+
+export interface SportGroupAdmin {
+  id: number;
+  sportId: number;
+  sport: string;
+  teacherId: number;
+  teacher: string;
+  levelId: number | null;
+  level: string;
+  weekday: number;
+  weekdayName: string;
+  startTime: string;
+  endTime: string;
+  active: boolean;
+  enrollmentCount: number;
+}
+
+export interface TransportRouteAdmin {
+  id: number;
+  name: string;
+  description: string;
+  active: boolean;
+  enrolledCount: number;
+}
+
+export interface ServicesOverview {
+  sports: SportAdmin[];
+  sportGroups: SportGroupAdmin[];
+  transportRoutes: TransportRouteAdmin[];
+}
+
+export interface EnrollmentsOverview {
+  sportEnrollments: Array<{
+    id: number;
+    studentId: number;
+    student: string;
+    sport: string;
+    level: string;
+    weekdayName: string;
+    startTime: string;
+    endTime: string;
+  }>;
+  transportEnrollments: Array<{
+    studentId: number;
+    student: string;
+    route: string;
+    createdAt: string;
+  }>;
+  cafeteria: Array<{
+    studentId: number;
+    student: string;
+    level: string;
+    course: string;
+    active: boolean;
+    createdAt: string | null;
+  }>;
+  matriculas: Array<{
+    id: number;
+    studentId: number;
+    student: string;
+    schoolYearId: number;
+    year: number;
+    courseId: number;
+    level: string;
+    course: string;
+    status: "enrolled" | "cancelled";
+    createdAt: string;
+  }>;
+}
+
 export interface ReportField {
   key: string;
   label: string;
