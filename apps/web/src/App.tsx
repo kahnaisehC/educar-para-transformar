@@ -16,6 +16,8 @@ import type {
   StudentDashboardData,
   TeacherCourse,
   TeacherProfile,
+  TeacherProfileView,
+  TeacherReportView,
   User,
   UserRole,
 } from "./types";
@@ -1412,6 +1414,7 @@ function AdminEnrollmentsTab({ token }: { token: string }) {
 }
 
 function TeacherDashboard({ token }: { token: string }) {
+  const [profile, setProfile] = useState<TeacherProfileView | null>(null);
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [saving, setSaving] = useState(false);
@@ -1422,6 +1425,21 @@ function TeacherDashboard({ token }: { token: string }) {
   const [loadingStudents, setLoadingStudents] = useState(false);
   const [notice, setNotice] = useState<{ tone: "success" | "error"; text: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [studentsError, setStudentsError] = useState<string | null>(null);
+  const [report, setReport] = useState<TeacherReportView | null>(null);
+  const [reportError, setReportError] = useState<string | null>(null);
+  const [loadingReport, setLoadingReport] = useState(false);
+
+  async function loadProfile() {
+    try {
+      const result = await apiRequest<{ profile: TeacherProfileView }>("/teacher/profile", { token });
+      setProfile(result.profile);
+      setEmail(result.profile.email ?? "");
+      setPhone(result.profile.phone ?? "");
+    } catch (requestError) {
+      setNotice({ tone: "error", text: getErrorMessage(requestError) });
+    }
+  }
 
   async function loadCourses() {
     setLoadingCourses(true);
@@ -1438,6 +1456,7 @@ function TeacherDashboard({ token }: { token: string }) {
   }
 
   useEffect(() => {
+    void loadProfile();
     void loadCourses();
   }, [token]);
 
@@ -1448,7 +1467,7 @@ function TeacherDashboard({ token }: { token: string }) {
     }
     let active = true;
     setLoadingStudents(true);
-    setError(null);
+    setStudentsError(null);
     apiRequest<{ students: CourseStudent[] }>(
       `/teacher/courses/students?subjectId=${selectedCourse.subjectId}&level=${encodeURIComponent(selectedCourse.level)}&course=${encodeURIComponent(selectedCourse.course)}`,
       { token },
@@ -1457,7 +1476,7 @@ function TeacherDashboard({ token }: { token: string }) {
         if (active) setStudents(result.students);
       })
       .catch((requestError) => {
-        if (active) setError(getErrorMessage(requestError));
+        if (active) setStudentsError(getErrorMessage(requestError));
       })
       .finally(() => {
         if (active) setLoadingStudents(false);
@@ -1481,6 +1500,19 @@ function TeacherDashboard({ token }: { token: string }) {
     }
   }
 
+  async function generateReport() {
+    setLoadingReport(true);
+    setReportError(null);
+    try {
+      const result = await apiRequest<{ report: TeacherReportView }>("/teacher/report", { token });
+      setReport(result.report);
+    } catch (requestError) {
+      setReportError(getErrorMessage(requestError));
+    } finally {
+      setLoadingReport(false);
+    }
+  }
+
   function exportStudentsCsv() {
     const header = ["Nivel", "Curso", "Materia", "Profesor", "Alumno", "Legajo", "DNI"];
     const lines = students.map((student) => [
@@ -1495,28 +1527,115 @@ function TeacherDashboard({ token }: { token: string }) {
     downloadCsv(`alumnos-${selectedCourse?.subject ?? "materia"}.csv`, header, lines);
   }
 
+  function exportReportCsv() {
+    if (!report) return;
+    const header = ["Nivel", "Curso", "Materia", "Día", "Inicio", "Fin", "Alumnos"];
+    const lines = report.courses.flatMap((course) =>
+      course.subjects.map((subject) => [
+        course.level,
+        course.course,
+        subject.subject,
+        subject.weekdayName,
+        subject.startTime,
+        subject.endTime,
+        String(course.studentCount),
+      ]),
+    );
+    downloadCsv("reporte-docente.csv", header, lines);
+  }
+
   return (
     <>
       {notice && <InlineMessage tone={notice.tone}>{notice.text}</InlineMessage>}
-      {error && !students.length && !courses.length && <ErrorState message={error} onRetry={() => void loadCourses()} />}
-      <section className="surface-panel teacher-contact-panel">
-        <PanelHeading eyebrow="Sprint 2 · HU-03" title="Actualizá tus datos de contacto" detail="Mantené actualizados tus medios de comunicación con la institución." />
-        <form onSubmit={saveContact} className="teacher-contact-form form-stack">
-          <label className="field"><span>Correo electrónico</span><input type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="docente@educar.local" required /></label>
-          <label className="field"><span>Teléfono</span><input value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="3624-000000" required /></label>
-          <button className="primary-button" type="submit" disabled={saving}>{saving ? "Guardando..." : "Guardar cambios"}</button>
-        </form>
-      </section>
+      {error && !courses.length && <ErrorState message={error} onRetry={() => void loadCourses()} />}
+      <div className="dashboard-columns student-columns">
+        <section className="surface-panel teacher-contact-panel">
+          <PanelHeading eyebrow="RF-PR-01 · Mi perfil" title={profile?.fullName ?? "Mi perfil docente"} detail="Legajo, especialidad y carga horaria a cargo." />
+          {profile ? (
+            <>
+              <div className="profile-facts">
+                <div><span>Legajo</span><strong>{profile.recordNumber ?? "Pendiente"}</strong></div>
+                <div><span>DNI</span><strong>{profile.dni ?? "Pendiente"}</strong></div>
+                <div><span>Especialidad</span><strong>{profile.specialty}</strong></div>
+                <div><span>Estado</span><strong>{profile.status === "active" ? "Activo" : "Inactivo"}</strong></div>
+              </div>
+              <div className="student-subjects">
+                <h4>Carga horaria</h4>
+                {profile.subjects.length === 0 && profile.sportGroups.length === 0 ? (
+                  <p className="muted-note">Todavía no tenés materias ni grupos asignados.</p>
+                ) : (
+                  <>
+                    {profile.subjects.map((subject) => (
+                      <div className="fact-row" key={`${subject.subjectId}-${subject.level}-${subject.course}-${subject.weekday}`}>
+                        <span>{subject.subject} · {subject.level} {subject.course}</span>
+                        <small>{subject.weekdayName} {subject.startTime}-{subject.endTime}</small>
+                      </div>
+                    ))}
+                    {profile.sportGroups.map((group) => (
+                      <div className="fact-row" key={`sport-${group.groupId}`}>
+                        <span>{group.sport} · {group.level}</span>
+                        <small>{group.weekdayName} {group.startTime}-{group.endTime}</small>
+                      </div>
+                    ))}
+                  </>
+                )}
+              </div>
+              <form onSubmit={saveContact} className="teacher-contact-form form-stack">
+                <label className="field"><span>Correo electrónico</span><input type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="docente@educar.local" required /></label>
+                <label className="field"><span>Teléfono</span><input value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="3624-000000" required /></label>
+                <button className="primary-button" type="submit" disabled={saving}>{saving ? "Guardando..." : "Guardar cambios"}</button>
+              </form>
+            </>
+          ) : (
+            <div className="detail-loading"><span className="loading-dot" /> Cargando perfil...</div>
+          )}
+        </section>
+        <section className="surface-panel teacher-courses-panel">
+          <div className="panel-heading report-heading">
+            <div><PanelHeading eyebrow="RF-PR-03 · Mi reporte" title="Reporte docente" detail="Cursos a cargo por nivel, materias y horarios." /></div>
+          </div>
+          <div className="form-actions report-actions">
+            <button className="primary-button" onClick={() => void generateReport()} disabled={loadingReport}>{loadingReport ? "Generando..." : "Generar reporte"}</button>
+            {report && <button className="secondary-button" onClick={exportReportCsv}>Exportar CSV</button>}
+            {report && <button className="secondary-button" onClick={() => window.print()}>Imprimir</button>}
+          </div>
+          {reportError && <InlineMessage tone="error">{reportError}</InlineMessage>}
+          {report && (
+            <div className="report-preview">
+              <div className="report-header">
+                <div>
+                  <h3>{report.teacher.fullName} · {report.teacher.specialty}</h3>
+                  <p>Reporte generado el {formatDateTime(report.generatedAt)}</p>
+                </div>
+              </div>
+              {report.courses.length === 0 ? (
+                <EmptyState title="Sin cursos asignados" detail="El reporte se completará cuando tengas materias a cargo." compact />
+              ) : report.courses.map((course) => (
+                <div key={`${course.level}-${course.course}`} className="report-course">
+                  <h4>{course.level} · {course.course} <small>{course.studentCount} alumnos</small></h4>
+                  <ul className="admin-list">
+                    {course.subjects.map((subject) => (
+                      <li key={`${subject.subject}-${subject.weekdayName}-${subject.startTime}`}>
+                        <span>{subject.subject}</span>
+                        <small>{subject.weekdayName} {subject.startTime}-{subject.endTime}</small>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      </div>
       <section className="surface-panel teacher-courses-panel">
-        <div className="panel-heading report-heading">
-          <div><PanelHeading eyebrow="Sprint 3 · HU-05" title="Mis cursos" detail="Seleccioná una materia y curso para consultar los alumnos asignados." /></div>
-        </div>
+        <PanelHeading eyebrow="Sprint 3 · HU-05" title="Mis cursos" detail="Seleccioná una materia y curso para consultar los alumnos asignados." />
         {loadingCourses ? (
           <div className="detail-loading"><span className="loading-dot" /> Cargando cursos...</div>
         ) : courses.length === 0 ? (
           <EmptyState title="No tenés cursos asignados" detail="Los cursos aparecerán cuando se cargue tu asignación académica." compact />
         ) : (
           <>
+            {studentsError && <InlineMessage tone="error">{studentsError}</InlineMessage>}
             <div className="course-selector">
               <label className="field">
                 <span>Materia y curso</span>
@@ -1535,7 +1654,7 @@ function TeacherDashboard({ token }: { token: string }) {
                   ))}
                 </select>
               </label>
-              <button className="secondary-button" disabled={loadingStudents} onClick={exportStudentsCsv}>
+              <button className="secondary-button" disabled={loadingStudents || students.length === 0} onClick={exportStudentsCsv}>
                 Exportar CSV
               </button>
             </div>
@@ -1794,6 +1913,11 @@ function formatDate(value: string | null) {
   if (!value) return "Pendiente";
   const date = new Date(value);
   return Number.isNaN(date.valueOf()) ? value : date.toLocaleDateString("es-AR");
+}
+
+function formatDateTime(value: string) {
+  const date = new Date(value);
+  return Number.isNaN(date.valueOf()) ? value : date.toLocaleString("es-AR");
 }
 
 function getErrorMessage(error: unknown) {

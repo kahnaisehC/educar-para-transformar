@@ -108,6 +108,60 @@ export interface TeacherCourse {
   course: string;
 }
 
+export interface TeacherProfileView {
+  id: number;
+  recordNumber: string | null;
+  dni: string | null;
+  fullName: string;
+  specialty: string;
+  email: string | null;
+  phone: string | null;
+  status: string;
+  subjects: Array<{
+    subjectId: number;
+    subject: string;
+    level: string;
+    course: string;
+    weekday: number;
+    weekdayName: string;
+    startTime: string;
+    endTime: string;
+  }>;
+  sportGroups: Array<{
+    groupId: number;
+    sport: string;
+    level: string;
+    weekday: number;
+    weekdayName: string;
+    startTime: string;
+    endTime: string;
+  }>;
+}
+
+export interface TeacherReportView {
+  generatedAt: string;
+  teacher: { fullName: string; specialty: string };
+  courses: Array<{
+    level: string;
+    course: string;
+    studentCount: number;
+    subjects: Array<{
+      subject: string;
+      weekdayName: string;
+      startTime: string;
+      endTime: string;
+    }>;
+  }>;
+  sports: Array<{
+    sport: string;
+    level: string;
+    weekdayName: string;
+    startTime: string;
+    endTime: string;
+    studentCount: number;
+  }>;
+}
+
 export interface CourseStudent {
   recordNumber: string;
   dni: string;

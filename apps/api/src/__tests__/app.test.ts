@@ -525,6 +525,57 @@ describe("academic model", () => {
   });
 });
 
+describe("teacher profile and report (RF-PR-01/03)", () => {
+  it("returns the teacher profile with workload and contact data", async () => {
+    const token = await loginAs("laura.docente");
+    const response = await request(app)
+      .get("/api/teacher/profile")
+      .set("Authorization", `Bearer ${token}`);
+
+    expect(response.status).toBe(200);
+    expect(response.body.profile).toMatchObject({
+      recordNumber: "PR-0001",
+      fullName: "Laura Docente",
+      specialty: "Deportes",
+      email: "laura@educar.local",
+    });
+    expect(response.body.profile.subjects[0]).toMatchObject({
+      subject: "Matematica",
+      level: "Primario",
+      course: "5to A",
+      weekdayName: "Lunes",
+      startTime: "08:00",
+      endTime: "09:00",
+    });
+    expect(response.body.profile.sportGroups.length).toBeGreaterThan(0);
+  });
+
+  it("generates the teacher report and restricts it by role", async () => {
+    const token = await loginAs("laura.docente");
+    const response = await request(app)
+      .get("/api/teacher/report")
+      .set("Authorization", `Bearer ${token}`);
+
+    expect(response.status).toBe(200);
+    expect(response.body.report.teacher.fullName).toBe("Laura Docente");
+    expect(response.body.report.generatedAt).toEqual(expect.any(String));
+    expect(response.body.report.courses[0]).toMatchObject({ level: "Primario", course: "5to A", studentCount: 2 });
+    expect(response.body.report.courses[0].subjects[0]).toMatchObject({
+      subject: "Matematica",
+      weekdayName: "Lunes",
+      startTime: "08:00",
+      endTime: "09:00",
+    });
+    expect(response.body.report.sports.length).toBeGreaterThan(0);
+
+    const studentToken = await loginAs("ana.alumna");
+    const denied = await request(app)
+      .get("/api/teacher/report")
+      .set("Authorization", `Bearer ${studentToken}`);
+    expect(denied.status).toBe(403);
+  });
+});
+
 describe("admin academic and services management", () => {
   it("manages levels, courses, subjects, offerings and school years", async () => {
     const token = await loginAs("admin.demo");

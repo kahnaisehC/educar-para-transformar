@@ -72,6 +72,8 @@ import {
   updateStudentContact,
 } from "./student.service.js";
 import {
+  getTeacherProfile,
+  getTeacherReport,
   listCourseStudents,
   listTeacherCourses,
   updateTeacherContact,
@@ -727,6 +729,22 @@ export function createApp(options: CreateAppOptions) {
       const status = requiredMatriculaStatus(request.body?.status);
       const matricula = await updateMatricula(options.pool, actor(request), matriculaId, status);
       response.json({ matricula });
+    }),
+  );
+
+  app.get(
+    "/api/teacher/profile",
+    requireRoles("teacher"),
+    asyncRoute(async (request, response) => {
+      response.json({ profile: await getTeacherProfile(options.pool, request.user!.id) });
+    }),
+  );
+
+  app.get(
+    "/api/teacher/report",
+    requireRoles("teacher"),
+    asyncRoute(async (request, response) => {
+      response.json({ report: await getTeacherReport(options.pool, request.user!.id) });
     }),
   );
 
