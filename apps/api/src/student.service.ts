@@ -2,6 +2,7 @@ import type { DatabasePool } from "./db.js";
 import { withTransaction } from "./db.js";
 import { AppError } from "./errors.js";
 import { withAuditProxy } from "./auditProxy.js";
+import { safeNotify } from "./notifications.service.js";
 import type { UserRole } from "./auth.js";
 import { getStudentDashboard, type StudentDashboard } from "./enrollment.service.js";
 
@@ -56,7 +57,7 @@ export async function enrollTransport(
   actorRole: UserRole,
   routeId: number,
 ): Promise<{ id: number; name: string; description: string; enrolledAt: string }> {
-  return withAuditProxy(pool, {
+  const enrollment = await withAuditProxy(pool, {
     operation: "enroll_transport",
     actorUserId,
     actorRole,
@@ -96,10 +97,17 @@ export async function enrollTransport(
         return { ...route.rows[0], enrolledAt: inserted.rows[0].enrolled_at };
       }),
   });
+  await safeNotify(pool, actorUserId, {
+    type: "transport_confirmed",
+    title: "Transporte confirmado",
+    body: `Quedaste inscripto al recorrido ${enrollment.name}`,
+    metadata: { routeId },
+  });
+  return enrollment;
 }
 
 export async function cancelTransport(pool: DatabasePool, actorUserId: number, actorRole: UserRole): Promise<void> {
-  return withAuditProxy(pool, {
+  await withAuditProxy(pool, {
     operation: "cancel_transport",
     actorUserId,
     actorRole,
@@ -117,10 +125,16 @@ export async function cancelTransport(pool: DatabasePool, actorUserId: number, a
         }
       }),
   });
+  await safeNotify(pool, actorUserId, {
+    type: "transport_cancelled",
+    title: "Transporte cancelado",
+    body: "Se canceló tu recorrido de transporte",
+    metadata: {},
+  });
 }
 
 export async function enrollCafeteria(pool: DatabasePool, actorUserId: number, actorRole: UserRole): Promise<void> {
-  return withAuditProxy(pool, {
+  await withAuditProxy(pool, {
     operation: "enroll_cafeteria",
     actorUserId,
     actorRole,
@@ -156,10 +170,16 @@ export async function enrollCafeteria(pool: DatabasePool, actorUserId: number, a
         }
       }),
   });
+  await safeNotify(pool, actorUserId, {
+    type: "cafeteria_confirmed",
+    title: "Comedor confirmado",
+    body: "Tu inscripción al comedor quedó registrada",
+    metadata: {},
+  });
 }
 
 export async function cancelCafeteria(pool: DatabasePool, actorUserId: number, actorRole: UserRole): Promise<void> {
-  return withAuditProxy(pool, {
+  await withAuditProxy(pool, {
     operation: "cancel_cafeteria",
     actorUserId,
     actorRole,
@@ -178,6 +198,12 @@ export async function cancelCafeteria(pool: DatabasePool, actorUserId: number, a
           throw new AppError(404, "El alumno no tiene una inscripción activa al comedor", "CAFETERIA_NOT_ENROLLED");
         }
       }),
+  });
+  await safeNotify(pool, actorUserId, {
+    type: "cafeteria_cancelled",
+    title: "Comedor cancelado",
+    body: "Se canceló tu inscripción al comedor",
+    metadata: {},
   });
 }
 

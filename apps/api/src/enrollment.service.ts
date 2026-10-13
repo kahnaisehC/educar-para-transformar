@@ -2,6 +2,7 @@ import type { DatabasePool } from "./db.js";
 import { withTransaction } from "./db.js";
 import { AppError, isAppError } from "./errors.js";
 import { withAuditProxy } from "./auditProxy.js";
+import { safeNotify } from "./notifications.service.js";
 import type { UserRole } from "./auth.js";
 import type { PoolClient } from "pg";
 
@@ -219,6 +220,35 @@ export async function enrollStudent(
   studentId: number,
   groupId: number,
 ): Promise<SportGroupView> {
+  try {
+    const result = await enrollStudentWithAudit(pool, actorUserId, actorRole, studentId, groupId);
+    await safeNotify(pool, actorUserId, {
+      type: "enrollment_confirmed",
+      title: "Inscripción deportiva confirmada",
+      body: `${result.sport} · ${result.weekdayName} ${result.startTime}-${result.endTime} · ${result.teacher}`,
+      metadata: { groupId, sport: result.sport },
+    });
+    return result;
+  } catch (error) {
+    if (error instanceof AppError && error.statusCode < 500) {
+      await safeNotify(pool, actorUserId, {
+        type: "enrollment_rejected",
+        title: "Inscripción deportiva rechazada",
+        body: error.message,
+        metadata: { groupId, code: error.code },
+      });
+    }
+    throw error;
+  }
+}
+
+function enrollStudentWithAudit(
+  pool: DatabasePool,
+  actorUserId: number,
+  actorRole: UserRole,
+  studentId: number,
+  groupId: number,
+): Promise<SportGroupView> {
   return withAuditProxy(pool, {
     operation: "enroll_sport",
     actorUserId,
@@ -312,7 +342,7 @@ export async function cancelEnrollment(
   studentId: number,
   groupId: number,
 ): Promise<void> {
-  await withAuditProxy<string>(pool, {
+  const sport = await withAuditProxy<string>(pool, {
     operation: "cancel_sport",
     actorUserId,
     actorRole,
@@ -346,6 +376,12 @@ export async function cancelEnrollment(
         );
         return result.rows[0].sport_name;
       }),
+  });
+  await safeNotify(pool, actorUserId, {
+    type: "enrollment_cancelled",
+    title: "Inscripción deportiva cancelada",
+    body: `Se canceló la inscripción a ${sport}`,
+    metadata: { groupId, sport },
   });
 }
 

@@ -192,6 +192,19 @@ CREATE INDEX IF NOT EXISTS idx_report_templates_entity ON report_templates (enti
 CREATE INDEX IF NOT EXISTS idx_report_templates_active ON report_templates (active);
 CREATE INDEX IF NOT EXISTS idx_report_templates_created_by ON report_templates (created_by);
 
+CREATE TABLE IF NOT EXISTS notifications (
+    id BIGSERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+    type VARCHAR(80) NOT NULL,
+    title VARCHAR(160) NOT NULL,
+    body TEXT NOT NULL DEFAULT '',
+    metadata JSONB NOT NULL DEFAULT '{}'::JSONB,
+    read_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_notifications_user_created_at ON notifications (user_id, created_at DESC);
+
 CREATE TABLE IF NOT EXISTS audit_logs (
     id BIGSERIAL PRIMARY KEY,
     actor_user_id INTEGER NOT NULL REFERENCES users (id) ON DELETE RESTRICT,

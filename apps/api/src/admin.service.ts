@@ -4,6 +4,7 @@ import type { DatabasePool } from "./db.js";
 import { withTransaction } from "./db.js";
 import { AppError, isAppError } from "./errors.js";
 import { withAuditProxy } from "./auditProxy.js";
+import { safeNotify } from "./notifications.service.js";
 import type { UserRole } from "./auth.js";
 
 export interface AdminUser {
@@ -133,7 +134,7 @@ export async function updateUser(
   userId: number,
   input: UpdateUserInput,
 ): Promise<AdminUser> {
-  return withAuditProxy(pool, {
+  const user = await withAuditProxy(pool, {
     operation: "update_user",
     actorUserId,
     actorRole,
@@ -203,6 +204,22 @@ export async function updateUser(
         return mapUser(user);
       }),
   });
+  if (user.id !== actorUserId) {
+    const changes: string[] = [];
+    if (input.displayName !== undefined) changes.push("nombre visible");
+    if (input.password !== undefined) changes.push("contraseña");
+    if (input.role !== undefined) changes.push("rol");
+    if (input.status !== undefined) changes.push("estado");
+    if (changes.length > 0) {
+      await safeNotify(pool, user.id, {
+        type: "account_updated",
+        title: "Tu cuenta fue actualizada",
+        body: `Administración modificó: ${changes.join(", ")}`,
+        metadata: { userId: user.id },
+      });
+    }
+  }
+  return user;
 }
 
 async function ensureRoleProfile(

@@ -1026,6 +1026,83 @@ describe("report parameters and access (RF-DI-02/03, RF-AD-04)", () => {
   });
 });
 
+describe("notifications panel", () => {
+  it("records confirmations and rejections, then marks them as read", async () => {
+    const token = await loginAs("ana.alumna");
+    const empty = await request(app)
+      .get("/api/notifications")
+      .set("Authorization", `Bearer ${token}`);
+    expect(empty.status).toBe(200);
+    expect(empty.body.unreadCount).toBe(0);
+
+    expect((await enroll(token, 1)).status).toBe(201);
+    expect((await enroll(token, 2)).status).toBe(409);
+
+    const list = await request(app)
+      .get("/api/notifications")
+      .set("Authorization", `Bearer ${token}`);
+    expect(list.status).toBe(200);
+    expect(list.body.unreadCount).toBeGreaterThanOrEqual(2);
+    const types = list.body.notifications.map((entry: { type: string }) => entry.type);
+    expect(types).toContain("enrollment_confirmed");
+    expect(types).toContain("enrollment_rejected");
+
+    const firstId = list.body.notifications[0].id as number;
+    const marked = await request(app)
+      .patch(`/api/notifications/${firstId}/read`)
+      .set("Authorization", `Bearer ${token}`);
+    expect(marked.status).toBe(200);
+
+    const afterOne = await request(app)
+      .get("/api/notifications")
+      .set("Authorization", `Bearer ${token}`);
+    expect(afterOne.body.unreadCount).toBe(list.body.unreadCount - 1);
+
+    await request(app)
+      .patch("/api/notifications/read-all")
+      .set("Authorization", `Bearer ${token}`);
+    const final = await request(app)
+      .get("/api/notifications")
+      .set("Authorization", `Bearer ${token}`);
+    expect(final.body.unreadCount).toBe(0);
+
+    const missing = await request(app)
+      .patch("/api/notifications/999999/read")
+      .set("Authorization", `Bearer ${token}`);
+    expect(missing.status).toBe(404);
+    expect(missing.body.code).toBe("NOTIFICATION_NOT_FOUND");
+  });
+
+  it("notifies a user when the administrator updates the account", async () => {
+    const adminToken = await loginAs("admin.demo");
+    const created = await request(app)
+      .post("/api/admin/users")
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({
+        username: "avisado.alumno",
+        displayName: "Avisado Alumno",
+        password: PASSWORD,
+        role: "student",
+      });
+    expect(created.status).toBe(201);
+
+    await request(app)
+      .patch(`/api/admin/users/${created.body.user.id}`)
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({ displayName: "Avisado Actualizado" });
+
+    const targetToken = await loginAs("avisado.alumno");
+    const list = await request(app)
+      .get("/api/notifications")
+      .set("Authorization", `Bearer ${targetToken}`);
+    expect(list.status).toBe(200);
+    expect(list.body.notifications[0]).toMatchObject({
+      type: "account_updated",
+      title: "Tu cuenta fue actualizada",
+    });
+  });
+});
+
 describe("design patterns evidence", () => {
   it("uses a database-pool proxy that authorizes the requested role and audits success and rejection", async () => {
     const studentToken = await loginAs("ana.alumna");

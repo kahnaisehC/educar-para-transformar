@@ -54,6 +54,11 @@ import {
   updateSportGroup,
   updateTransportRoute,
 } from "./adminServices.service.js";
+import {
+  listNotifications,
+  markAllNotificationsRead,
+  markNotificationRead,
+} from "./notifications.service.js";
 import type { DatabasePool } from "./db.js";
 import { AppError, isAppError } from "./errors.js";
 import {
@@ -127,6 +132,30 @@ export function createApp(options: CreateAppOptions) {
   app.get("/api/me", (request, response) => {
     response.json({ user: request.user });
   });
+
+  app.get(
+    "/api/notifications",
+    asyncRoute(async (request, response) => {
+      response.json(await listNotifications(options.pool, request.user!.id));
+    }),
+  );
+
+  app.patch(
+    "/api/notifications/:notificationId/read",
+    asyncRoute(async (request, response) => {
+      const notificationId = positiveInteger(request.params.notificationId, "notificationId");
+      await markNotificationRead(options.pool, request.user!.id, notificationId);
+      response.json({ message: "Notificación marcada como leída" });
+    }),
+  );
+
+  app.patch(
+    "/api/notifications/read-all",
+    asyncRoute(async (request, response) => {
+      await markAllNotificationsRead(options.pool, request.user!.id);
+      response.json({ message: "Notificaciones marcadas como leídas" });
+    }),
+  );
 
   app.get(
     "/api/student/dashboard",

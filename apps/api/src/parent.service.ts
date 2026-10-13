@@ -2,6 +2,7 @@ import type { DatabasePool } from "./db.js";
 import { withTransaction } from "./db.js";
 import { AppError, isAppError } from "./errors.js";
 import { withAuditProxy } from "./auditProxy.js";
+import { safeNotify } from "./notifications.service.js";
 import type { UserRole } from "./auth.js";
 
 export interface ChildListItem {
@@ -302,6 +303,35 @@ export async function getChildEnrollment(
 }
 
 export async function enrollChild(
+  pool: DatabasePool,
+  actorUserId: number,
+  actorRole: UserRole,
+  studentId: number,
+  courseId: number,
+): Promise<ChildEnrollmentView> {
+  try {
+    const view = await enrollChildWithAudit(pool, actorUserId, actorRole, studentId, courseId);
+    await safeNotify(pool, actorUserId, {
+      type: "matricula_confirmed",
+      title: "Matrícula registrada",
+      body: `${view.matricula?.level ?? ""} · ${view.matricula?.course ?? ""} · año lectivo ${view.schoolYear?.year ?? ""}`.trim(),
+      metadata: { studentId, courseId },
+    });
+    return view;
+  } catch (error) {
+    if (error instanceof AppError && error.statusCode < 500) {
+      await safeNotify(pool, actorUserId, {
+        type: "matricula_rejected",
+        title: "Matrícula rechazada",
+        body: error.message,
+        metadata: { studentId, courseId, code: error.code },
+      });
+    }
+    throw error;
+  }
+}
+
+function enrollChildWithAudit(
   pool: DatabasePool,
   actorUserId: number,
   actorRole: UserRole,

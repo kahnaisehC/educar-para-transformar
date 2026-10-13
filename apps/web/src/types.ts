@@ -1,3 +1,13 @@
+export interface AppNotification {
+  id: number;
+  type: string;
+  title: string;
+  body: string;
+  metadata: Record<string, unknown>;
+  readAt: string | null;
+  createdAt: string;
+}
+
 export type UserRole = "student" | "parent" | "teacher" | "admin" | "director";
 export type UserStatus = "active" | "inactive";
 
