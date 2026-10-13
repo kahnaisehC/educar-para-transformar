@@ -46,12 +46,15 @@ export async function listTeacherCourses(
     level: string;
     course: string;
   }>(
-    `SELECT DISTINCT sub.id AS subject_id, sub.name AS subject, st.level, st.course
+    `SELECT DISTINCT sub.id AS subject_id, sub.name AS subject,
+            COALESCE(l.name, 'Pendiente') AS level, COALESCE(c.name, 'Pendiente') AS course
      FROM student_subjects ss
      JOIN subjects sub ON sub.id = ss.subject_id
      JOIN students st ON st.id = ss.student_id
+     LEFT JOIN courses c ON c.id = st.course_id
+     LEFT JOIN levels l ON l.id = c.level_id
      WHERE ss.teacher_id = $1
-     ORDER BY sub.name, st.level, st.course`,
+     ORDER BY sub.name, l.name, c.name`,
     [teacherId],
   );
   return result.rows.map((row) => ({
@@ -79,14 +82,17 @@ export async function listCourseStudents(
     subject: string;
     teacher: string;
   }>(
-    `SELECT st.record_number, st.dni, st.full_name, st.level, st.course,
+    `SELECT st.record_number, st.dni, st.full_name,
+            COALESCE(l.name, 'Pendiente') AS level, COALESCE(c.name, 'Pendiente') AS course,
             sub.name AS subject, t.full_name AS teacher
      FROM student_subjects ss
      JOIN students st ON st.id = ss.student_id
      JOIN subjects sub ON sub.id = ss.subject_id
      JOIN teachers t ON t.id = ss.teacher_id
+     LEFT JOIN courses c ON c.id = st.course_id
+     LEFT JOIN levels l ON l.id = c.level_id
      WHERE ss.teacher_id = $1 AND ss.subject_id = $2
-       AND st.level = $3 AND st.course = $4
+       AND l.name = $3 AND c.name = $4
      ORDER BY st.full_name`,
     [teacherId, subjectId, level, course],
   );

@@ -94,14 +94,13 @@ describe("authentication and role access", () => {
       });
 
     expect(created.status).toBe(201);
-    const profile = await pool.query<{ full_name: string; level: string; course: string }>(
-      "SELECT full_name, level, course FROM students WHERE user_id = $1",
+    const profile = await pool.query<{ full_name: string; course_id: number | null }>(
+      "SELECT full_name, course_id FROM students WHERE user_id = $1",
       [created.body.user.id],
     );
     expect(profile.rows[0]).toMatchObject({
       full_name: "Nuevo Alumno",
-      level: "Pendiente",
-      course: "Pendiente",
+      course_id: null,
     });
   });
 });
@@ -470,6 +469,62 @@ describe("admin user safeguards", () => {
   });
 });
 
+describe("academic model", () => {
+  it("resolves student level and course from the normalized model", async () => {
+    const token = await loginAs("ana.alumna");
+    const dashboard = await request(app)
+      .get("/api/student/dashboard")
+      .set("Authorization", `Bearer ${token}`);
+
+    expect(dashboard.status).toBe(200);
+    expect(dashboard.body.student).toMatchObject({ level: "Primario", course: "5to A" });
+  });
+
+  it("generates cursado and matriculas reports", async () => {
+    const token = await loginAs("director.demo");
+
+    const entities = await request(app)
+      .get("/api/director/report-entities")
+      .set("Authorization", `Bearer ${token}`);
+    const entityKeys = entities.body.entities.map((entry: { key: string }) => entry.key);
+    expect(entityKeys).toContain("cursado");
+    expect(entityKeys).toContain("matriculas");
+
+    const cursado = await request(app)
+      .post("/api/director/report-templates")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ name: "Cursado", entity: "cursado", fields: ["student_name", "subject", "schedule"] });
+    expect(cursado.status).toBe(201);
+
+    const generatedCursado = await request(app)
+      .post(`/api/director/report-templates/${cursado.body.template.id}/generate`)
+      .set("Authorization", `Bearer ${token}`);
+    expect(generatedCursado.status).toBe(200);
+    expect(generatedCursado.body.report.rows[0]).toMatchObject({
+      student_name: "Ana Alumna",
+      subject: "Matematica",
+    });
+    expect(generatedCursado.body.report.rows[0].schedule).toBe("08:00-09:00");
+
+    const matriculas = await request(app)
+      .post("/api/director/report-templates")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ name: "Matriculas", entity: "matriculas", fields: ["student_name", "year", "status"] });
+    expect(matriculas.status).toBe(201);
+
+    const generatedMatriculas = await request(app)
+      .post(`/api/director/report-templates/${matriculas.body.template.id}/generate`)
+      .set("Authorization", `Bearer ${token}`);
+    expect(generatedMatriculas.status).toBe(200);
+    expect(generatedMatriculas.body.report.rows).toHaveLength(2);
+    expect(generatedMatriculas.body.report.rows[0]).toMatchObject({
+      student_name: "Ana Alumna",
+      year: "2026",
+      status: "enrolled",
+    });
+  });
+});
+
 describe("design patterns evidence", () => {
   it("uses a database-pool proxy that authorizes the requested role and audits success and rejection", async () => {
     const studentToken = await loginAs("ana.alumna");
@@ -567,17 +622,24 @@ async function insertFixtures(database: DatabasePool): Promise<void> {
   const anaUserId = await insertUser("ana.alumna", "Ana Alumna", "student");
   const parentUserId = await insertUser("marta.madre", "Marta Madre", "parent");
   const brunoUserId = await insertUser("bruno.alumno", "Bruno Alumno", "student");
-  await insertUser("admin.demo", "Administracion", "admin");
+  const adminUserId = await insertUser("admin.demo", "Administracion", "admin");
   const teacherUserId = await insertUser("laura.docente", "Laura Docente", "teacher");
   await insertUser("director.demo", "Direccion", "director");
 
+  const levelResult = await database.query<{ id: number }>(
+    "INSERT INTO levels (name) VALUES ('Primario') RETURNING id",
+  );
+  const courseResult = await database.query<{ id: number }>(
+    "INSERT INTO courses (level_id, name) VALUES ($1, '5to A') RETURNING id",
+    [levelResult.rows[0].id],
+  );
   const insertStudent = async (userId: number, recordNumber: string, dni: string, name: string, email: string) => {
     const result = await database.query<{ id: number }>(
       `INSERT INTO students
-        (user_id, record_number, dni, full_name, birth_date, address, phone, email, level, course)
-       VALUES ($1, $2, $3, $4, '2014-05-15', 'Domicilio de prueba', '3624-111111', $5, 'Primario', '5to A')
+        (user_id, record_number, dni, full_name, birth_date, address, phone, email, course_id)
+       VALUES ($1, $2, $3, $4, '2014-05-15', 'Domicilio de prueba', '3624-111111', $5, $6)
        RETURNING id`,
-      [userId, recordNumber, dni, name, email],
+      [userId, recordNumber, dni, name, email, courseResult.rows[0].id],
     );
     return result.rows[0].id;
   };
@@ -612,6 +674,25 @@ async function insertFixtures(database: DatabasePool): Promise<void> {
      ON CONFLICT DO NOTHING`,
     [anaStudentId, matematicaId, teacherId, brunoStudentId],
   );
+  await database.query(
+    `INSERT INTO course_subjects (course_id, subject_id, teacher_id, weekday, start_time, end_time)
+     VALUES ($1, $2, $3, 1, '08:00', '09:00')`,
+    [courseResult.rows[0].id, matematicaId, teacherId],
+  );
+  const schoolYearResult = await database.query<{ id: number }>(
+    "INSERT INTO school_years (year, active) VALUES (2026, TRUE) RETURNING id",
+  );
+  await database.query(
+    `INSERT INTO school_year_enrollments (student_id, school_year_id, course_id, status, created_by)
+     VALUES ($1, $3, $4, 'enrolled', $5), ($2, $3, $4, 'enrolled', $5)`,
+    [
+      anaStudentId,
+      brunoStudentId,
+      schoolYearResult.rows[0].id,
+      courseResult.rows[0].id,
+      adminUserId,
+    ],
+  );
 
   const sportIds: number[] = [];
   for (const name of ["Futbol", "Natacion", "Atletismo", "Ajedrez"]) {
@@ -628,8 +709,8 @@ async function insertFixtures(database: DatabasePool): Promise<void> {
     [sportIds[3], 3, "16:00", "17:00"],
   ] as const) {
     await database.query(
-      `INSERT INTO sport_groups (sport_id, teacher_id, level, weekday, start_time, end_time)
-       VALUES ($1, $2, 'Todos', $3, $4, $5)`,
+      `INSERT INTO sport_groups (sport_id, teacher_id, level_id, weekday, start_time, end_time)
+       VALUES ($1, $2, NULL, $3, $4, $5)`,
       [sportId, teacherId, weekday, startTime, endTime],
     );
   }

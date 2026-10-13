@@ -50,11 +50,16 @@ export async function listChildren(pool: DatabasePool, userId: number): Promise<
     course: string;
     status: string;
   }>(
-    `SELECT s.id, s.full_name, s.record_number, s.level, s.course, s.status
+    `SELECT st.id, st.full_name, st.record_number,
+            COALESCE(l.name, 'Pendiente') AS level,
+            COALESCE(c.name, 'Pendiente') AS course,
+            st.status
      FROM parent_students ps
-     JOIN students s ON s.id = ps.student_id
+     JOIN students st ON st.id = ps.student_id
+     LEFT JOIN courses c ON c.id = st.course_id
+     LEFT JOIN levels l ON l.id = c.level_id
      WHERE ps.parent_id = $1
-     ORDER BY s.full_name`,
+     ORDER BY st.full_name`,
     [parentId],
   );
 
@@ -102,9 +107,14 @@ export async function getChildSummary(
     course: string;
     status: string;
   }>(
-    `SELECT id, record_number, dni, full_name, level, course, status
-     FROM students
-     WHERE id = $1`,
+    `SELECT st.id, st.record_number, st.dni, st.full_name,
+            COALESCE(l.name, 'Pendiente') AS level,
+            COALESCE(c.name, 'Pendiente') AS course,
+            st.status
+     FROM students st
+     LEFT JOIN courses c ON c.id = st.course_id
+     LEFT JOIN levels l ON l.id = c.level_id
+     WHERE st.id = $1`,
     [studentId],
   );
   const student = studentResult.rows[0];

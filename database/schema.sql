@@ -13,6 +13,20 @@ CREATE TABLE IF NOT EXISTS users (
 
 CREATE INDEX IF NOT EXISTS idx_users_role_status ON users (role, status);
 
+CREATE TABLE IF NOT EXISTS levels (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(120) NOT NULL UNIQUE
+);
+
+CREATE TABLE IF NOT EXISTS courses (
+    id SERIAL PRIMARY KEY,
+    level_id INTEGER NOT NULL REFERENCES levels (id) ON DELETE RESTRICT,
+    name VARCHAR(80) NOT NULL,
+    UNIQUE (level_id, name)
+);
+
+CREATE INDEX IF NOT EXISTS idx_courses_level_id ON courses (level_id);
+
 CREATE TABLE IF NOT EXISTS students (
     id SERIAL PRIMARY KEY,
     user_id INTEGER NOT NULL UNIQUE REFERENCES users (id) ON DELETE CASCADE,
@@ -23,12 +37,12 @@ CREATE TABLE IF NOT EXISTS students (
     address VARCHAR(200),
     phone VARCHAR(40),
     email VARCHAR(160),
-    level VARCHAR(80) NOT NULL,
-    course VARCHAR(80) NOT NULL,
+    course_id INTEGER REFERENCES courses (id) ON DELETE SET NULL,
     status VARCHAR(20) NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'inactive'))
 );
 
 CREATE INDEX IF NOT EXISTS idx_students_user_id ON students (user_id);
+CREATE INDEX IF NOT EXISTS idx_students_course_id ON students (course_id);
 
 CREATE TABLE IF NOT EXISTS parents (
     id SERIAL PRIMARY KEY,
@@ -72,6 +86,43 @@ CREATE TABLE IF NOT EXISTS student_subjects (
 
 CREATE INDEX IF NOT EXISTS idx_student_subjects_teacher_id ON student_subjects (teacher_id);
 
+CREATE TABLE IF NOT EXISTS course_subjects (
+    id SERIAL PRIMARY KEY,
+    course_id INTEGER NOT NULL REFERENCES courses (id) ON DELETE CASCADE,
+    subject_id INTEGER NOT NULL REFERENCES subjects (id) ON DELETE RESTRICT,
+    teacher_id INTEGER NOT NULL REFERENCES teachers (id) ON DELETE RESTRICT,
+    weekday SMALLINT NOT NULL CHECK (weekday BETWEEN 1 AND 7),
+    start_time TIME NOT NULL,
+    end_time TIME NOT NULL,
+    active BOOLEAN NOT NULL DEFAULT TRUE,
+    UNIQUE (course_id, subject_id, weekday, start_time),
+    CHECK (start_time < end_time)
+);
+
+CREATE INDEX IF NOT EXISTS idx_course_subjects_course_id ON course_subjects (course_id);
+CREATE INDEX IF NOT EXISTS idx_course_subjects_teacher_id ON course_subjects (teacher_id);
+CREATE INDEX IF NOT EXISTS idx_course_subjects_subject_id ON course_subjects (subject_id);
+
+CREATE TABLE IF NOT EXISTS school_years (
+    id SERIAL PRIMARY KEY,
+    year INTEGER NOT NULL UNIQUE,
+    active BOOLEAN NOT NULL DEFAULT FALSE
+);
+
+CREATE TABLE IF NOT EXISTS school_year_enrollments (
+    id SERIAL PRIMARY KEY,
+    student_id INTEGER NOT NULL REFERENCES students (id) ON DELETE CASCADE,
+    school_year_id INTEGER NOT NULL REFERENCES school_years (id) ON DELETE RESTRICT,
+    course_id INTEGER NOT NULL REFERENCES courses (id) ON DELETE RESTRICT,
+    status VARCHAR(20) NOT NULL DEFAULT 'enrolled' CHECK (status IN ('enrolled', 'cancelled')),
+    created_by INTEGER NOT NULL REFERENCES users (id) ON DELETE RESTRICT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE (student_id, school_year_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_school_year_enrollments_student_id ON school_year_enrollments (student_id);
+CREATE INDEX IF NOT EXISTS idx_school_year_enrollments_course_id ON school_year_enrollments (course_id);
+
 CREATE TABLE IF NOT EXISTS sports (
     id SERIAL PRIMARY KEY,
     name VARCHAR(120) NOT NULL UNIQUE
@@ -81,17 +132,18 @@ CREATE TABLE IF NOT EXISTS sport_groups (
     id SERIAL PRIMARY KEY,
     sport_id INTEGER NOT NULL REFERENCES sports (id) ON DELETE RESTRICT,
     teacher_id INTEGER NOT NULL REFERENCES teachers (id) ON DELETE RESTRICT,
-    level VARCHAR(80) NOT NULL,
+    level_id INTEGER REFERENCES levels (id) ON DELETE RESTRICT,
     weekday SMALLINT NOT NULL CHECK (weekday BETWEEN 1 AND 7),
     start_time TIME NOT NULL,
     end_time TIME NOT NULL,
     active BOOLEAN NOT NULL DEFAULT TRUE,
-    UNIQUE (sport_id, level, weekday, start_time),
+    UNIQUE (sport_id, level_id, weekday, start_time),
     CHECK (start_time < end_time)
 );
 
 CREATE INDEX IF NOT EXISTS idx_sport_groups_schedule ON sport_groups (weekday, start_time, end_time);
 CREATE INDEX IF NOT EXISTS idx_sport_groups_sport_id ON sport_groups (sport_id);
+CREATE INDEX IF NOT EXISTS idx_sport_groups_level_id ON sport_groups (level_id);
 
 CREATE TABLE IF NOT EXISTS sport_enrollments (
     id SERIAL PRIMARY KEY,

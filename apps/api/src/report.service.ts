@@ -64,6 +64,35 @@ export const REPORT_ENTITIES = [
       { key: "enrolled_at", label: "Fecha de inscripción" },
     ],
   },
+  {
+    key: "cursado",
+    label: "Cursado por materia",
+    description: "Alumnos con sus materias, docentes y horarios",
+    fields: [
+      { key: "student_name", label: "Alumno" },
+      { key: "record_number", label: "Legajo" },
+      { key: "level", label: "Nivel" },
+      { key: "course", label: "Curso" },
+      { key: "subject", label: "Materia" },
+      { key: "teacher", label: "Docente" },
+      { key: "weekday", label: "Día" },
+      { key: "schedule", label: "Horario" },
+    ],
+  },
+  {
+    key: "matriculas",
+    label: "Matrículas",
+    description: "Matrículas anuales de los alumnos",
+    fields: [
+      { key: "student_name", label: "Alumno" },
+      { key: "record_number", label: "Legajo" },
+      { key: "level", label: "Nivel" },
+      { key: "course", label: "Curso" },
+      { key: "year", label: "Año lectivo" },
+      { key: "status", label: "Estado" },
+      { key: "enrolled_at", label: "Fecha de matrícula" },
+    ],
+  },
 ] as const;
 
 export type ReportEntityKey = (typeof REPORT_ENTITIES)[number]["key"];
@@ -364,6 +393,13 @@ export async function generateReport(
   });
 }
 
+function timeRange(start: unknown, end: unknown): string {
+  if (start === null || start === undefined || end === null || end === undefined) {
+    return "";
+  }
+  return `${String(start).slice(0, 5)}-${String(end).slice(0, 5)}`;
+}
+
 function projectRow(
   row: Record<string, string>,
   columns: Array<{ key: string; label: string }>,
@@ -386,9 +422,14 @@ async function runEntityQuery(
   }
   const queries: Record<ReportEntityKey, QuerySpec> = {
     students: {
-      sql: `SELECT st.record_number, st.dni, st.full_name, st.level, st.course, st.status
+      sql: `SELECT st.record_number, st.dni, st.full_name,
+                   COALESCE(l.name, 'Pendiente') AS level,
+                   COALESCE(c.name, 'Pendiente') AS course,
+                   st.status
             FROM students st
-            ORDER BY st.level, st.course, st.full_name`,
+            LEFT JOIN courses c ON c.id = st.course_id
+            LEFT JOIN levels l ON l.id = c.level_id
+            ORDER BY l.name, c.name, st.full_name`,
       stringify: (row) => ({
         record_number: String(row.record_number ?? ""),
         dni: String(row.dni ?? ""),
@@ -411,7 +452,8 @@ async function runEntityQuery(
       }),
     },
     sports: {
-      sql: `SELECT st.full_name AS student_name, s.name AS sport, sg.level,
+      sql: `SELECT st.full_name AS student_name, s.name AS sport,
+                   COALESCE(l.name, 'Todos') AS level,
                    CASE sg.weekday
                      WHEN 1 THEN 'Lunes'
                      WHEN 2 THEN 'Martes'
@@ -421,20 +463,21 @@ async function runEntityQuery(
                      WHEN 6 THEN 'Sabado'
                      ELSE 'Domingo'
                    END AS weekday,
-                   sg.start_time || '-' || sg.end_time AS schedule,
+                   sg.start_time, sg.end_time,
                    t.full_name AS teacher
             FROM sport_enrollments se
             JOIN students st ON st.id = se.student_id
             JOIN sport_groups sg ON sg.id = se.group_id
             JOIN sports s ON s.id = sg.sport_id
             JOIN teachers t ON t.id = sg.teacher_id
+            LEFT JOIN levels l ON l.id = sg.level_id
             ORDER BY s.name, st.full_name`,
       stringify: (row) => ({
         student_name: String(row.student_name ?? ""),
         sport: String(row.sport ?? ""),
         level: String(row.level ?? ""),
         weekday: String(row.weekday ?? ""),
-        schedule: String(row.schedule ?? "").replace(/:\d\d(?=-\d\d:\d\d)/g, ""),
+        schedule: timeRange(row.start_time, row.end_time),
         teacher: String(row.teacher ?? ""),
       }),
     },
@@ -461,6 +504,63 @@ async function runEntityQuery(
         student_name: String(row.student_name ?? ""),
         status: String(row.status ?? ""),
         enrolled_at: String(row.enrolled_at ?? ""),
+      }),
+    },
+    cursado: {
+      sql: `SELECT st.full_name AS student_name, st.record_number,
+                   COALESCE(l.name, 'Pendiente') AS level,
+                   COALESCE(c.name, 'Pendiente') AS course,
+                   sub.name AS subject, t.full_name AS teacher,
+                   CASE cs.weekday
+                     WHEN 1 THEN 'Lunes'
+                     WHEN 2 THEN 'Martes'
+                     WHEN 3 THEN 'Miercoles'
+                     WHEN 4 THEN 'Jueves'
+                     WHEN 5 THEN 'Viernes'
+                     WHEN 6 THEN 'Sabado'
+                     WHEN 7 THEN 'Domingo'
+                   END AS weekday,
+                   cs.start_time, cs.end_time
+            FROM student_subjects ss
+            JOIN students st ON st.id = ss.student_id
+            JOIN subjects sub ON sub.id = ss.subject_id
+            JOIN teachers t ON t.id = ss.teacher_id
+            LEFT JOIN courses c ON c.id = st.course_id
+            LEFT JOIN levels l ON l.id = c.level_id
+            LEFT JOIN course_subjects cs
+              ON cs.course_id = st.course_id
+             AND cs.subject_id = ss.subject_id
+             AND cs.teacher_id = ss.teacher_id
+            ORDER BY l.name, c.name, sub.name, st.full_name`,
+      stringify: (row) => ({
+        student_name: String(row.student_name ?? ""),
+        record_number: String(row.record_number ?? ""),
+        level: String(row.level ?? ""),
+        course: String(row.course ?? ""),
+        subject: String(row.subject ?? ""),
+        teacher: String(row.teacher ?? ""),
+        weekday: String(row.weekday ?? ""),
+        schedule: timeRange(row.start_time, row.end_time),
+      }),
+    },
+    matriculas: {
+      sql: `SELECT st.full_name AS student_name, st.record_number,
+                   l.name AS level, c.name AS course,
+                   sy.year, sye.status, sye.created_at
+            FROM school_year_enrollments sye
+            JOIN students st ON st.id = sye.student_id
+            JOIN courses c ON c.id = sye.course_id
+            JOIN levels l ON l.id = c.level_id
+            JOIN school_years sy ON sy.id = sye.school_year_id
+            ORDER BY sy.year DESC, l.name, c.name, st.full_name`,
+      stringify: (row) => ({
+        student_name: String(row.student_name ?? ""),
+        record_number: String(row.record_number ?? ""),
+        level: String(row.level ?? ""),
+        course: String(row.course ?? ""),
+        year: String(row.year ?? ""),
+        status: String(row.status ?? ""),
+        enrolled_at: String(row.created_at ?? ""),
       }),
     },
   };

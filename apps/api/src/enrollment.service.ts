@@ -77,7 +77,7 @@ const GROUP_SELECT = `
     sg.id AS group_id,
     s.id AS sport_id,
     s.name AS sport_name,
-    sg.level,
+    COALESCE(l.name, 'Todos') AS level,
     sg.weekday,
     CASE sg.weekday
       WHEN 1 THEN 'Lunes'
@@ -94,6 +94,7 @@ const GROUP_SELECT = `
   FROM sport_groups sg
   JOIN sports s ON s.id = sg.sport_id
   JOIN teachers t ON t.id = sg.teacher_id
+  LEFT JOIN levels l ON l.id = sg.level_id
 `;
 
 function mapGroup(row: GroupRow & { enrolled_at?: string }): SportGroupView & { enrolledAt?: string } {
@@ -113,10 +114,15 @@ function mapGroup(row: GroupRow & { enrolled_at?: string }): SportGroupView & { 
 
 async function findStudent(pool: DatabasePool, userId: number): Promise<StudentRow> {
   const result = await pool.query<StudentRow>(
-    `SELECT id, record_number, dni, full_name, birth_date, address, phone, email,
-             level, course, status
-     FROM students
-     WHERE user_id = $1`,
+    `SELECT st.id, st.record_number, st.dni, st.full_name, st.birth_date, st.address,
+            st.phone, st.email,
+            COALESCE(l.name, 'Pendiente') AS level,
+            COALESCE(c.name, 'Pendiente') AS course,
+            st.status
+     FROM students st
+     LEFT JOIN courses c ON c.id = st.course_id
+     LEFT JOIN levels l ON l.id = c.level_id
+     WHERE st.user_id = $1`,
     [userId],
   );
   const student = result.rows[0];

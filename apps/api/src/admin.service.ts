@@ -92,8 +92,8 @@ export async function createUser(
         if (user.role === "student") {
           await client.query(
             `INSERT INTO students
-               (user_id, record_number, dni, full_name, level, course, status)
-             VALUES ($1, $2, $3, $4, 'Pendiente', 'Pendiente', $5)`,
+               (user_id, record_number, dni, full_name, status)
+             VALUES ($1, $2, $3, $4, $5)`,
             [user.id, `PEND-${user.id}`, `PEND-${user.id}`, input.displayName, input.status],
           );
         }
