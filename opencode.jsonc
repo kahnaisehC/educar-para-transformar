@@ -1,0 +1,49 @@
+{
+  // Configuracion de opencode para el monorepo "Educar para Transformar".
+  // Schema completo: https://opencode.ai/config.json
+  // Tras editar este archivo: salir y volver a abrir opencode (no se recarga en caliente).
+  "$schema": "https://opencode.ai/config.json",
+
+  // Contexto que opencode carga siempre. AGENTS.md se autodetecta, pero ser
+  // explicito evita sorpresas si se renombra.
+  "instructions": ["AGENTS.md", "docs/ai/GUIA_IA.md"],
+
+  // Permisos: se evalua la ULTIMA regla que coincide, asi que las amplias van
+  // primero. Evita acciones destructivas o irreversibles sin confirmacion.
+  "permission": {
+    "bash": {
+      "*": "allow",
+      "git push*": "ask",
+      "git push --force*": "deny",
+      "rm -rf*": "ask",
+      "podman rm*": "ask"
+    }
+  }
+
+  // --- MCP (Model Context Protocol) -----------------------------------------
+  // Los servidores MCP suman herramientas externas al agente. Estan comentados
+  // porque requieren setup (tokens, binarios) y opencode los arranca al inicio.
+  // Descomenta solo los que uses. Ver docs/ai/GUIA_IA.md para mas detalle.
+  //
+  // "mcp": {
+  //   "github": {
+  //     "type": "remote",
+  //     "url": "https://api.githubcopilot.com/mcp/",
+  //     "enabled": true,
+  //     "headers": { "Authorization": "Bearer {env:GITHUB_TOKEN}" }
+  //   },
+  //   "postgres": {
+  //     "type": "local",
+  //     "command": ["npx", "-y", "@modelcontextprotocol/server-postgres"],
+  //     "environment": {
+  //       "DATABASE_URL": "postgres://educar:educar_dev_password@localhost:5432/educar"
+  //     }
+  //   }
+  // }
+
+  // --- Agentes/subagentes y comandos ----------------------------------------
+  // Se definen como archivos en .opencode/agent/*.md y .opencode/command/*.md.
+  // Ejemplos incluidos en este repo:
+  //   .opencode/command/verificar.md   -> corre typecheck + test + build
+  //   .opencode/agent/migraciones-db.md -> subagente para migraciones seguras
+}
