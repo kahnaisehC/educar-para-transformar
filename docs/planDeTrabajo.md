@@ -77,11 +77,10 @@ La página web institucional y la aplicación móvil forman parte del escenario 
 
 ### Módulo: Docente
 
-- **RF-PR-01 - Consulta del perfil profesional:** El sistema debe permitir al docente consultar su perfil profesional, materias, cursos y niveles.
+- **RF-PR-01 - Consulta del perfil profesional y carga horaria:** El sistema debe permitir al docente consultar legajo, DNI, nombre, apellido, especialidad, estado, materias, cursos, niveles y su carga horaria a cargo.
 - **RF-PR-02 - Actualización de datos de contacto:** El sistema debe permitir al docente actualizar su correo electrónico y teléfono.
-- **RF-PR-03 - Consulta de carga horaria:** El sistema debe permitir al docente consultar su carga horaria.
-- **RF-PR-04 - Listado de alumnos:** El sistema debe permitir al docente generar listados de alumnos por curso y materia.
-- **RF-PR-05 - Generación del reporte docente:** El sistema debe permitir al docente generar un reporte con los cursos a su cargo por nivel y sus horarios.
+- **RF-PR-03 - Generación del reporte docente:** El sistema debe permitir al docente generar su Reporte Docente con los cursos a su cargo por nivel y sus horarios.
+- **RF-PR-04 - Listado de alumnos:** El sistema debe permitir al docente generar listados de alumnos por curso y por materia, limitados a sus asignaciones.
 
 ### Módulo: Administrador
 

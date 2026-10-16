@@ -495,6 +495,12 @@ La ruta crítica estimada es: relevamiento, modelo de datos, contratos de API, S
 
 # 6. Backlog de los Sprints
 
+> **Nota sobre la numeración:** las historias de usuario de este documento
+> (HU-01 a HU-15) pertenecen a la Parte 3 (aplicación móvil) y usan un espacio
+> de códigos propio, independiente de las HU-01 a HU-07 de la Parte 2
+> descritas en `requerimientosCorregidos.md`. Al referenciar una HU sin
+> contexto, aclarar siempre a qué parte pertenece.
+
 ## HU-01 - Autenticación y Sesión en la Aplicación Móvil
 
 | ID | Título / Historia de Usuario | Prioridad | Estado |

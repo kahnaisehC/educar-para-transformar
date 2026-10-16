@@ -37,3 +37,18 @@ personas del grupo: no dependas de la memoria del chat.
 - **Verificación:** documentos creados; no se tocó código del proyecto.
 - **Próximos pasos:** mantener la bitácora al día; revisar
   `AGENTS.md` cuando cambien los comandos o la arquitectura.
+
+## 2026-10-16 — Corrección de conflictos de numeración de requisitos
+- **Objetivo:** alinear la numeración de RF/HU entre todos los documentos
+  usando `docs/requerimientosCorregidos.md` como fuente de verdad.
+- **Cambios:** en `docs/planDeTrabajo.md` se renumeró el módulo Docente
+  (RF-PR-03 = reporte docente, RF-PR-04 = listados; se eliminó RF-PR-05 y la
+  carga horaria se integró a RF-PR-01). Se marcaron como superdedados los
+  originales `Requerimentos&...txt` y `PlanificacionDeSprints.txt` con una nota
+  de diferencias. En `planDeTrabajoMovil.md` se aclaró que HU-01..15 y RF-MV-*
+  son un espacio de códigos propio de la Parte 3.
+- **Tests:** no aplica (solo documentación).
+- **Estado:** hecho.
+- **Verificación:** typecheck + 43 tests + build en verde.
+- **Próximos pasos:** usar siempre `requerimientosCorregidos.md` como
+  referencia canónica; revisar si aparece numeración nueva divergente.

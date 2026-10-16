@@ -1,4 +1,13 @@
-﻿TRABAJO PRÁCTICO N°1
+﻿[DOCUMENTO ORIGINAL - SUPERDEDADO]
+La version corregida y consolidada es "requerimientosCorregidos.md".
+Diferencias respecto de la version corregida:
+- HU-03: el actor es Alumno o Docente (aqui figuraba solo Docente).
+- HU-04: el título correcto es "Gestión de usuarios y roles" (aqui figura "Alta de Nuevo Curso").
+- Falta RF-PA-03 (aislamiento de información de hijos no asociados).
+- RF-DI se renumeró: RF-DI-01 (plantillas), RF-DI-02 (generación), RF-DI-03 (listados).
+- Falta HU-07 (Configuración de reportes institucionales, rol Director).
+
+TRABAJO PRÁCTICO N°1
 Parte 1
 
 

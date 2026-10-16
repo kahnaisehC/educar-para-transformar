@@ -1,4 +1,11 @@
-﻿Backlog del Sprint 
+﻿[DOCUMENTO ORIGINAL - SUPERDEDADO]
+La version corregida y consolidada es "planificacionDeSprints.md", alineada
+con "requerimientosCorregidos.md". Diferencias:
+- Esta version tiene 6 historias de usuario; la corregida agrega HU-07
+  (Configuración de reportes institucionales, rol Director, Sprint 3).
+- Los puntos y la distribución de sprints fueron recalculados.
+
+Backlog del Sprint 
 De acuerdo con el archivo "Inscripción a Deportes", el backlog completo contiene las 6 historias de usuario.
 ID
 	Título
