@@ -3,6 +3,7 @@ import { type FormEvent, useEffect, useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 
 import { apiRequest } from "../api";
+import { BillingReports } from "./BillingReports";
 
 import type { AcademicLevel, AcademicOverview, AdminUser, EnrollmentsOverview, GeneratedReport, ReportEntity, ReportTemplate, ServicesOverview, TeacherProfile, User, UserRole } from "../types";
 
@@ -18,7 +19,7 @@ import {
   getErrorMessage,
 } from "../ui";
 
-type AdminTab = "users" | "academic" | "services" | "enrollments" | "reports";
+type AdminTab = "users" | "academic" | "services" | "enrollments" | "reports" | "billing";
 
 const ADMIN_TABS: Array<{ key: AdminTab; path: string; label: string }> = [
   { key: "users", path: "usuarios", label: "Usuarios" },
@@ -26,6 +27,7 @@ const ADMIN_TABS: Array<{ key: AdminTab; path: string; label: string }> = [
   { key: "services", path: "servicios", label: "Deportes y servicios" },
   { key: "enrollments", path: "inscripciones", label: "Inscripciones" },
   { key: "reports", path: "reportes", label: "Reportes" },
+  { key: "billing", path: "cobranza", label: "Cobranza" },
 ];
 
 
@@ -55,6 +57,7 @@ export function AdminDashboard({ token, currentUser }: { token: string; currentU
       {activeTab === "services" && <AdminServicesTab token={token} />}
       {activeTab === "enrollments" && <AdminEnrollmentsTab token={token} />}
       {activeTab === "reports" && <AdminReportsTab token={token} />}
+      {activeTab === "billing" && <BillingReports token={token} />}
     </>
   );
 }

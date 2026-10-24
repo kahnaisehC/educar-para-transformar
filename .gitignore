@@ -13,3 +13,7 @@ dist/
 !.env.example
 postgres_data/
 *.log
+
+uploads/
+.expo/
+apps/mobile/.expo/

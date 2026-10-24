@@ -12,6 +12,7 @@ fi
 
 NETWORK_NAME="educar-network"
 VOLUME_NAME="educar-postgres-data"
+UPLOADS_VOLUME="educar-uploads"
 DB_CONTAINER="educar-db"
 API_CONTAINER="educar-api"
 WEB_CONTAINER="educar-web"
@@ -30,6 +31,10 @@ fi
 
 if ! podman volume inspect "$VOLUME_NAME" >/dev/null 2>&1; then
   podman volume create "$VOLUME_NAME" >/dev/null
+fi
+
+if ! podman volume inspect "$UPLOADS_VOLUME" >/dev/null 2>&1; then
+  podman volume create "$UPLOADS_VOLUME" >/dev/null
 fi
 
 remove_container "$WEB_CONTAINER"
@@ -81,6 +86,18 @@ podman run --detach \
   --env DATABASE_URL=postgres://educar:educar_dev_password@educar-db:5432/educar \
   --env JWT_SECRET="$JWT_SECRET_VALUE" \
   --env CORS_ORIGIN=http://localhost:5173 \
+  --env APP_URL=http://localhost:5173 \
+  --env UPLOADS_DIR=/workspace/uploads \
+  --env "SMTP_HOST=${SMTP_HOST:-}" \
+  --env "SMTP_PORT=${SMTP_PORT:-587}" \
+  --env "SMTP_SECURE=${SMTP_SECURE:-false}" \
+  --env "SMTP_USER=${SMTP_USER:-}" \
+  --env "SMTP_PASS=${SMTP_PASS:-}" \
+  --env "SMTP_FROM=${SMTP_FROM:-EDUCAR PARA TRANSFORMAR <no-reply@educar.local>}" \
+  --env "BANK_ALIAS=${BANK_ALIAS:-EDUCAR.CUOTAS}" \
+  --env "BANK_CBU=${BANK_CBU:-0000003100010000000001}" \
+  --env "BANK_HOLDER=${BANK_HOLDER:-Centro Educativo Educar para Transformar}" \
+  --volume "$UPLOADS_VOLUME:/workspace/uploads" \
   --publish 4000:4000 \
   educar-api >/dev/null
 

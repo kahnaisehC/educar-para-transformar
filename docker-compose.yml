@@ -29,6 +29,19 @@ services:
       DATABASE_URL: postgres://educar:educar_dev_password@db:5432/educar
       JWT_SECRET: ${JWT_SECRET:-local-only-change-this-jwt-secret-educar-2026}
       CORS_ORIGIN: http://localhost:5173
+      APP_URL: http://localhost:5173
+      UPLOADS_DIR: /workspace/uploads
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-EDUCAR PARA TRANSFORMAR <no-reply@educar.local>}
+      BANK_ALIAS: ${BANK_ALIAS:-EDUCAR.CUOTAS}
+      BANK_CBU: ${BANK_CBU:-0000003100010000000001}
+      BANK_HOLDER: ${BANK_HOLDER:-Centro Educativo Educar para Transformar}
+    volumes:
+      - uploads_data:/workspace/uploads
     depends_on:
       db:
         condition: service_healthy
@@ -49,3 +62,4 @@ services:
 
 volumes:
   postgres_data:
+  uploads_data:

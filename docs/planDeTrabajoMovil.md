@@ -35,6 +35,16 @@
 
 ### Aplicación Móvil de Gestión de Cuotas
 
+> **Estado de implementación al 24/10/2026.** El diseño vigente está en
+> `docs/mobile/diseno.md` y el código en `apps/mobile` + `apps/api`. Se
+> implementaron el modelo económico (tarifas, facturas, ítems, comprobantes,
+> pagos e imputaciones), la autenticación móvil, la consulta de cuotas, el
+> circuito de comprobantes con validación administrativa, la recuperación de
+> contraseña, las notificaciones por correo con PDF adjunto y los reportes de
+> cobranza/morosidad. Las historias del backlog se mantienen con el estado
+> original del plan; el detalle de lo entregado se registra en
+> `docs/ai/BITACORA_IA.md`.
+
 ## Nombre del Equipo de Trabajo
 
 **Equipo de desarrollo de la aplicación móvil de gestión educativa**

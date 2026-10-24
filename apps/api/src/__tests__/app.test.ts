@@ -2,7 +2,10 @@ import bcrypt from "bcryptjs";
 import { newDb } from "pg-mem";
 import request from "supertest";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { readFileSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createApp } from "../app.js";
 import type { DatabasePool } from "../db.js";
@@ -20,6 +23,7 @@ const PASSWORD = "Educar2027!";
 
 let pool: DatabasePool;
 let app: ReturnType<typeof createApp>;
+let uploadsDir: string;
 
 beforeEach(async () => {
   const database = newDb({ autoCreateForeignKeyIndices: true });
@@ -27,12 +31,31 @@ beforeEach(async () => {
   const pg = database.adapters.createPg();
   pool = new pg.Pool() as unknown as DatabasePool;
   await insertFixtures(pool);
-  app = createApp({ pool, jwtSecret: JWT_SECRET, corsOrigin: "http://localhost:5173" });
+  uploadsDir = mkdtempSync(join(tmpdir(), "educar-uploads-"));
+  app = createApp({
+    pool,
+    jwtSecret: JWT_SECRET,
+    corsOrigin: "http://localhost:5173",
+    uploadsDir,
+    appUrl: "http://localhost:5173",
+    bank: { alias: "EDUCAR.TEST", cbu: "0000003100010000000001", holder: "Centro Educativo" },
+    smtp: {
+      host: null,
+      port: 587,
+      secure: false,
+      user: null,
+      password: null,
+      from: "EDUCAR <no-reply@educar.local>",
+    },
+  });
 });
 
 afterEach(async () => {
   if (pool) {
     await pool.end();
+  }
+  if (uploadsDir) {
+    rmSync(uploadsDir, { recursive: true, force: true });
   }
 });
 
@@ -1139,6 +1162,370 @@ describe("notifications panel", () => {
   });
 });
 
+describe("billing module (Parte 3)", () => {
+  it("creates tariffs and generates one invoice per student and period", async () => {
+    const adminToken = await loginAs("admin.demo");
+    await createBillingTariffs(adminToken);
+
+    const anaToken = await loginAs("ana.alumna");
+    expect(
+      (
+        await request(app)
+          .post("/api/student/enrollments")
+          .set("Authorization", `Bearer ${anaToken}`)
+          .send({ groupId: 1 })
+      ).status,
+    ).toBe(201);
+    expect(
+      (
+        await request(app)
+          .post("/api/student/transport")
+          .set("Authorization", `Bearer ${anaToken}`)
+          .send({ routeId: 1 })
+      ).status,
+    ).toBe(201);
+
+    const brunoToken = await loginAs("bruno.alumno");
+    expect(
+      (
+        await request(app)
+          .post("/api/student/enrollments")
+          .set("Authorization", `Bearer ${brunoToken}`)
+          .send({ groupId: 3 })
+      ).status,
+    ).toBe(201);
+    expect(
+      (
+        await request(app)
+          .post("/api/student/cafeteria")
+          .set("Authorization", `Bearer ${brunoToken}`)
+      ).status,
+    ).toBe(201);
+
+    const generated = await request(app)
+      .post("/api/admin/billing/invoices/generate")
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({ year: 2026, month: 10 });
+    expect(generated.status).toBe(201);
+    expect(generated.body).toMatchObject({ created: 2, skipped: 0 });
+
+    const anaInvoice = generated.body.invoices.find(
+      (invoice: { studentId: number }) => invoice.studentId === 1,
+    );
+    expect(anaInvoice.totalAmount).toBe(70000);
+    expect(anaInvoice.items.map((item: { description: string }) => item.description)).toEqual([
+      "Cuota mensual 2026-10",
+      "Futbol",
+      "Transporte · Recorrido Norte",
+    ]);
+
+    const again = await request(app)
+      .post("/api/admin/billing/invoices/generate")
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({ year: 2026, month: 10 });
+    expect(again.status).toBe(201);
+    expect(again.body).toMatchObject({ created: 0, skipped: 2 });
+
+    const list = await request(app)
+      .get("/api/admin/billing/invoices?year=2026&month=10")
+      .set("Authorization", `Bearer ${adminToken}`);
+    expect(list.body.invoices).toHaveLength(2);
+
+    const forbidden = await request(app)
+      .get("/api/admin/billing/tariffs")
+      .set("Authorization", `Bearer ${anaToken}`);
+    expect(forbidden.status).toBe(403);
+  });
+
+  it("lets the parent consult only their children's invoices and PDF", async () => {
+    const context = await prepareBilling();
+    const parentToken = await loginAs("marta.madre");
+
+    const summary = await request(app)
+      .get("/api/parent/billing/children/1/summary")
+      .set("Authorization", `Bearer ${parentToken}`);
+    expect(summary.status).toBe(200);
+    expect(summary.body.summary.totalPending).toBe(70000);
+    expect(summary.body.summary.currentInvoice.periodMonth).toBe(10);
+
+    const forbidden = await request(app)
+      .get("/api/parent/billing/children/2/summary")
+      .set("Authorization", `Bearer ${parentToken}`);
+    expect(forbidden.status).toBe(403);
+    expect(forbidden.body.code).toBe("CHILD_NOT_ASSOCIATED");
+
+    const pdf = await request(app)
+      .get(`/api/parent/billing/invoices/${context.anaInvoiceId}/pdf`)
+      .set("Authorization", `Bearer ${parentToken}`);
+    expect(pdf.status).toBe(200);
+    expect(pdf.headers["content-type"]).toContain("application/pdf");
+
+    const bank = await request(app)
+      .get("/api/parent/billing/bank-details")
+      .set("Authorization", `Bearer ${parentToken}`);
+    expect(bank.body.bank.alias).toBe("EDUCAR.TEST");
+  });
+
+  it("uploads receipts and approves partial and total payments", async () => {
+    const context = await prepareBilling();
+    const parentToken = await loginAs("marta.madre");
+
+    const detail = await request(app)
+      .get(`/api/parent/billing/invoices/${context.anaInvoiceId}`)
+      .set("Authorization", `Bearer ${parentToken}`);
+    const items = detail.body.invoice.items as Array<{ id: number; kind: string }>;
+    const monthly = items.find((item) => item.kind === "monthly");
+    const sport = items.find((item) => item.kind === "sport");
+    const transport = items.find((item) => item.kind === "transport");
+    expect(monthly && sport && transport).toBeTruthy();
+
+    const upload = await request(app)
+      .post(`/api/parent/billing/invoices/${context.anaInvoiceId}/receipts`)
+      .set("Authorization", `Bearer ${parentToken}`)
+      .field("itemIds", JSON.stringify([monthly!.id, sport!.id]))
+      .attach("file", Buffer.from("%PDF-1.4\n% comprobante de prueba\n"), {
+        filename: "comprobante.pdf",
+        contentType: "application/pdf",
+      });
+    expect(upload.status).toBe(201);
+    expect(upload.body.receipt.status).toBe("pending");
+    expect(upload.body.receipt.claimedAmount).toBe(58000);
+    const receiptId = upload.body.receipt.id as number;
+
+    const ownFile = await request(app)
+      .get(`/api/billing/receipts/${receiptId}/file`)
+      .set("Authorization", `Bearer ${parentToken}`);
+    expect(ownFile.status).toBe(200);
+
+    const otherParent = await loginAs("carlos.padre");
+    const forbiddenFile = await request(app)
+      .get(`/api/billing/receipts/${receiptId}/file`)
+      .set("Authorization", `Bearer ${otherParent}`);
+    expect(forbiddenFile.status).toBe(403);
+
+    const adminToken = context.adminToken;
+    const pending = await request(app)
+      .get("/api/admin/billing/receipts?status=pending")
+      .set("Authorization", `Bearer ${adminToken}`);
+    expect(pending.body.receipts).toHaveLength(1);
+
+    const approved = await request(app)
+      .post(`/api/admin/billing/receipts/${receiptId}/approve`)
+      .set("Authorization", `Bearer ${adminToken}`);
+    expect(approved.status).toBe(200);
+    expect(approved.body.invoice.status).toBe("partial");
+    expect(approved.body.invoice.paidAmount).toBe(58000);
+
+    const doubleApproval = await request(app)
+      .post(`/api/admin/billing/receipts/${receiptId}/approve`)
+      .set("Authorization", `Bearer ${adminToken}`);
+    expect(doubleApproval.status).toBe(409);
+    expect(doubleApproval.body.code).toBe("RECEIPT_NOT_PENDING");
+
+    const duplicatePaidItem = await request(app)
+      .post(`/api/parent/billing/invoices/${context.anaInvoiceId}/receipts`)
+      .set("Authorization", `Bearer ${parentToken}`)
+      .field("itemIds", JSON.stringify([monthly!.id]))
+      .attach("file", Buffer.from("%PDF-1.4\n% item pago\n"), {
+        filename: "item-pago.pdf",
+        contentType: "application/pdf",
+      });
+    expect(duplicatePaidItem.status).toBe(409);
+    expect(duplicatePaidItem.body.code).toBe("ITEM_ALREADY_PAID");
+
+    const uploadRest = await request(app)
+      .post(`/api/parent/billing/invoices/${context.anaInvoiceId}/receipts`)
+      .set("Authorization", `Bearer ${parentToken}`)
+      .field("itemIds", JSON.stringify([transport!.id]))
+      .attach("file", Buffer.from("%PDF-1.4\n% saldo\n"), {
+        filename: "saldo.pdf",
+        contentType: "application/pdf",
+      });
+    expect(uploadRest.status).toBe(201);
+
+    const approvedRest = await request(app)
+      .post(`/api/admin/billing/receipts/${uploadRest.body.receipt.id}/approve`)
+      .set("Authorization", `Bearer ${adminToken}`);
+    expect(approvedRest.status).toBe(200);
+    expect(approvedRest.body.invoice.status).toBe("paid");
+    expect(approvedRest.body.invoice.balance).toBe(0);
+
+    const duplicateItem = await request(app)
+      .post(`/api/parent/billing/invoices/${context.anaInvoiceId}/receipts`)
+      .set("Authorization", `Bearer ${parentToken}`)
+      .field("itemIds", JSON.stringify([transport!.id]))
+      .attach("file", Buffer.from("%PDF-1.4\n% duplicado\n"), {
+        filename: "duplicado.pdf",
+        contentType: "application/pdf",
+      });
+    expect(duplicateItem.status).toBe(409);
+    expect(duplicateItem.body.code).toBe("INVOICE_NOT_PAYABLE");
+  });
+
+  it("rejects receipts with a reason and validates file types", async () => {
+    const context = await prepareBilling();
+    const parentToken = await loginAs("marta.madre");
+    const detail = await request(app)
+      .get(`/api/parent/billing/invoices/${context.anaInvoiceId}`)
+      .set("Authorization", `Bearer ${parentToken}`);
+    const itemId = detail.body.invoice.items[0].id as number;
+
+    const invalid = await request(app)
+      .post(`/api/parent/billing/invoices/${context.anaInvoiceId}/receipts`)
+      .set("Authorization", `Bearer ${parentToken}`)
+      .field("itemIds", JSON.stringify([itemId]))
+      .attach("file", Buffer.from("texto"), {
+        filename: "comprobante.txt",
+        contentType: "text/plain",
+      });
+    expect(invalid.status).toBe(400);
+    expect(invalid.body.code).toBe("INVALID_FILE_TYPE");
+
+    const upload = await request(app)
+      .post(`/api/parent/billing/invoices/${context.anaInvoiceId}/receipts`)
+      .set("Authorization", `Bearer ${parentToken}`)
+      .field("itemIds", JSON.stringify([itemId]))
+      .attach("file", Buffer.from("%PDF-1.4\n% rechazo\n"), {
+        filename: "rechazo.pdf",
+        contentType: "application/pdf",
+      });
+    expect(upload.status).toBe(201);
+
+    const rejected = await request(app)
+      .post(`/api/admin/billing/receipts/${upload.body.receipt.id}/reject`)
+      .set("Authorization", `Bearer ${context.adminToken}`)
+      .send({ reason: "El importe no coincide" });
+    expect(rejected.status).toBe(200);
+    expect(rejected.body.receipt.status).toBe("rejected");
+    expect(rejected.body.receipt.rejectionReason).toBe("El importe no coincide");
+
+    const invoice = await request(app)
+      .get(`/api/admin/billing/invoices/${context.anaInvoiceId}`)
+      .set("Authorization", `Bearer ${context.adminToken}`);
+    expect(invoice.body.invoice.status).toBe("pending");
+    expect(invoice.body.invoice.paidAmount).toBe(0);
+  });
+
+  it("reports income, payments, services and delinquency", async () => {
+    const context = await prepareBilling();
+    const parentToken = await loginAs("marta.madre");
+    const detail = await request(app)
+      .get(`/api/parent/billing/invoices/${context.anaInvoiceId}`)
+      .set("Authorization", `Bearer ${parentToken}`);
+    const items = detail.body.invoice.items as Array<{ id: number; kind: string }>;
+    const monthly = items.find((item) => item.kind === "monthly")!;
+    const sport = items.find((item) => item.kind === "sport")!;
+
+    const upload = await request(app)
+      .post(`/api/parent/billing/invoices/${context.anaInvoiceId}/receipts`)
+      .set("Authorization", `Bearer ${parentToken}`)
+      .field("itemIds", JSON.stringify([monthly.id, sport.id]))
+      .attach("file", Buffer.from("%PDF-1.4\n% reporte\n"), {
+        filename: "reporte.pdf",
+        contentType: "application/pdf",
+      });
+    await request(app)
+      .post(`/api/admin/billing/receipts/${upload.body.receipt.id}/approve`)
+      .set("Authorization", `Bearer ${context.adminToken}`);
+
+    const income = await request(app)
+      .get("/api/admin/billing/reports/income?from=2026-10-01&to=2026-10-31")
+      .set("Authorization", `Bearer ${context.adminToken}`);
+    expect(income.status).toBe(200);
+    expect(income.body.report.total).toBe(58000);
+    expect(income.body.report.count).toBe(1);
+
+    const payments = await request(app)
+      .get("/api/admin/billing/reports/payments?from=2026-10-01&to=2026-10-31")
+      .set("Authorization", `Bearer ${context.adminToken}`);
+    expect(payments.status).toBe(200);
+    expect(payments.body.report.complete).toHaveLength(0);
+    expect(payments.body.report.incomplete).toHaveLength(2);
+
+    const services = await request(app)
+      .get("/api/admin/billing/reports/services?from=2026-10-01&to=2026-10-31")
+      .set("Authorization", `Bearer ${context.adminToken}`);
+    expect(services.status).toBe(200);
+    expect(services.body.report.rows[0]).toMatchObject({
+      kind: "sport",
+      student: "Ana Alumna",
+      service: "Futbol",
+      paidAmount: 8000,
+    });
+
+    const delinquency = await request(app)
+      .get("/api/admin/billing/delinquency?year=2026&month=10")
+      .set("Authorization", `Bearer ${context.adminToken}`);
+    expect(delinquency.status).toBe(200);
+    expect(delinquency.body.report).toMatchObject({
+      billed: 137000,
+      collected: 58000,
+      pending: 79000,
+    });
+    expect(delinquency.body.report.evolution).toHaveLength(6);
+    expect(delinquency.body.report.students[0]).toMatchObject({ student: "Bruno Alumno", balance: 67000 });
+  });
+
+  it("sends reminders and debt notices idempotently", async () => {
+    const context = await prepareBilling();
+    const first = await request(app)
+      .post("/api/admin/billing/notifications/reminders")
+      .set("Authorization", `Bearer ${context.adminToken}`)
+      .send({ year: 2026, month: 10 });
+    expect(first.status).toBe(200);
+    expect(first.body.result.sent).toBe(2);
+
+    const second = await request(app)
+      .post("/api/admin/billing/notifications/reminders")
+      .set("Authorization", `Bearer ${context.adminToken}`)
+      .send({ year: 2026, month: 10 });
+    expect(second.body.result.sent).toBe(0);
+    expect(second.body.result.skipped).toBe(2);
+
+    const debt = await request(app)
+      .post("/api/admin/billing/notifications/debt")
+      .set("Authorization", `Bearer ${context.adminToken}`)
+      .send({ year: 2026, month: 10 });
+    expect(debt.body.result.sent).toBe(2);
+  });
+
+  it("resets a password with a one-use token", async () => {
+    const anaId = await userId("ana.alumna");
+    const token = "test-reset-token";
+    const hash = createHash("sha256").update(token).digest("hex");
+    await pool.query(
+      "INSERT INTO password_reset_tokens (user_id, token_hash, expires_at) VALUES ($1, $2, $3)",
+      [anaId, hash, new Date(Date.now() + 3600000).toISOString()],
+    );
+
+    const reset = await request(app)
+      .post("/api/auth/reset-password")
+      .send({ token, newPassword: "NuevaClave2027!" });
+    expect(reset.status).toBe(200);
+
+    const login = await request(app)
+      .post("/api/auth/login")
+      .send({ username: "ana.alumna", password: "NuevaClave2027!" });
+    expect(login.status).toBe(200);
+
+    const reused = await request(app)
+      .post("/api/auth/reset-password")
+      .send({ token, newPassword: "OtraClave2027!" });
+    expect(reused.status).toBe(400);
+    expect(reused.body.code).toBe("INVALID_RESET_TOKEN");
+
+    const forgot = await request(app)
+      .post("/api/auth/forgot-password")
+      .send({ username: "ana.alumna" });
+    expect(forgot.status).toBe(200);
+
+    const unknown = await request(app)
+      .post("/api/auth/forgot-password")
+      .send({ username: "no.existe" });
+    expect(unknown.status).toBe(200);
+  });
+});
+
 describe("design patterns evidence", () => {
   it("uses a database-pool proxy that authorizes the requested role and audits success and rejection", async () => {
     const studentToken = await loginAs("ana.alumna");
@@ -1216,6 +1603,73 @@ async function userId(username: string): Promise<number> {
   return result.rows[0].id;
 }
 
+async function createBillingTariffs(token: string): Promise<void> {
+  const entries = [
+    { kind: "monthly", amount: 50000, validFrom: "2026-01-01" },
+    { kind: "sport", sportId: 1, amount: 8000, validFrom: "2026-01-01" },
+    { kind: "sport", sportId: 3, amount: 7000, validFrom: "2026-01-01" },
+    { kind: "transport", transportRouteId: 1, amount: 12000, validFrom: "2026-01-01" },
+    { kind: "cafeteria", amount: 10000, validFrom: "2026-01-01" },
+  ];
+  for (const entry of entries) {
+    const response = await request(app)
+      .post("/api/admin/billing/tariffs")
+      .set("Authorization", `Bearer ${token}`)
+      .send(entry);
+    expect(response.status).toBe(201);
+  }
+}
+
+async function prepareBilling(): Promise<{ adminToken: string; anaInvoiceId: number }> {
+  const adminToken = await loginAs("admin.demo");
+  await createBillingTariffs(adminToken);
+
+  const anaToken = await loginAs("ana.alumna");
+  expect(
+    (
+      await request(app)
+        .post("/api/student/enrollments")
+        .set("Authorization", `Bearer ${anaToken}`)
+        .send({ groupId: 1 })
+    ).status,
+  ).toBe(201);
+  expect(
+    (
+      await request(app)
+        .post("/api/student/transport")
+        .set("Authorization", `Bearer ${anaToken}`)
+        .send({ routeId: 1 })
+    ).status,
+  ).toBe(201);
+
+  const brunoToken = await loginAs("bruno.alumno");
+  expect(
+    (
+      await request(app)
+        .post("/api/student/enrollments")
+        .set("Authorization", `Bearer ${brunoToken}`)
+        .send({ groupId: 3 })
+    ).status,
+  ).toBe(201);
+  expect(
+    (
+      await request(app)
+        .post("/api/student/cafeteria")
+        .set("Authorization", `Bearer ${brunoToken}`)
+    ).status,
+  ).toBe(201);
+
+  const generated = await request(app)
+    .post("/api/admin/billing/invoices/generate")
+    .set("Authorization", `Bearer ${adminToken}`)
+    .send({ year: 2026, month: 10 });
+  expect(generated.status).toBe(201);
+  const anaInvoice = generated.body.invoices.find(
+    (invoice: { studentId: number }) => invoice.studentId === 1,
+  );
+  return { adminToken, anaInvoiceId: anaInvoice.id as number };
+}
+
 function enroll(token: string, groupId: number) {
   return request(app)
     .post("/api/student/enrollments")
@@ -1227,9 +1681,9 @@ async function insertFixtures(database: DatabasePool): Promise<void> {
   const passwordHash = await bcrypt.hash(PASSWORD, 4);
   const insertUser = async (username: string, displayName: string, role: string) => {
     const result = await database.query<{ id: number }>(
-      `INSERT INTO users (username, display_name, password_hash, role, status)
-       VALUES ($1, $2, $3, $4, 'active') RETURNING id`,
-      [username, displayName, passwordHash, role],
+      `INSERT INTO users (username, display_name, password_hash, email, role, status)
+       VALUES ($1, $2, $3, $4, $5, 'active') RETURNING id`,
+      [username, displayName, passwordHash, `${username}@educar.local`, role],
     );
     return result.rows[0].id;
   };
@@ -1239,6 +1693,7 @@ async function insertFixtures(database: DatabasePool): Promise<void> {
   const adminUserId = await insertUser("admin.demo", "Administracion", "admin");
   const teacherUserId = await insertUser("laura.docente", "Laura Docente", "teacher");
   await insertUser("director.demo", "Direccion", "director");
+  const carlosUserId = await insertUser("carlos.padre", "Carlos Padre", "parent");
 
   const levelResult = await database.query<{ id: number }>(
     "INSERT INTO levels (name) VALUES ('Primario') RETURNING id",
@@ -1267,6 +1722,14 @@ async function insertFixtures(database: DatabasePool): Promise<void> {
   await database.query(
     "INSERT INTO parent_students (parent_id, student_id) VALUES ($1, $2)",
     [parentResult.rows[0].id, anaStudentId],
+  );
+  const carlosParent = await database.query<{ id: number }>(
+    "INSERT INTO parents (user_id, full_name) VALUES ($1, 'Carlos Padre') RETURNING id",
+    [carlosUserId],
+  );
+  await database.query(
+    "INSERT INTO parent_students (parent_id, student_id) VALUES ($1, $2)",
+    [carlosParent.rows[0].id, brunoStudentId],
   );
 
   const teacherResult = await database.query<{ id: number }>(

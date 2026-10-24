@@ -52,3 +52,41 @@ personas del grupo: no dependas de la memoria del chat.
 - **Verificación:** typecheck + 43 tests + build en verde.
 - **Próximos pasos:** usar siempre `requerimientosCorregidos.md` como
   referencia canónica; revisar si aparece numeración nueva divergente.
+
+## 2026-10-23 — Agentes de arquitectura y desarrollo móvil
+- **Objetivo:** preparar la Parte 3 (app móvil) con dos perfiles de IA
+  separados: diseño y ejecución.
+- **Cambios:** se agregaron `.opencode/agent/mobile-architect.md` (agente
+  primario de arquitectura, sin implementación) y
+  `.opencode/agent/mobile-developer.md` (subagente de desarrollo). Ambos leen
+  `AGENTS.md`, el plan móvil, la API existente y la bitácora antes de actuar.
+- **Tests:** no aplica (configuración y prompts).
+- **Estado:** hecho.
+- **Verificación:** `opencode debug agents` lista `mobile-architect` (primary)
+  y `mobile-developer` (subagent) con los permisos previstos.
+- **Próximos pasos:** usar `mobile-architect` para cerrar modelo económico,
+  contratos de API y plan de rebanadas antes de que `mobile-developer`
+  implemente la primera rebanada (auth + modelo de cuotas).
+
+## 2026-10-24 — Parte 3: modelo económico, API de cuotas y app móvil
+- **Objetivo:** ejecutar los Sprints 1 a 6 de la aplicación móvil de cuotas
+  reutilizando la API y la base existentes.
+- **Cambios:** migración `006_billing_core.sql` (tarifas, facturas, ítems,
+  comprobantes, pagos, imputaciones, envíos y tokens de contraseña); endpoints
+  de facturación, comprobantes, reportes, morosidad y recuperación de
+  contraseña; generación de PDF con PDFKit y correo con Nodemailer; panel de
+  cobranza en la web; paquete `apps/mobile` con Expo Router, SecureStore,
+  login, cuotas, pagos, historial, comprobantes, tarifas y reportes; volumen
+  `educar-uploads` en los scripts de arranque; diseño en
+  `docs/mobile/diseno.md`.
+- **Tests:** se agregaron 7 casos de facturación (tarifas, generación
+  idempotente, cuotas, comprobantes, aprobación parcial/total, rechazo,
+  reportes, morosidad, recordatorios idempotentes y reset de contraseña).
+- **Estado:** núcleo de la Parte 3 implementado. Quedan pruebas de integración
+  móvil en dispositivo, envío SMTP real y pulido visual.
+- **Verificación:** `npm run typecheck` (API, web y móvil), 50 tests y
+  `npm run build` en verde; smoke test real con Podman (login, tarifas,
+  facturas, comprobante, aprobación, PDF y reportes).
+- **Próximos pasos:** probar la app en Expo Go con un dispositivo, configurar
+  SMTP real si se desea enviar correos y completar la evidencia para la
+  defensa/testig.

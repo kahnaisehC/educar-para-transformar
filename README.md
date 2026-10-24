@@ -1,6 +1,6 @@
 # Educar para Transformar
 
-Aplicación de los Sprints 1, 2 y 3 del sistema de gestión del Centro Educativo **EDUCAR PARA TRANSFORMAR**. Es un monorepo con React + TypeScript, API Node.js + TypeScript, PostgreSQL y autenticación JWT.
+Sistema de gestión del Centro Educativo **EDUCAR PARA TRANSFORMAR** (Partes 2 y 3 de la consigna integradora). Es un monorepo con React + TypeScript (web), React Native + Expo (móvil), API Node.js + TypeScript, PostgreSQL y autenticación JWT.
 
 ## Alcance del sistema completo
 
@@ -15,23 +15,28 @@ Aplicación de los Sprints 1, 2 y 3 del sistema de gestión del Centro Educativo
 - Reporte docente (cursos a cargo por nivel, materias y horarios), parámetros de consulta para la Dirección (RF-DI-02/03) y borrado de plantillas.
 - Auditoría de inscripciones, cancelaciones, operaciones administrativas y generación de reportes.
 - Panel de alertas y notificaciones: confirmaciones, rechazos, cambios de cuenta y matrículas.
+- **Parte 3 (móvil):** app Expo con login, consulta de cuotas y facturas, historial de comprobantes, selección de ítems, carga de comprobante (imagen/PDF), validación administrativa, tarifas, emisión de facturas y reportes de cobranza.
+- Recuperación y cambio de contraseña, notificaciones por correo con PDF adjunto, idempotencia de envíos y panel de morosidad.
 
 ## Estructura
 
 ```text
-apps/api/              API Express, servicios de negocio, JWT y pruebas Vitest
-apps/web/src/pages/    Vistas por rol (React/Vite) con rutas reales
-apps/web/src/components/ Componentes compartidos (notificaciones, UI)
-apps/web/src/ui.tsx    Helpers y componentes de interfaz reutilizables
-database/              Esquema, datos demo y migraciones PostgreSQL
-docs/                  Documentación existente del proyecto, preservada
+apps/api/               API Express, servicios de negocio, JWT y pruebas Vitest
+apps/web/src/pages/     Vistas por rol (React/Vite) con rutas reales
+apps/mobile/app/        App Expo Router: pantallas de padre, admin y dirección
+apps/mobile/src/        Cliente API, sesión segura, tipos y componentes móviles
+database/               Esquema, datos demo y migraciones PostgreSQL
+docs/mobile/            Diseño de la Parte 3 (arquitectura y contratos)
+docs/                   Documentación existente del proyecto, preservada
 ```
 
 ## Requisitos
 
-- Podman.
+- Podman (o Docker).
+- Node.js >= 20 para ejecutar la app móvil en desarrollo.
+- Expo Go o un emulador/dispositivo para probar la app móvil.
 
-Node.js y PostgreSQL se ejecutan dentro de los contenedores; no es necesario instalarlos en el host.
+PostgreSQL, la API y la web se ejecutan dentro de los contenedores; no es necesario instalar PostgreSQL en el host.
 
 ## Puesta en marcha con Podman
 
@@ -52,7 +57,7 @@ podman rm -f educar-web educar-api educar-db
 
 La API queda disponible en `http://localhost:4000`.
 
-La base se inicializa con `database/schema.sql` y `database/seed.sql`. El script aplica además las migraciones de `database/migrations/` (`002_student_and_sprint2.sql`, `003_sprint3.sql`) para actualizar volúmenes existentes. Para reinicializar los datos demo en un entorno local:
+La base se inicializa con `database/schema.sql` y `database/seed.sql`. El script aplica además todas las migraciones de `database/migrations/` (`002` a `006`) para actualizar volúmenes existentes. Para reinicializar los datos demo en un entorno local:
 
 ```bash
 podman rm -f educar-web educar-api educar-db
@@ -61,6 +66,20 @@ podman volume rm educar-postgres-data
 ```
 
 El secreto JWT de `apps/api/.env` debe ser largo, aleatorio y exclusivo de cada entorno. Nunca usar el secreto de ejemplo en producción.
+
+### App móvil (Expo)
+
+Con la API y la base levantadas:
+
+```bash
+npm install
+EXPO_PUBLIC_API_URL=http://localhost:4000/api npm run start --workspace @educar/mobile
+```
+
+- En un emulador Android usá `http://10.0.2.2:4000/api`; en un dispositivo físico usá la IP de la máquina.
+- Escaneá el QR con Expo Go o abrí el emulador.
+- Variables opcionales del backend: `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`, `UPLOADS_DIR`, `APP_URL`, `BANK_ALIAS`, `BANK_CBU`, `BANK_HOLDER` (ver `apps/api/.env.example`).
+- Los comprobantes se guardan en el volumen `educar-uploads`; si `SMTP_HOST` está vacío se usa un transporte de correo de prueba.
 
 ## Cuentas demo
 
@@ -86,7 +105,7 @@ npm run typecheck
 npm run build
 ```
 
-Las pruebas del backend (Vitest + `pg-mem`) cubren autenticación y RBAC, aislamiento padre-hijo, límite de dos deportes, conflictos de horario, duplicados, perfiles iniciales, contacto, transporte, comedor, cancellations, reportes, listado docente (HU-05), plantillas de reportes institucionales (HU-07) con filtros, matrículas del padre (RF-PA-02), gestión académica del administrador (RF-AD-01/02, HU-04), reporte docente (RF-PR-01/03), parámetros de consulta (RF-DI-02/03), notificaciones y la evidencia de los patrones Singleton, Proxy e Iterator.
+Las 50 pruebas del backend (Vitest + `pg-mem` + supertest) cubren autenticación y RBAC, aislamiento padre-hijo, límite de dos deportes, conflictos de horario, duplicados, perfiles iniciales, contacto, transporte, comedor, cancelaciones, reportes, listado docente (HU-05), plantillas de reportes institucionales (HU-07), matrículas del padre (RF-PA-02), gestión académica del administrador (RF-AD-01/02, HU-04), reporte docente (RF-PR-01/03), parámetros de consulta (RF-DI-02/03), notificaciones y los patrones Singleton, Proxy e Iterator. Para la Parte 3 agregan tarifas, generación idempotente de facturas, consulta de cuotas, carga multipart de comprobantes, aprobación/rechazo con imputación, pagos parciales, reportes de cobranza, morosidad, recordatorios idempotentes y recuperación de contraseña.
 
 ## Patrones de diseño
 
@@ -121,6 +140,10 @@ Los patrones se implementaron en el código real del Sprint 3 y se aplican en la
 - `GET /api/director/report-entities` · `GET /api/director/report-filters`
 - `GET /api/director/report-templates` · `POST/PATCH/DELETE /api/director/report-templates(/:id)`
 - `POST /api/director/report-templates/:templateId/generate` (con `filters`)
+- `POST /api/auth/forgot-password` · `POST /api/auth/reset-password` · `PATCH /api/me/password`
+- **Facturación (admin):** `GET/POST/PATCH /api/admin/billing/tariffs(/:id)`, `POST /api/admin/billing/invoices/generate`, `GET /api/admin/billing/invoices(/:id)`, `GET /api/admin/billing/receipts`, `POST /api/admin/billing/receipts/:id/approve|reject`
+- **Facturación (padre):** `GET /api/parent/billing/children/:studentId/summary|invoices`, `GET /api/parent/billing/invoices/:id`, `POST /api/parent/billing/invoices/:id/receipts` (multipart), `GET /api/parent/billing/bank-details`
+- **Reportes de cobranza:** `GET /api/admin/billing/reports/income|payments|services`, `GET /api/admin/billing/delinquency`, `POST /api/admin/billing/notifications/reminders|debt`
 
 Todas las rutas excepto login y health requieren `Authorization: Bearer <token>`. La API vuelve a consultar el usuario en cada request, por lo que una cuenta desactivada pierde acceso aunque conserve un JWT anterior. El rol administrador puede consultar y generar los reportes institucionales autorizados; la creación y edición de plantillas es exclusiva de Dirección.
 
@@ -134,7 +157,10 @@ Todas las rutas excepto login y health requieren `Authorization: Bearer <token>`
 | RF-AD-01 (gestión académica), RF-AD-02 (transporte y comedor), RF-AD-03 (usuarios y roles), RF-AD-04 (reportes autorizados) | Implementado |
 | RF-DI-01 (plantillas), RF-DI-02 (parámetros de consulta), RF-DI-03 (listados por nivel/curso/materia/deporte/horario/profesor/recorrido) | Implementado |
 | Panel de alertas y notificaciones | Implementado (in-app) |
-| App móvil (PARTE-3 de la consigna) | Planificada por separado en `docs/planDeTrabajoMovil.md` |
+| Parte 3 · RF-MV-01 a RF-MV-19 (auth, cuotas, pagos, comprobantes, tarifas, facturas) | Implementado |
+| Parte 3 · RF-MV-20 a RF-MV-25 (reportes de cobranza y morosidad) | Implementado en la web |
+| Parte 3 · RF-MV-16/17 (correo, PDF adjunto, idempotencia) | Implementado con transporte de prueba/SMTP configurable |
+| App móvil (Expo) | Implementada en `apps/mobile` |
 
 ## Patrones de Diseño
 

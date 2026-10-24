@@ -2,15 +2,15 @@ BEGIN;
 
 -- All demo accounts use Educar2027!. Change or remove these accounts before deployment.
 -- The hash was generated with bcrypt (12 rounds).
-INSERT INTO users (id, username, display_name, password_hash, role, status)
+INSERT INTO users (id, username, display_name, password_hash, email, role, status)
 VALUES
-    (1, 'ana.alumna', 'Ana Alumna', '$2b$12$xmOZOKyNNvdyZqXdsBfXoOiKwUIjId7fFNDc2w4YXwqdarA4nYfa6', 'student', 'active'),
-    (2, 'marta.madre', 'Marta Madre', '$2b$12$xmOZOKyNNvdyZqXdsBfXoOiKwUIjId7fFNDc2w4YXwqdarA4nYfa6', 'parent', 'active'),
-    (3, 'bruno.alumno', 'Bruno Alumno', '$2b$12$xmOZOKyNNvdyZqXdsBfXoOiKwUIjId7fFNDc2w4YXwqdarA4nYfa6', 'student', 'active'),
-    (4, 'carlos.padre', 'Carlos Padre', '$2b$12$xmOZOKyNNvdyZqXdsBfXoOiKwUIjId7fFNDc2w4YXwqdarA4nYfa6', 'parent', 'active'),
-    (5, 'laura.docente', 'Laura Docente', '$2b$12$xmOZOKyNNvdyZqXdsBfXoOiKwUIjId7fFNDc2w4YXwqdarA4nYfa6', 'teacher', 'active'),
-    (6, 'admin.demo', 'Administracion', '$2b$12$xmOZOKyNNvdyZqXdsBfXoOiKwUIjId7fFNDc2w4YXwqdarA4nYfa6', 'admin', 'active'),
-    (7, 'director.demo', 'Direccion', '$2b$12$xmOZOKyNNvdyZqXdsBfXoOiKwUIjId7fFNDc2w4YXwqdarA4nYfa6', 'director', 'active')
+    (1, 'ana.alumna', 'Ana Alumna', '$2b$12$xmOZOKyNNvdyZqXdsBfXoOiKwUIjId7fFNDc2w4YXwqdarA4nYfa6', 'ana.alumna@educar.local', 'student', 'active'),
+    (2, 'marta.madre', 'Marta Madre', '$2b$12$xmOZOKyNNvdyZqXdsBfXoOiKwUIjId7fFNDc2w4YXwqdarA4nYfa6', 'marta.madre@educar.local', 'parent', 'active'),
+    (3, 'bruno.alumno', 'Bruno Alumno', '$2b$12$xmOZOKyNNvdyZqXdsBfXoOiKwUIjId7fFNDc2w4YXwqdarA4nYfa6', 'bruno.alumno@educar.local', 'student', 'active'),
+    (4, 'carlos.padre', 'Carlos Padre', '$2b$12$xmOZOKyNNvdyZqXdsBfXoOiKwUIjId7fFNDc2w4YXwqdarA4nYfa6', 'carlos.padre@educar.local', 'parent', 'active'),
+    (5, 'laura.docente', 'Laura Docente', '$2b$12$xmOZOKyNNvdyZqXdsBfXoOiKwUIjId7fFNDC2w4YXwqdarA4nYfa6', 'laura.docente@educar.local', 'teacher', 'active'),
+    (6, 'admin.demo', 'Administracion', '$2b$12$xmOZOKyNNvdyZqXdsBfXoOiKwUIjId7fFNDc2w4YXwqdarA4nYfa6', 'admin.demo@educar.local', 'admin', 'active'),
+    (7, 'director.demo', 'Direccion', '$2b$12$xmOZOKyNNvdyZqXdsBfXoOiKwUIjId7fFNDc2w4YXwqdarA4nYfa6', 'director.demo@educar.local', 'director', 'active')
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO levels (id, name)
@@ -95,6 +95,51 @@ VALUES
     (4, 'Recorrido Oeste', 'Acceso oeste y zona rural', TRUE)
 ON CONFLICT (id) DO NOTHING;
 
+-- Inscripciones demo para componer las facturas del módulo económico.
+INSERT INTO sport_enrollments (student_id, group_id)
+VALUES (1, 1), (2, 3)
+ON CONFLICT (student_id, group_id) DO NOTHING;
+
+INSERT INTO transport_enrollments (student_id, route_id)
+VALUES (1, 1)
+ON CONFLICT (student_id) DO NOTHING;
+
+INSERT INTO cafeteria_enrollments (student_id, active)
+VALUES (2, TRUE)
+ON CONFLICT (student_id) DO NOTHING;
+
+-- Tarifas vigentes del ciclo 2026 (histórico simple).
+INSERT INTO billing_tariffs (id, kind, sport_id, transport_route_id, amount, valid_from, created_by)
+VALUES
+    (1, 'monthly', NULL, NULL, 50000.00, '2026-01-01', 6),
+    (2, 'sport', 1, NULL, 8000.00, '2026-01-01', 6),
+    (3, 'sport', 2, NULL, 8000.00, '2026-01-01', 6),
+    (4, 'sport', 3, NULL, 7000.00, '2026-01-01', 6),
+    (5, 'sport', 4, NULL, 6000.00, '2026-01-01', 6),
+    (6, 'transport', NULL, 1, 12000.00, '2026-01-01', 6),
+    (7, 'transport', NULL, 2, 12000.00, '2026-01-01', 6),
+    (8, 'transport', NULL, 3, 12000.00, '2026-01-01', 6),
+    (9, 'transport', NULL, 4, 12000.00, '2026-01-01', 6),
+    (10, 'cafeteria', NULL, NULL, 10000.00, '2026-01-01', 6)
+ON CONFLICT (id) DO NOTHING;
+
+-- Facturas demo del período 2026-10.
+INSERT INTO invoices (id, student_id, period_year, period_month, issue_date, due_date, total_amount, status, created_by)
+VALUES
+    (1, 1, 2026, 10, '2026-10-01', '2026-11-10', 70000.00, 'pending', 6),
+    (2, 2, 2026, 10, '2026-10-01', '2026-11-10', 67000.00, 'pending', 6)
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO invoice_items (id, invoice_id, kind, description, sport_id, transport_route_id, tariff_id, amount)
+VALUES
+    (1, 1, 'monthly', 'Cuota mensual 2026-10', NULL, NULL, 1, 50000.00),
+    (2, 1, 'sport', 'Futbol', 1, NULL, 2, 8000.00),
+    (3, 1, 'transport', 'Transporte · Recorrido Norte', NULL, 1, 6, 12000.00),
+    (4, 2, 'monthly', 'Cuota mensual 2026-10', NULL, NULL, 1, 50000.00),
+    (5, 2, 'sport', 'Atletismo', 3, NULL, 4, 7000.00),
+    (6, 2, 'cafeteria', 'Comedor', NULL, NULL, 10, 10000.00)
+ON CONFLICT (id) DO NOTHING;
+
 SELECT setval(pg_get_serial_sequence('users', 'id'), GREATEST((SELECT MAX(id) FROM users), 1));
 SELECT setval(pg_get_serial_sequence('levels', 'id'), GREATEST((SELECT MAX(id) FROM levels), 1));
 SELECT setval(pg_get_serial_sequence('courses', 'id'), GREATEST((SELECT MAX(id) FROM courses), 1));
@@ -108,5 +153,13 @@ SELECT setval(pg_get_serial_sequence('school_year_enrollments', 'id'), GREATEST(
 SELECT setval(pg_get_serial_sequence('sports', 'id'), GREATEST((SELECT MAX(id) FROM sports), 1));
 SELECT setval(pg_get_serial_sequence('sport_groups', 'id'), GREATEST((SELECT MAX(id) FROM sport_groups), 1));
 SELECT setval(pg_get_serial_sequence('transport_routes', 'id'), GREATEST((SELECT MAX(id) FROM transport_routes), 1));
+SELECT setval(pg_get_serial_sequence('billing_tariffs', 'id'), GREATEST((SELECT MAX(id) FROM billing_tariffs), 1));
+SELECT setval(pg_get_serial_sequence('invoices', 'id'), GREATEST((SELECT MAX(id) FROM invoices), 1));
+SELECT setval(pg_get_serial_sequence('invoice_items', 'id'), GREATEST((SELECT MAX(id) FROM invoice_items), 1));
+SELECT setval(pg_get_serial_sequence('payment_receipts', 'id'), GREATEST((SELECT COALESCE(MAX(id), 0) FROM payment_receipts), 1));
+SELECT setval(pg_get_serial_sequence('payments', 'id'), GREATEST((SELECT COALESCE(MAX(id), 0) FROM payments), 1));
+SELECT setval(pg_get_serial_sequence('payment_allocations', 'id'), GREATEST((SELECT COALESCE(MAX(id), 0) FROM payment_allocations), 1));
+SELECT setval(pg_get_serial_sequence('notification_deliveries', 'id'), GREATEST((SELECT COALESCE(MAX(id), 0) FROM notification_deliveries), 1));
+SELECT setval(pg_get_serial_sequence('password_reset_tokens', 'id'), GREATEST((SELECT COALESCE(MAX(id), 0) FROM password_reset_tokens), 1));
 
 COMMIT;

@@ -1,4 +1,4 @@
-import type { DatabasePool } from "./db.js";
+import type { DatabasePool, Queryable } from "./db.js";
 import { withTransaction } from "./db.js";
 import { AppError, isAppError } from "./errors.js";
 import { withAuditProxy } from "./auditProxy.js";
@@ -77,8 +77,8 @@ export async function listChildren(pool: DatabasePool, userId: number): Promise<
   }));
 }
 
-async function assertChildAssociation(
-  pool: DatabasePool,
+export async function assertChildAssociation(
+  pool: Queryable,
   userId: number,
   studentId: number,
 ): Promise<void> {

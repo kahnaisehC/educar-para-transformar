@@ -1,6 +1,10 @@
+import { randomBytes } from "node:crypto";
+import { mkdirSync } from "node:fs";
+import { extname, resolve } from "node:path";
 import cors from "cors";
 import express, { type NextFunction, type Request, type RequestHandler, type Response } from "express";
 import jwt from "jsonwebtoken";
+import multer from "multer";
 import {
   authenticate,
   isUserRole,
@@ -59,6 +63,34 @@ import {
   markAllNotificationsRead,
   markNotificationRead,
 } from "./notifications.service.js";
+import {
+  approveReceipt,
+  createPaymentReceipt,
+  createTariff,
+  generateInvoices,
+  getChildBillingSummary,
+  getInvoice,
+  getInvoiceForParent,
+  getReceiptFileInfo,
+  listChildInvoices,
+  listInvoices,
+  listReceipts,
+  listTariffs,
+  rejectReceipt,
+  updateTariff,
+  type TariffInput,
+} from "./billing.service.js";
+import {
+  getDelinquencyReport,
+  getIncomeReport,
+  getPaymentsReport,
+  getServicesReport,
+} from "./billingReports.service.js";
+import { sendDebtNotices, sendMonthlyReminders } from "./billingNotifications.service.js";
+import { buildInvoicePdf } from "./invoicePdf.service.js";
+import { configureMail } from "./mail.service.js";
+import { changePassword, requestPasswordReset, resetPassword } from "./password.service.js";
+import type { BankDetails, SmtpConfig } from "./config.js";
 import type { DatabasePool } from "./db.js";
 import { AppError, isAppError } from "./errors.js";
 import {
@@ -103,13 +135,69 @@ export interface CreateAppOptions {
   pool: DatabasePool;
   jwtSecret: string;
   corsOrigin?: string;
+  uploadsDir?: string;
+  appUrl?: string;
+  bank?: BankDetails;
+  smtp?: SmtpConfig;
 }
 
 type AsyncHandler = (request: Request, response: Response, next: NextFunction) => Promise<void>;
 
+const DEFAULT_BANK: BankDetails = {
+  alias: "EDUCAR.CUOTAS",
+  cbu: "0000003100010000000001",
+  holder: "Centro Educativo Educar para Transformar",
+};
+
+const DEFAULT_SMTP: SmtpConfig = {
+  host: null,
+  port: 587,
+  secure: false,
+  user: null,
+  password: null,
+  from: "EDUCAR PARA TRANSFORMAR <no-reply@educar.local>",
+};
+
+const ALLOWED_RECEIPT_TYPES = new Set(["image/jpeg", "image/png", "application/pdf"]);
+
 export function createApp(options: CreateAppOptions) {
   const app = express();
   const auth = requireAuth(options.pool, options.jwtSecret);
+  const uploadsDir = options.uploadsDir ?? "uploads";
+  const bank = options.bank ?? DEFAULT_BANK;
+  const appUrl = options.appUrl ?? "http://localhost:5173";
+  const receiptsDir = resolve(uploadsDir, "receipts");
+  mkdirSync(receiptsDir, { recursive: true });
+  configureMail(options.smtp ?? DEFAULT_SMTP);
+
+  const upload = multer({
+    storage: multer.diskStorage({
+      destination: (_request, _file, callback) => callback(null, receiptsDir),
+      filename: (_request, file, callback) =>
+        callback(
+          null,
+          `${Date.now()}-${randomBytes(8).toString("hex")}${extname(file.originalname).toLowerCase()}`,
+        ),
+    }),
+    limits: { fileSize: 5 * 1024 * 1024 },
+    fileFilter: (_request, file, callback) => {
+      if (!ALLOWED_RECEIPT_TYPES.has(file.mimetype)) {
+        callback(new AppError(400, "El comprobante debe ser JPG, PNG o PDF", "INVALID_FILE_TYPE"));
+        return;
+      }
+      callback(null, true);
+    },
+  });
+
+  const uploadReceipt = (request: Request, response: Response, next: NextFunction) => {
+    upload.single("file")(request, response, (error: unknown) => {
+      if (error) {
+        next(error instanceof AppError ? error : new AppError(400, "No se pudo subir el archivo", "UPLOAD_ERROR"));
+        return;
+      }
+      next();
+    });
+  };
 
   app.disable("x-powered-by");
   app.use(cors({ origin: options.corsOrigin ?? "http://localhost:5173" }));
@@ -127,11 +215,39 @@ export function createApp(options: CreateAppOptions) {
     response.json(result);
   }));
 
+  app.post("/api/auth/forgot-password", asyncRoute(async (request, response) => {
+    const identifier = requiredString(request.body?.username, "username");
+    await requestPasswordReset(options.pool, identifier, appUrl);
+    response.json({
+      message: "Si la cuenta existe, enviamos un correo con las instrucciones.",
+    });
+  }));
+
+  app.post("/api/auth/reset-password", asyncRoute(async (request, response) => {
+    const token = requiredString(request.body?.token, "token");
+    const newPassword = requiredPassword(request.body?.newPassword);
+    await resetPassword(options.pool, token, newPassword);
+    response.json({ message: "La contraseña fue actualizada correctamente" });
+  }));
+
   app.use("/api", auth);
 
   app.get("/api/me", (request, response) => {
     response.json({ user: request.user });
   });
+
+  app.patch(
+    "/api/me/password",
+    asyncRoute(async (request, response) => {
+      await changePassword(
+        options.pool,
+        request.user!.id,
+        requiredString(request.body?.currentPassword, "currentPassword"),
+        requiredPassword(request.body?.newPassword),
+      );
+      response.json({ message: "La contraseña fue actualizada correctamente" });
+    }),
+  );
 
   app.get(
     "/api/notifications",
@@ -796,6 +912,290 @@ export function createApp(options: CreateAppOptions) {
   );
 
   app.get(
+    "/api/parent/billing/children/:studentId/summary",
+    requireRoles("parent"),
+    asyncRoute(async (request, response) => {
+      const studentId = positiveInteger(request.params.studentId, "studentId");
+      const summary = await getChildBillingSummary(options.pool, request.user!.id, studentId);
+      response.json({ summary });
+    }),
+  );
+
+  app.get(
+    "/api/parent/billing/children/:studentId/invoices",
+    requireRoles("parent"),
+    asyncRoute(async (request, response) => {
+      const studentId = positiveInteger(request.params.studentId, "studentId");
+      const from = optionalDate(request.query.from, "from");
+      const to = optionalDate(request.query.to, "to");
+      const invoices = await listChildInvoices(
+        options.pool,
+        request.user!.id,
+        studentId,
+        from,
+        to,
+      );
+      response.json({ invoices });
+    }),
+  );
+
+  app.get(
+    "/api/parent/billing/invoices/:invoiceId",
+    requireRoles("parent"),
+    asyncRoute(async (request, response) => {
+      const invoiceId = positiveInteger(request.params.invoiceId, "invoiceId");
+      const invoice = await getInvoiceForParent(options.pool, request.user!.id, invoiceId);
+      response.json({ invoice });
+    }),
+  );
+
+  app.get(
+    "/api/parent/billing/invoices/:invoiceId/pdf",
+    requireRoles("parent"),
+    asyncRoute(async (request, response) => {
+      const invoiceId = positiveInteger(request.params.invoiceId, "invoiceId");
+      const invoice = await getInvoiceForParent(options.pool, request.user!.id, invoiceId);
+      const pdf = await buildInvoicePdf(invoice, bank);
+      response
+        .type("application/pdf")
+        .set("Content-Disposition", `inline; filename="factura-${invoice.id}.pdf"`)
+        .send(pdf);
+    }),
+  );
+
+  app.post(
+    "/api/parent/billing/invoices/:invoiceId/receipts",
+    requireRoles("parent"),
+    uploadReceipt,
+    asyncRoute(async (request, response) => {
+      const invoiceId = positiveInteger(request.params.invoiceId, "invoiceId");
+      if (!request.file) {
+        throw new AppError(400, "Debe adjuntar un comprobante", "FILE_REQUIRED");
+      }
+      const itemIds = parseItemIds(request.body?.itemIds);
+      const receipt = await createPaymentReceipt(
+        options.pool,
+        actor(request),
+        invoiceId,
+        itemIds,
+        {
+          fileName: request.file.originalname,
+          filePath: `receipts/${request.file.filename}`,
+          mimeType: request.file.mimetype,
+          sizeBytes: request.file.size,
+        },
+      );
+      response.status(201).json({ receipt });
+    }),
+  );
+
+  app.get(
+    "/api/parent/billing/bank-details",
+    requireRoles("parent"),
+    asyncRoute(async (_request, response) => {
+      response.json({ bank });
+    }),
+  );
+
+  app.get(
+    "/api/billing/receipts/:receiptId/file",
+    requireRoles("parent", "admin", "director"),
+    asyncRoute(async (request, response) => {
+      const receiptId = positiveInteger(request.params.receiptId, "receiptId");
+      const info = await getReceiptFileInfo(options.pool, receiptId);
+      if (request.user!.role === "parent" && info.uploadedBy !== request.user!.id) {
+        throw new AppError(403, "No puede acceder a ese comprobante", "FORBIDDEN");
+      }
+      response
+        .type(info.mimeType)
+        .set("Content-Disposition", `inline; filename="${info.fileName}"`)
+        .sendFile(resolve(uploadsDir, info.filePath));
+    }),
+  );
+
+  app.get(
+    "/api/admin/billing/tariffs",
+    admin,
+    asyncRoute(async (_request, response) => {
+      response.json({ tariffs: await listTariffs(options.pool) });
+    }),
+  );
+
+  app.post(
+    "/api/admin/billing/tariffs",
+    admin,
+    asyncRoute(async (request, response) => {
+      const tariff = await createTariff(options.pool, actor(request), {
+        kind: requiredTariffKind(request.body?.kind),
+        sportId: nullableId(request.body?.sportId, "sportId") ?? null,
+        transportRouteId: nullableId(request.body?.transportRouteId, "transportRouteId") ?? null,
+        amount: requiredAmount(request.body?.amount),
+        validFrom: optionalDate(request.body?.validFrom, "validFrom"),
+      });
+      response.status(201).json({ tariff });
+    }),
+  );
+
+  app.patch(
+    "/api/admin/billing/tariffs/:tariffId",
+    admin,
+    asyncRoute(async (request, response) => {
+      const tariffId = positiveInteger(request.params.tariffId, "tariffId");
+      const tariff = await updateTariff(options.pool, actor(request), tariffId, {
+        amount: request.body?.amount === undefined ? undefined : requiredAmount(request.body.amount),
+        validTo:
+          request.body?.validTo === undefined
+            ? undefined
+            : request.body.validTo === null
+              ? null
+              : requiredDate(request.body.validTo, "validTo"),
+      });
+      response.json({ tariff });
+    }),
+  );
+
+  app.post(
+    "/api/admin/billing/invoices/generate",
+    admin,
+    asyncRoute(async (request, response) => {
+      const { year, month } = requiredYearMonth(request.body);
+      const result = await generateInvoices(options.pool, actor(request), {
+        year,
+        month,
+        dueDate: optionalDate(request.body?.dueDate, "dueDate"),
+      });
+      response.status(201).json(result);
+    }),
+  );
+
+  app.get(
+    "/api/admin/billing/invoices",
+    admin,
+    asyncRoute(async (request, response) => {
+      const invoices = await listInvoices(options.pool, {
+        year: request.query.year === undefined ? undefined : positiveInteger(request.query.year, "year"),
+        month: request.query.month === undefined ? undefined : positiveInteger(request.query.month, "month"),
+        studentId:
+          request.query.studentId === undefined
+            ? undefined
+            : positiveInteger(request.query.studentId, "studentId"),
+      });
+      response.json({ invoices });
+    }),
+  );
+
+  app.get(
+    "/api/admin/billing/invoices/:invoiceId",
+    admin,
+    asyncRoute(async (request, response) => {
+      const invoiceId = positiveInteger(request.params.invoiceId, "invoiceId");
+      response.json({ invoice: await getInvoice(options.pool, invoiceId) });
+    }),
+  );
+
+  app.get(
+    "/api/admin/billing/invoices/:invoiceId/pdf",
+    admin,
+    asyncRoute(async (request, response) => {
+      const invoiceId = positiveInteger(request.params.invoiceId, "invoiceId");
+      const invoice = await getInvoice(options.pool, invoiceId);
+      const pdf = await buildInvoicePdf(invoice, bank);
+      response
+        .type("application/pdf")
+        .set("Content-Disposition", `inline; filename="factura-${invoice.id}.pdf"`)
+        .send(pdf);
+    }),
+  );
+
+  app.get(
+    "/api/admin/billing/receipts",
+    admin,
+    asyncRoute(async (request, response) => {
+      const status = request.query.status;
+      if (status !== undefined && status !== "pending" && status !== "approved" && status !== "rejected") {
+        throw new AppError(400, "El estado del comprobante no es válido", "VALIDATION_ERROR");
+      }
+      response.json({ receipts: await listReceipts(options.pool, { status }) });
+    }),
+  );
+
+  app.post(
+    "/api/admin/billing/receipts/:receiptId/approve",
+    admin,
+    asyncRoute(async (request, response) => {
+      const receiptId = positiveInteger(request.params.receiptId, "receiptId");
+      response.json(await approveReceipt(options.pool, actor(request), receiptId));
+    }),
+  );
+
+  app.post(
+    "/api/admin/billing/receipts/:receiptId/reject",
+    admin,
+    asyncRoute(async (request, response) => {
+      const receiptId = positiveInteger(request.params.receiptId, "receiptId");
+      const reason = requiredString(request.body?.reason, "reason");
+      response.json({ receipt: await rejectReceipt(options.pool, actor(request), receiptId, reason) });
+    }),
+  );
+
+  app.get(
+    "/api/admin/billing/reports/income",
+    requireRoles("admin", "director"),
+    asyncRoute(async (request, response) => {
+      const from = requiredDate(request.query.from, "from");
+      const to = requiredDate(request.query.to, "to");
+      response.json({ report: await getIncomeReport(options.pool, from, to) });
+    }),
+  );
+
+  app.get(
+    "/api/admin/billing/reports/payments",
+    requireRoles("admin", "director"),
+    asyncRoute(async (request, response) => {
+      const from = requiredDate(request.query.from, "from");
+      const to = requiredDate(request.query.to, "to");
+      response.json({ report: await getPaymentsReport(options.pool, from, to) });
+    }),
+  );
+
+  app.get(
+    "/api/admin/billing/reports/services",
+    requireRoles("admin", "director"),
+    asyncRoute(async (request, response) => {
+      const from = requiredDate(request.query.from, "from");
+      const to = requiredDate(request.query.to, "to");
+      response.json({ report: await getServicesReport(options.pool, from, to) });
+    }),
+  );
+
+  app.get(
+    "/api/admin/billing/delinquency",
+    requireRoles("admin", "director"),
+    asyncRoute(async (request, response) => {
+      const { year, month } = requiredYearMonth(request.query);
+      response.json({ report: await getDelinquencyReport(options.pool, year, month) });
+    }),
+  );
+
+  app.post(
+    "/api/admin/billing/notifications/reminders",
+    admin,
+    asyncRoute(async (request, response) => {
+      const { year, month } = requiredYearMonth(request.body);
+      response.json({ result: await sendMonthlyReminders(options.pool, bank, year, month) });
+    }),
+  );
+
+  app.post(
+    "/api/admin/billing/notifications/debt",
+    admin,
+    asyncRoute(async (request, response) => {
+      const { year, month } = requiredYearMonth(request.body);
+      response.json({ result: await sendDebtNotices(options.pool, bank, year, month) });
+    }),
+  );
+
+  app.get(
     "/api/teacher/profile",
     requireRoles("teacher"),
     asyncRoute(async (request, response) => {
@@ -934,6 +1334,10 @@ export function createAppFromConfig(pool: DatabasePool, config: AppConfig) {
     pool,
     jwtSecret: config.jwtSecret,
     corsOrigin: config.corsOrigin,
+    uploadsDir: config.uploadsDir,
+    appUrl: config.appUrl,
+    bank: config.bank,
+    smtp: config.smtp,
   });
 }
 
@@ -1026,6 +1430,63 @@ function requiredBoolean(value: unknown): boolean {
     throw new AppError(400, "El campo activo debe ser un valor booleano", "VALIDATION_ERROR");
   }
   return value;
+}
+
+function requiredTariffKind(value: unknown): TariffInput["kind"] {
+  if (value !== "monthly" && value !== "sport" && value !== "transport" && value !== "cafeteria") {
+    throw new AppError(400, "El tipo de tarifa no es válido", "VALIDATION_ERROR");
+  }
+  return value;
+}
+
+function requiredAmount(value: unknown): number {
+  const amount = typeof value === "number" ? value : Number(value);
+  if (!Number.isFinite(amount) || amount < 0) {
+    throw new AppError(400, "El importe debe ser un número mayor o igual a cero", "VALIDATION_ERROR");
+  }
+  return Math.round(amount * 100) / 100;
+}
+
+function requiredDate(value: unknown, field: string): string {
+  const date = requiredString(value, field);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    throw new AppError(400, `El campo ${field} debe tener el formato AAAA-MM-DD`, "VALIDATION_ERROR");
+  }
+  return date;
+}
+
+function optionalDate(value: unknown, field: string): string | undefined {
+  if (value === undefined || value === null || value === "") {
+    return undefined;
+  }
+  return requiredDate(value, field);
+}
+
+function requiredYearMonth(value: unknown): { year: number; month: number } {
+  const input = (value ?? {}) as Record<string, unknown>;
+  const year = positiveInteger(input.year, "year");
+  const month = positiveInteger(input.month, "month");
+  if (month < 1 || month > 12) {
+    throw new AppError(400, "El mes debe estar entre 1 y 12", "VALIDATION_ERROR");
+  }
+  return { year, month };
+}
+
+function parseItemIds(value: unknown): number[] {
+  if (Array.isArray(value)) {
+    return value.map((entry) => positiveInteger(entry, "itemIds"));
+  }
+  if (typeof value === "string" && value.trim()) {
+    try {
+      const parsed = JSON.parse(value);
+      if (Array.isArray(parsed)) {
+        return parsed.map((entry) => positiveInteger(entry, "itemIds"));
+      }
+    } catch {
+      // cae al error de validación
+    }
+  }
+  throw new AppError(400, "Debe seleccionar al menos un ítem para pagar", "VALIDATION_ERROR");
 }
 
 function actor(request: Request): { userId: number; role: UserRole } {

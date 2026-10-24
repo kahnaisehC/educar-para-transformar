@@ -1,0 +1,32 @@
+{
+  "expo": {
+    "name": "Educar para Transformar",
+    "slug": "educar-movil",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "educar",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "ar.edu.educar.movil"
+    },
+    "android": {
+      "package": "ar.edu.educar.movil"
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "La app usa la galería para adjuntar el comprobante de pago."
+        }
+      ]
+    ]
+  }
+}

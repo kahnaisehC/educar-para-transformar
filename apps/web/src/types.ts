@@ -366,6 +366,76 @@ export interface EnrollmentsOverview {
   }>;
 }
 
+export interface IncomeReport {
+  total: number;
+  count: number;
+  rows: Array<{
+    paymentId: number;
+    amount: number;
+    paidAt: string;
+    student: string;
+    periodYear: number;
+    periodMonth: number;
+  }>;
+}
+
+export interface PaymentsReport {
+  rows: Array<{
+    invoiceId: number;
+    student: string;
+    periodYear: number;
+    periodMonth: number;
+    totalAmount: number;
+    paidAmount: number;
+    balance: number;
+    status: string;
+    complete: boolean;
+  }>;
+  complete: PaymentsReport["rows"];
+  incomplete: PaymentsReport["rows"];
+}
+
+export interface ServicesReport {
+  rows: Array<{
+    kind: "sport" | "transport";
+    student: string;
+    level: string;
+    course: string;
+    service: string;
+    weekday: string | null;
+    schedule: string | null;
+    teacher: string | null;
+    paidAmount: number;
+  }>;
+}
+
+export interface DelinquencyReport {
+  year: number;
+  month: number;
+  billed: number;
+  collected: number;
+  pending: number;
+  collectionRate: number;
+  projectedClosingDebt: number;
+  assumption: string;
+  evolution: Array<{
+    periodYear: number;
+    periodMonth: number;
+    billed: number;
+    collected: number;
+    collectionRate: number;
+  }>;
+  students: Array<{
+    invoiceId: number;
+    student: string;
+    dueDate: string;
+    totalAmount: number;
+    paidAmount: number;
+    balance: number;
+    daysLate: number;
+  }>;
+}
+
 export interface ReportField {
   key: string;
   label: string;

@@ -1,6 +1,7 @@
 import { type FormEvent, useEffect, useState } from "react";
 
 import { apiRequest } from "../api";
+import { BillingReports } from "./BillingReports";
 
 import type { GeneratedReport, ReportEntity, ReportFilterOptions, ReportTemplate } from "../types";
 
@@ -238,6 +239,7 @@ export function DirectorDashboard({ token }: { token: string }) {
           {report.rows.length === 0 ? <EmptyState title="Sin datos para esta plantilla" detail="La entidad elegida todavía no tiene registros cargados." compact /> : <div className="user-table-wrap"><table className="user-table"><thead><tr>{report.columns.map((column) => <th key={column.key}>{column.label}</th>)}</tr></thead><tbody>{report.rows.map((row, index) => <tr key={index}>{report.columns.map((column) => <td key={column.key}>{row[column.key]}</td>)}</tr>)}</tbody></table></div>}
         </section>
       )}
+      <BillingReports token={token} />
     </>
   );
 }

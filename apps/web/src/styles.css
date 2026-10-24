@@ -214,6 +214,7 @@ h1, h2, h3, strong { letter-spacing: -.025em; }
 .teacher-contact-panel { max-width: 620px; }
 .teacher-contact-form { max-width: 430px; margin-top: 22px; }
 .report-actions { margin-bottom: 16px; }
+.report-total { color: var(--navy); font-size: 1.35rem; white-space: nowrap; }
 .filter-panel { margin-top: 22px; }
 .filter-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-bottom: 16px; }
 .report-course { padding-top: 14px; }
