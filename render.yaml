@@ -1,0 +1,45 @@
+# Blueprint de Render: PostgreSQL + API + frontend estático.
+# Después del primer deploy hay que completar las variables marcadas
+# "sync: false" (ver docs/DEPLOY_RENDER.md).
+databases:
+  - name: educar-db
+    databaseName: educar
+    user: educar
+    plan: free
+
+services:
+  - type: web
+    name: educar-api
+    runtime: node
+    plan: free
+    buildCommand: npm install && npm run build --workspace @educar/api
+    startCommand: node scripts/init-db.mjs && npm run start --workspace @educar/api
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+      - key: DATABASE_URL
+        fromDatabase:
+          name: educar-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CORS_ORIGIN
+        sync: false
+      - key: APP_URL
+        sync: false
+
+  - type: web
+    name: educar-web
+    runtime: static
+    buildCommand: npm install && npm run build --workspace @educar/web
+    staticPublishPath: apps/web/dist
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+      - key: VITE_API_URL
+        sync: false
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
