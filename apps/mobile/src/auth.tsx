@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import * as SecureStore from "expo-secure-store";
 import { apiRequest } from "./api";
+import { deleteStoredItem, getStoredItem, setStoredItem } from "./storage";
 import type { User } from "./types";
 
 const TOKEN_KEY = "educar.mobile.token";
@@ -24,7 +24,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let active = true;
     (async () => {
       try {
-        const stored = await SecureStore.getItemAsync(TOKEN_KEY);
+        const stored = await getStoredItem(TOKEN_KEY);
         if (!stored) return;
         const result = await apiRequest<{ user: User }>("/me", { token: stored });
         if (active) {
@@ -32,7 +32,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setUser(result.user);
         }
       } catch {
-        await SecureStore.deleteItemAsync(TOKEN_KEY);
+        await deleteStoredItem(TOKEN_KEY);
       } finally {
         if (active) setLoading(false);
       }
@@ -47,14 +47,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       method: "POST",
       body: { username, password },
     });
-    await SecureStore.setItemAsync(TOKEN_KEY, result.token);
+    await setStoredItem(TOKEN_KEY, result.token);
     setToken(result.token);
     setUser(result.user);
     return result.user;
   }
 
   async function logout(): Promise<void> {
-    await SecureStore.deleteItemAsync(TOKEN_KEY);
+    await deleteStoredItem(TOKEN_KEY);
     setToken(null);
     setUser(null);
   }

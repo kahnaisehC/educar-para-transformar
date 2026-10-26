@@ -23,6 +23,7 @@ interface PickedFile {
   uri: string;
   name: string;
   type: string;
+  file?: unknown;
 }
 
 export default function ParentPaymentScreen() {
@@ -104,6 +105,7 @@ export default function ParentPaymentScreen() {
       uri: asset.uri,
       name: asset.name,
       type: asset.mimeType ?? "application/pdf",
+      file: (asset as { file?: unknown }).file,
     });
   }
 
@@ -115,11 +117,15 @@ export default function ParentPaymentScreen() {
     try {
       const formData = new FormData();
       formData.append("itemIds", JSON.stringify(selectedItems));
-      formData.append("file", {
-        uri: file.uri,
-        name: file.name,
-        type: file.type,
-      } as unknown as Blob);
+      if (file.file) {
+        formData.append("file", file.file as Blob);
+      } else {
+        formData.append("file", {
+          uri: file.uri,
+          name: file.name,
+          type: file.type,
+        } as unknown as Blob);
+      }
       await apiUpload(`/parent/billing/invoices/${invoice.id}/receipts`, token, formData);
       setFile(null);
       setSelectedItems([]);
