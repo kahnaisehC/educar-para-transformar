@@ -157,7 +157,7 @@ o Nivel educativo.
 • Listado de alumnos por deporte, nivel, horario y profesor a cargo.
 • Listado de alumnos por recorrido del servicio de transporte.
 Reglas de Negocio:
-5
+-5
 • Cada alumno puede:
 o inscribirse a dos deportes simultáneamente.
 o Inscribirse al servicio de transporte por recorrido.
