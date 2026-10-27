@@ -140,7 +140,7 @@ export async function updateUser(
     actorRole,
     allowedRoles: ["admin"],
     normalizeError: normalizeAdminError,
-    onSuccess: (user) => ({ userId, changes: input }),
+    onSuccess: () => ({ userId, changes: input }),
     onError: (error) => ({
       userId,
       changes: input,

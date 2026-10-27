@@ -4,7 +4,7 @@ import { apiRequest } from "../api";
 
 import type { CourseStudent, TeacherCourse, TeacherProfileView, TeacherReportView } from "../types";
 
-import { DashboardSkeleton, EmptyState, ErrorState, InlineMessage, PanelHeading, downloadCsv, formatDateTime, getErrorMessage } from "../ui";
+import { EmptyState, ErrorState, InlineMessage, PanelHeading, downloadCsv, formatDateTime, getErrorMessage } from "../ui";
 
 export function TeacherDashboard({ token, view = "overview" }: { token: string; view?: "overview" | "courses" }) {
   const [profile, setProfile] = useState<TeacherProfileView | null>(null);

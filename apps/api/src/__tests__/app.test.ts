@@ -11,8 +11,6 @@ import { createApp } from "../app.js";
 import type { DatabasePool } from "../db.js";
 import { closeDatabasePool, getDatabasePool } from "../database.js";
 import { RowIterator } from "../rowIterator.js";
-import { withAuditProxy } from "../auditProxy.js";
-import { AppError } from "../errors.js";
 
 const schema = readFileSync(
   fileURLToPath(new URL("../../../../database/schema.sql", import.meta.url)),

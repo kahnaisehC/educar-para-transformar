@@ -90,3 +90,11 @@ personas del grupo: no dependas de la memoria del chat.
 - **Próximos pasos:** probar la app en Expo Go con un dispositivo, configurar
   SMTP real si se desea enviar correos y completar la evidencia para la
   defensa/testig.
+
+
+## Unidad 5 – Calidad y pruebas (27/10/2026)
+
+- **Objetivo:** completar el TP de la Unidad 5 (caso de prueba, prueba estática y dinámica, métricas) sobre RF-AL-03 / HU-01.
+- **Cambios:** ESLint, Husky + lint-staged, Cypress (E2E y regresión), cobertura con `@vitest/coverage-v8`, configuración de SonarCloud, job `e2e` y paso `lint` en CI, política de PR y carpeta `unidad5v2/` con el Word y el PDF. Se eliminaron imports sin usar detectados por ESLint.
+- **Estado:** lint 0 errores, typecheck, 50 tests y build en verde; Cypress 4/4 contra el stack real.
+- **Próximos pasos:** vincular SonarCloud (`SONAR_TOKEN`) y activar la protección de `main`.

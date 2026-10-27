@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { BrowserRouter } from "react-router-dom";
-import { getMe, login } from "./api";
+import { getMe } from "./api";
 import { AppShell } from "./AppShell";
 import { FullPageState } from "./ui";
 import { LoginPage } from "./pages/LoginPage";

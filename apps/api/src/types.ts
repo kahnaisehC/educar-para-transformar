@@ -9,6 +9,7 @@ export interface CurrentUser {
 }
 
 declare global {
+  // eslint-disable-next-line @typescript-eslint/no-namespace -- declaration merging requerido por Express
   namespace Express {
     interface Request {
       user?: CurrentUser;

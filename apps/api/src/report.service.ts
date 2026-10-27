@@ -244,7 +244,7 @@ export async function updateReportTemplate(
     actorRole,
     allowedRoles: ["director"],
     normalizeError: normalizeReportError,
-    onSuccess: (template) => ({ templateId, changes: input }),
+    onSuccess: () => ({ templateId, changes: input }),
     onError: (error) => ({ templateId, reason: getErrorMessage(error) }),
     handler: () =>
       withTransaction(pool, async (client) => {
