@@ -41,7 +41,11 @@ jobs:
       - name: Instalar dependencias
         run: npm install
 
-      # 4. Verificación de tipos (quality gate temprano)
+      # 4a. Linter (ESLint): primer quality gate de estilo y errores comunes
+      - name: Lint
+        run: npm run lint
+
+      # 4b. Verificación de tipos (quality gate temprano)
       - name: Typecheck
         run: npm run typecheck
 
@@ -65,3 +69,40 @@ jobs:
             apps/api/dist
             apps/web/dist
           retention-days: 7
+
+  e2e:
+    name: Pruebas E2E (Cypress)
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: educar
+          POSTGRES_USER: educar
+          POSTGRES_PASSWORD: educar_dev_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U educar -d educar"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgres://educar:educar_dev_password@localhost:5432/educar
+      JWT_SECRET: ci-only-test-secret-not-for-production
+      CORS_ORIGIN: http://localhost:5173
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm install
+      - name: Inicializar base de datos (esquema, seed y migraciones)
+        run: node scripts/init-db.mjs
+      - name: Levantar API y frontend
+        run: |
+          npm run dev:api &
+          npm run dev --workspace @educar/web -- --host &
+          npx wait-on http://localhost:4000/api/health http://localhost:5173
+      - name: Cypress
+        run: npm run e2e

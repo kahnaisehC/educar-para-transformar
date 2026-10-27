@@ -2,9 +2,9 @@ import { type FormEvent, useEffect, useState } from "react";
 
 import { apiRequest } from "../api";
 
-import type { CafeteriaEnrollment, StudentDashboardData, StudentReport, TransportEnrollment, TransportRoute } from "../types";
+import type { StudentDashboardData, StudentReport } from "../types";
 
-import { DashboardSkeleton, EmptyState, ErrorState, InlineMessage, PanelHeading, downloadCsv, formatDate, getErrorMessage, getSportInitial } from "../ui";
+import { DashboardSkeleton, EmptyState, ErrorState, InlineMessage, PanelHeading, formatDate, getErrorMessage, getSportInitial } from "../ui";
 
 export function StudentDashboard({ token }: { token: string }) {
   const [data, setData] = useState<StudentDashboardData | null>(null);

@@ -49,21 +49,26 @@ npm run dev:web        # Vite dev server, puerto 5173 (proxy /api -> 4000)
 npm test               # Vitest en @educar/api
 npm run test:watch --workspace @educar/api
 npm run typecheck      # tsc --noEmit en todos los workspaces
+npm run lint           # ESLint (0 errores requeridos; hook pre-commit con Husky)
+npm run test:coverage --workspace @educar/api   # cobertura (lcov para SonarCloud)
+npm run e2e            # Cypress contra API + web + PostgreSQL levantados
 npm run build          # build de API (dist) y web (dist)
 
 ./scripts/start.sh     # build + levantar PostgreSQL + API + web con Podman
 podman rm -f educar-web educar-api educar-db   # detener
 ```
 
-Requiere Node >= 20. No hay ESLint/Prettier configurado: respetá el estilo del
-archivo que editás.
+Requiere Node >= 20. ESLint (`eslint.config.mjs`) y un hook pre-commit (Husky +
+lint-staged) validan el código; no hay Prettier: respetá el estilo del archivo
+que editás. Política de PR en `docs/POLITICA_PR.md`; entrega de la Unidad 5 en
+`unidad5v2/`.
 
 ## Reglas de trabajo (obligatorias)
 
 1. **Una rebanada vertical por vez.** No implementes "todo el plan" de una.
    Ver `docs/app-steering-guide.txt`.
 2. **Antes de dar una tarea por terminada** ejecutá:
-   `npm run typecheck && npm test && npm run build`. El CI corre exactamente
+   `npm run lint && npm run typecheck && npm test && npm run build`. El CI corre exactamente
    eso en cada push/PR a `main`; no se mergea en rojo.
 3. **No rompas tests existentes.** Si cambiás una regla de negocio, actualizá o
    agregá tests.
