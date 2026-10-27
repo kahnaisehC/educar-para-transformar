@@ -20,9 +20,9 @@ Reglas para integrar cambios a `main` mediante revisión por pares.
 - ¿Maneja los errores con `AppError` y valida las entradas?
 - ¿Puede exponer datos de otro usuario o de otro rol?
 
-## Activar la protección de rama (GitHub)
+## Protección de rama activada (GitHub)
 
-*Settings > Branches > Add branch protection rule* para `main`:
+Configurada en *Settings > Branches > Add branch protection rule* para `main`:
 
 - Require a pull request before merging (1 approval, Require review from Code Owners).
 - Require status checks to pass: `Build, typecheck y test`, `Pruebas E2E (Cypress)` y `Análisis SonarCloud`.

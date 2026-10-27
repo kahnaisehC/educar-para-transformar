@@ -36,6 +36,6 @@ Funcionalidad elegida: **RF-AL-03 / HU-01 – Inscripción a deportes** (la Unid
 - Vitest: 50 pruebas aprobadas; cobertura de la API 84,61 % de líneas y 73,21 % de ramas.
 - ESLint: 0 errores y 12 advertencias (`react-hooks/exhaustive-deps`).
 
-## Pendiente (acciones manuales en GitHub / SonarCloud)
+## Configuración en GitHub
 
-- Activar la protección de `main` en *Settings > Branches* (ver `docs/POLITICA_PR.md`).
+- Protección de `main` activada en *Settings > Branches* (ver `docs/POLITICA_PR.md`).
