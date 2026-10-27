@@ -2,6 +2,7 @@ docs/pdf
 .vscode
 
 *pdf
+!docs/tps/tp_unidad_4_metodologia_parte2.pdf
 __pycache__/
 *.pyc
 data/

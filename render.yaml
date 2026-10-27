@@ -12,6 +12,7 @@ services:
     name: educar-api
     runtime: node
     plan: free
+    autoDeployTrigger: checksPass
     buildCommand: npm install && npm run build --workspace @educar/api
     startCommand: node scripts/init-db.mjs && npm run start --workspace @educar/api
     healthCheckPath: /api/health
@@ -32,6 +33,7 @@ services:
   - type: web
     name: educar-web
     runtime: static
+    autoDeployTrigger: checksPass
     buildCommand: npm install && npm run build --workspace @educar/web
     staticPublishPath: apps/web/dist
     envVars:
