@@ -1426,22 +1426,25 @@ describe("billing module (Parte 3)", () => {
       .post(`/api/admin/billing/receipts/${upload.body.receipt.id}/approve`)
       .set("Authorization", `Bearer ${context.adminToken}`);
 
+    const reportEnd = new Date(new Date(detail.body.invoice.issueDate).getTime() + 24 * 60 * 60 * 1000)
+      .toISOString()
+      .slice(0, 10);
     const income = await request(app)
-      .get("/api/admin/billing/reports/income?from=2026-10-01&to=2026-10-31")
+      .get(`/api/admin/billing/reports/income?from=2026-10-01&to=${reportEnd}`)
       .set("Authorization", `Bearer ${context.adminToken}`);
     expect(income.status).toBe(200);
     expect(income.body.report.total).toBe(58000);
     expect(income.body.report.count).toBe(1);
 
     const payments = await request(app)
-      .get("/api/admin/billing/reports/payments?from=2026-10-01&to=2026-10-31")
+      .get(`/api/admin/billing/reports/payments?from=2026-10-01&to=${reportEnd}`)
       .set("Authorization", `Bearer ${context.adminToken}`);
     expect(payments.status).toBe(200);
     expect(payments.body.report.complete).toHaveLength(0);
     expect(payments.body.report.incomplete).toHaveLength(2);
 
     const services = await request(app)
-      .get("/api/admin/billing/reports/services?from=2026-10-01&to=2026-10-31")
+      .get(`/api/admin/billing/reports/services?from=2026-10-01&to=${reportEnd}`)
       .set("Authorization", `Bearer ${context.adminToken}`);
     expect(services.status).toBe(200);
     expect(services.body.report.rows[0]).toMatchObject({
