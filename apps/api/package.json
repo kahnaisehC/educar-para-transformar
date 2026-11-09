@@ -13,6 +13,7 @@
     "test:coverage": "vitest run --coverage --coverage.reporter=text --coverage.reporter=lcov"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1164.0",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",

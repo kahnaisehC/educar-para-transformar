@@ -40,6 +40,13 @@ export interface InvoiceItem {
   status: InvoiceItemStatus;
 }
 
+export interface Payment {
+  id: number;
+  number: string | null;
+  amount: number;
+  createdAt: string;
+}
+
 export interface ReceiptItem {
   invoiceItemId: number;
   description: string;
@@ -61,6 +68,7 @@ export interface Receipt {
   reviewedAt: string | null;
   createdAt: string;
   items: ReceiptItem[];
+  payment: Payment | null;
 }
 
 export interface Invoice {
@@ -78,6 +86,7 @@ export interface Invoice {
   displayStatus: InvoiceDisplayStatus;
   items: InvoiceItem[];
   receipts: Receipt[];
+  payments: Payment[];
 }
 
 export interface BillingSummary {

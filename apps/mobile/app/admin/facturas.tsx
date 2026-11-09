@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { useAuth } from "../../src/auth";
 import { apiRequest, getErrorMessage } from "../../src/api";
+import { sharePaymentReceipt } from "../../src/downloads";
 import type { Invoice } from "../../src/types";
 import { dateLabel, money, periodLabel } from "../../src/format";
 import {
@@ -30,6 +31,7 @@ export default function AdminInvoicesScreen() {
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [sharingId, setSharingId] = useState<number | null>(null);
 
   async function load() {
     if (!token) return;
@@ -76,6 +78,19 @@ export default function AdminInvoicesScreen() {
       setError(getErrorMessage(requestError));
     } finally {
       setGenerating(false);
+    }
+  }
+
+  async function downloadPayment(paymentId: number, number: string | null) {
+    if (!token) return;
+    setSharingId(paymentId);
+    setError(null);
+    try {
+      await sharePaymentReceipt(paymentId, token, number, "admin");
+    } catch (requestError) {
+      setError(getErrorMessage(requestError));
+    } finally {
+      setSharingId(null);
     }
   }
 
@@ -140,6 +155,25 @@ export default function AdminInvoicesScreen() {
                     label={`${money(receipt.claimedAmount)} · ${dateLabel(receipt.createdAt)}`}
                     value={receipt.status}
                   />
+                ))
+              )}
+              <SectionTitle>Pagos acreditados</SectionTitle>
+              {detail.payments.length === 0 ? (
+                <Text style={styles.note}>Sin pagos acreditados.</Text>
+              ) : (
+                detail.payments.map((payment) => (
+                  <View key={payment.id}>
+                    <Row
+                      label={`${payment.number ?? `Pago ${payment.id}`} · ${dateLabel(payment.createdAt)}`}
+                      value={money(payment.amount)}
+                    />
+                    <Button
+                      label={sharingId === payment.id ? "Generando..." : "Descargar comprobante"}
+                      variant="secondary"
+                      onPress={() => void downloadPayment(payment.id, payment.number)}
+                      loading={sharingId === payment.id}
+                    />
+                  </View>
                 ))
               )}
             </>

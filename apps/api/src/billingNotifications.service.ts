@@ -9,6 +9,28 @@ export interface NotificationRunResult {
   sent: number;
   skipped: number;
   failed: number;
+  reason?: string;
+}
+
+export interface NotificationRunOptions {
+  force?: boolean;
+  today?: Date;
+}
+
+export function isLastBusinessDayOfMonth(date: Date): boolean {
+  const last = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 0));
+  while (last.getUTCDay() === 0 || last.getUTCDay() === 6) {
+    last.setUTCDate(last.getUTCDate() - 1);
+  }
+  return (
+    date.getUTCFullYear() === last.getUTCFullYear() &&
+    date.getUTCMonth() === last.getUTCMonth() &&
+    date.getUTCDate() === last.getUTCDate()
+  );
+}
+
+export function isDebtNoticeDay(date: Date): boolean {
+  return date.getUTCDate() === 20;
 }
 
 type Kind = "monthly_reminder" | "debt_notice";
@@ -140,8 +162,9 @@ export async function sendMonthlyReminders(
   bank: BankDetails,
   year: number,
   month: number,
+  options: NotificationRunOptions = {},
 ): Promise<NotificationRunResult> {
-  return runNotifications(pool, bank, year, month, "monthly_reminder");
+  return runNotifications(pool, bank, year, month, "monthly_reminder", options);
 }
 
 export async function sendDebtNotices(
@@ -149,8 +172,9 @@ export async function sendDebtNotices(
   bank: BankDetails,
   year: number,
   month: number,
+  options: NotificationRunOptions = {},
 ): Promise<NotificationRunResult> {
-  return runNotifications(pool, bank, year, month, "debt_notice");
+  return runNotifications(pool, bank, year, month, "debt_notice", options);
 }
 
 async function runNotifications(
@@ -159,7 +183,30 @@ async function runNotifications(
   year: number,
   month: number,
   kind: Kind,
+  options: NotificationRunOptions = {},
 ): Promise<NotificationRunResult> {
+  const today = options.today ?? new Date();
+  if (!options.force) {
+    if (kind === "monthly_reminder" && !isLastBusinessDayOfMonth(today)) {
+      return {
+        processed: 0,
+        sent: 0,
+        skipped: 0,
+        failed: 0,
+        reason: "not_last_business_day",
+      };
+    }
+    if (kind === "debt_notice" && !isDebtNoticeDay(today)) {
+      return {
+        processed: 0,
+        sent: 0,
+        skipped: 0,
+        failed: 0,
+        reason: "not_debt_notice_day",
+      };
+    }
+  }
+
   const groups = await loadParentGroups(pool, year, month);
   const result: NotificationRunResult = { processed: groups.length, sent: 0, skipped: 0, failed: 0 };
   const periodLabel = `${MONTH_NAMES[month - 1]} ${year}`;

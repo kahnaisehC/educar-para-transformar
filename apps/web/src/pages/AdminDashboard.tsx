@@ -180,8 +180,8 @@ export function AdminUsersTab({ token, currentUser }: { token: string; currentUs
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<{ tone: "success" | "error"; text: string } | null>(null);
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({ username: "", displayName: "", password: "", role: "student" as UserRole });
-  const [editing, setEditing] = useState<{ id: number; displayName: string; password: string } | null>(null);
+  const [form, setForm] = useState({ username: "", displayName: "", email: "", password: "", role: "student" as UserRole });
+  const [editing, setEditing] = useState<{ id: number; displayName: string; email: string; password: string } | null>(null);
 
   async function loadUsers() {
     setLoading(true);
@@ -206,7 +206,7 @@ export function AdminUsersTab({ token, currentUser }: { token: string; currentUs
     setNotice(null);
     try {
       await apiRequest("/admin/users", { method: "POST", token, body: JSON.stringify(form) });
-      setForm({ username: "", displayName: "", password: "", role: "student" });
+      setForm({ username: "", displayName: "", email: "", password: "", role: "student" });
       setNotice({ tone: "success", text: "El usuario fue creado y quedó registrado en auditoría." });
       await loadUsers();
     } catch (requestError) {
@@ -242,7 +242,10 @@ export function AdminUsersTab({ token, currentUser }: { token: string; currentUs
     setSaving(true);
     setNotice(null);
     try {
-      const body: { displayName: string; password?: string } = { displayName: editing.displayName };
+      const body: { displayName: string; email?: string | null; password?: string } = {
+        displayName: editing.displayName,
+        email: editing.email || null,
+      };
       if (editing.password) body.password = editing.password;
       const result = await apiRequest<{ user: AdminUser }>(`/admin/users/${editing.id}`, {
         method: "PATCH",
@@ -271,6 +274,7 @@ export function AdminUsersTab({ token, currentUser }: { token: string; currentUs
           <form onSubmit={createAccount} className="form-stack">
             <label className="field"><span>Nombre visible</span><input value={form.displayName} onChange={(event) => setForm({ ...form, displayName: event.target.value })} placeholder="Nombre y apellido" required /></label>
             <label className="field"><span>Usuario</span><input value={form.username} onChange={(event) => setForm({ ...form, username: event.target.value })} placeholder="nombre.apellido" required /></label>
+            <label className="field"><span>Correo electrónico</span><input type="email" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} placeholder="persona@educar.local" required /></label>
             <label className="field"><span>Contraseña inicial</span><input type="password" minLength={8} value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} placeholder="Mínimo 8 caracteres" required /></label>
             <label className="field"><span>Rol</span><select value={form.role} onChange={(event) => setForm({ ...form, role: event.target.value as UserRole })}>{Object.entries(ROLE_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
             <button className="primary-button full-button" type="submit" disabled={saving}>{saving ? "Creando..." : "Crear usuario"}</button>
@@ -286,6 +290,7 @@ export function AdminUsersTab({ token, currentUser }: { token: string; currentUs
             <form onSubmit={saveUser} className="form-stack inline-edit-form">
               <div className="inline-edit-grid">
                 <label className="field"><span>Nombre visible</span><input value={editing.displayName} onChange={(event) => setEditing({ ...editing, displayName: event.target.value })} required /></label>
+                <label className="field"><span>Correo electrónico</span><input type="email" value={editing.email} onChange={(event) => setEditing({ ...editing, email: event.target.value })} required /></label>
                 <label className="field"><span>Nueva contraseña (opcional)</span><input type="password" minLength={8} value={editing.password} onChange={(event) => setEditing({ ...editing, password: event.target.value })} placeholder="Dejar vacío para conservarla" /></label>
               </div>
               <div className="form-actions">
@@ -294,7 +299,7 @@ export function AdminUsersTab({ token, currentUser }: { token: string; currentUs
               </div>
             </form>
           )}
-          {users.length === 0 ? <EmptyState title="No hay usuarios registrados" detail="Creá la primera cuenta desde el formulario." compact /> : <div className="user-table-wrap"><table className="user-table"><thead><tr><th>Persona</th><th>Rol</th><th>Estado</th><th aria-label="Acciones" /></tr></thead><tbody>{users.map((item) => <tr key={item.id}><td><div className="table-person"><span className="table-avatar">{item.displayName.slice(0, 1)}</span><span><strong>{item.displayName}</strong><small>@{item.username}</small></span></div></td><td><select className="table-select" value={item.role} disabled={item.id === currentUser.id} onChange={(event) => void changeUser(item, { role: event.target.value as UserRole })}>{Object.entries(ROLE_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></td><td><span className={`status-chip ${item.status === "active" ? "success-chip" : "inactive-chip"}`}>{item.status === "active" ? "Activo" : "Inactivo"}</span></td><td><div className="row-actions"><button className="text-button" onClick={() => setEditing({ id: item.id, displayName: item.displayName, password: "" })}>Editar</button><button className="text-button" disabled={item.id === currentUser.id} onClick={() => void changeUser(item, { status: item.status === "active" ? "inactive" : "active" })}>{item.status === "active" ? "Desactivar" : "Activar"}</button></div></td></tr>)}</tbody></table></div>}
+          {users.length === 0 ? <EmptyState title="No hay usuarios registrados" detail="Creá la primera cuenta desde el formulario." compact /> : <div className="user-table-wrap"><table className="user-table"><thead><tr><th>Persona</th><th>Rol</th><th>Estado</th><th aria-label="Acciones" /></tr></thead><tbody>{users.map((item) => <tr key={item.id}><td><div className="table-person"><span className="table-avatar">{item.displayName.slice(0, 1)}</span><span><strong>{item.displayName}</strong><small>@{item.username}</small></span></div></td><td><select className="table-select" value={item.role} disabled={item.id === currentUser.id} onChange={(event) => void changeUser(item, { role: event.target.value as UserRole })}>{Object.entries(ROLE_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></td><td><span className={`status-chip ${item.status === "active" ? "success-chip" : "inactive-chip"}`}>{item.status === "active" ? "Activo" : "Inactivo"}</span></td><td><div className="row-actions"><button className="text-button" onClick={() => setEditing({ id: item.id, displayName: item.displayName, email: item.email ?? "", password: "" })}>Editar</button><button className="text-button" disabled={item.id === currentUser.id} onClick={() => void changeUser(item, { status: item.status === "active" ? "inactive" : "active" })}>{item.status === "active" ? "Desactivar" : "Activar"}</button></div></td></tr>)}</tbody></table></div>}
         </section>
       </div>
     </>

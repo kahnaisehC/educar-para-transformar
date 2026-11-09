@@ -15,6 +15,15 @@ export interface SmtpConfig {
   from: string;
 }
 
+export interface StorageSettings {
+  driver: "local" | "s3";
+  bucket: string | null;
+  region: string;
+  endpoint: string | null;
+  accessKey: string | null;
+  secretKey: string | null;
+}
+
 export interface BankDetails {
   alias: string;
   cbu: string;
@@ -28,7 +37,9 @@ export interface AppConfig {
   corsOrigin: string;
   uploadsDir: string;
   appUrl: string;
+  notificationsToken: string | null;
   smtp: SmtpConfig;
+  storage: StorageSettings;
   bank: BankDetails;
 }
 
@@ -50,6 +61,7 @@ export function loadConfig(): AppConfig {
     corsOrigin: process.env.CORS_ORIGIN ?? "http://localhost:5173",
     uploadsDir: process.env.UPLOADS_DIR ?? "uploads",
     appUrl: process.env.APP_URL ?? "http://localhost:5173",
+    notificationsToken: process.env.NOTIFICATIONS_TOKEN ?? null,
     smtp: {
       host: process.env.SMTP_HOST ?? null,
       port: Number(process.env.SMTP_PORT ?? 587),
@@ -57,6 +69,14 @@ export function loadConfig(): AppConfig {
       user: process.env.SMTP_USER ?? null,
       password: process.env.SMTP_PASS ?? null,
       from: process.env.SMTP_FROM ?? "EDUCAR PARA TRANSFORMAR <no-reply@educar.local>",
+    },
+    storage: {
+      driver: process.env.STORAGE_DRIVER === "s3" ? "s3" : "local",
+      bucket: process.env.S3_BUCKET ?? null,
+      region: process.env.S3_REGION ?? "auto",
+      endpoint: process.env.S3_ENDPOINT ?? null,
+      accessKey: process.env.S3_ACCESS_KEY ?? null,
+      secretKey: process.env.S3_SECRET_KEY ?? null,
     },
     bank: {
       alias: process.env.BANK_ALIAS ?? "EDUCAR.CUOTAS",

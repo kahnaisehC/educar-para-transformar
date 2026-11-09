@@ -14,7 +14,7 @@ services:
     plan: free
     autoDeployTrigger: checksPass
     buildCommand: npm install && npm run build --workspace @educar/api
-    startCommand: node scripts/init-db.mjs && npm run start --workspace @educar/api
+    startCommand: node scripts/migrate-db.mjs && npm run start --workspace @educar/api
     healthCheckPath: /api/health
     envVars:
       - key: NODE_VERSION
@@ -28,6 +28,40 @@ services:
       - key: CORS_ORIGIN
         sync: false
       - key: APP_URL
+        sync: false
+      - key: UPLOADS_DIR
+        value: /workspace/uploads
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        value: 587
+      - key: SMTP_SECURE
+        value: false
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: SMTP_FROM
+        sync: false
+      - key: BANK_ALIAS
+        value: EDUCAR.CUOTAS
+      - key: BANK_CBU
+        value: "0000003100010000000001"
+      - key: BANK_HOLDER
+        value: Centro Educativo Educar para Transformar
+      - key: NOTIFICATIONS_TOKEN
+        generateValue: true
+      - key: STORAGE_DRIVER
+        value: local
+      - key: S3_ENDPOINT
+        sync: false
+      - key: S3_BUCKET
+        sync: false
+      - key: S3_REGION
+        sync: false
+      - key: S3_ACCESS_KEY
+        sync: false
+      - key: S3_SECRET_KEY
         sync: false
 
   - type: web

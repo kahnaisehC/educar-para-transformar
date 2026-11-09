@@ -1,5 +1,6 @@
-import { randomBytes } from "node:crypto";
+import { randomBytes, timingSafeEqual } from "node:crypto";
 import { mkdirSync } from "node:fs";
+import { readFile, unlink } from "node:fs/promises";
 import { extname, resolve } from "node:path";
 import cors from "cors";
 import express, { type NextFunction, type Request, type RequestHandler, type Response } from "express";
@@ -71,6 +72,8 @@ import {
   getChildBillingSummary,
   getInvoice,
   getInvoiceForParent,
+  getPaymentDetail,
+  getPaymentForParent,
   getReceiptFileInfo,
   listChildInvoices,
   listInvoices,
@@ -88,7 +91,13 @@ import {
 } from "./billingReports.service.js";
 import { sendDebtNotices, sendMonthlyReminders } from "./billingNotifications.service.js";
 import { buildInvoicePdf } from "./invoicePdf.service.js";
-import { configureMail } from "./mail.service.js";
+import { buildPaymentReceiptPdf } from "./paymentPdf.service.js";
+import { configureMail, getMailStatus, sendMail, verifyMailTransport } from "./mail.service.js";
+import {
+  createReceiptStorage,
+  receiptKeyFromPath,
+  type ReceiptStorage,
+} from "./storage.js";
 import { changePassword, requestPasswordReset, resetPassword } from "./password.service.js";
 import type { BankDetails, SmtpConfig } from "./config.js";
 import type { DatabasePool } from "./db.js";
@@ -137,8 +146,10 @@ export interface CreateAppOptions {
   corsOrigin?: string;
   uploadsDir?: string;
   appUrl?: string;
+  notificationsToken?: string | null;
   bank?: BankDetails;
   smtp?: SmtpConfig;
+  storage?: ReceiptStorage;
 }
 
 type AsyncHandler = (request: Request, response: Response, next: NextFunction) => Promise<void>;
@@ -166,6 +177,18 @@ export function createApp(options: CreateAppOptions) {
   const uploadsDir = options.uploadsDir ?? "uploads";
   const bank = options.bank ?? DEFAULT_BANK;
   const appUrl = options.appUrl ?? "http://localhost:5173";
+  const notificationsToken = options.notificationsToken ?? null;
+  const storage =
+    options.storage ??
+    createReceiptStorage({
+      driver: "local",
+      uploadsDir,
+      bucket: null,
+      region: "auto",
+      endpoint: null,
+      accessKey: null,
+      secretKey: null,
+    });
   const receiptsDir = resolve(uploadsDir, "receipts");
   mkdirSync(receiptsDir, { recursive: true });
   configureMail(options.smtp ?? DEFAULT_SMTP);
@@ -228,6 +251,23 @@ export function createApp(options: CreateAppOptions) {
     const newPassword = requiredPassword(request.body?.newPassword);
     await resetPassword(options.pool, token, newPassword);
     response.json({ message: "La contraseña fue actualizada correctamente" });
+  }));
+
+  app.post("/api/internal/notifications/run", asyncRoute(async (request, response) => {
+    if (!notificationsToken) {
+      throw new AppError(503, "Las notificaciones internas no están configuradas", "NOTIFICATIONS_DISABLED");
+    }
+    const provided = request.header("x-internal-token") ?? "";
+    if (provided.length !== notificationsToken.length ||
+        !timingSafeEqual(Buffer.from(provided), Buffer.from(notificationsToken))) {
+      throw new AppError(401, "Token interno inválido", "INVALID_INTERNAL_TOKEN");
+    }
+    const kind = request.body?.kind === "debt" ? "debt" : "reminders";
+    const { year, month } = requiredYearMonth(request.body);
+    const result = kind === "debt"
+      ? await sendDebtNotices(options.pool, bank, year, month)
+      : await sendMonthlyReminders(options.pool, bank, year, month);
+    response.json({ kind, result });
   }));
 
   app.use("/api", auth);
@@ -430,6 +470,7 @@ export function createApp(options: CreateAppOptions) {
       const input = {
         username: requiredString(request.body?.username, "username").toLowerCase(),
         displayName: requiredString(request.body?.displayName, "displayName"),
+        email: nullableEmail(request.body?.email),
         password: requiredPassword(request.body?.password),
         role: requiredRole(request.body?.role),
         status: optionalStatus(request.body?.status),
@@ -447,6 +488,9 @@ export function createApp(options: CreateAppOptions) {
       const input: UpdateUserInput = {};
       if (request.body?.displayName !== undefined) {
         input.displayName = requiredString(request.body.displayName, "displayName");
+      }
+      if (request.body?.email !== undefined) {
+        input.email = nullableEmail(request.body.email);
       }
       if (request.body?.password !== undefined) {
         input.password = requiredPassword(request.body.password);
@@ -963,6 +1007,20 @@ export function createApp(options: CreateAppOptions) {
     }),
   );
 
+  app.get(
+    "/api/parent/billing/payments/:paymentId/receipt",
+    requireRoles("parent"),
+    asyncRoute(async (request, response) => {
+      const paymentId = positiveInteger(request.params.paymentId, "paymentId");
+      const detail = await getPaymentForParent(options.pool, request.user!.id, paymentId);
+      const pdf = await buildPaymentReceiptPdf(detail);
+      response
+        .type("application/pdf")
+        .set("Content-Disposition", `inline; filename="comprobante-pago-${detail.payment.number ?? paymentId}.pdf"`)
+        .send(pdf);
+    }),
+  );
+
   app.post(
     "/api/parent/billing/invoices/:invoiceId/receipts",
     requireRoles("parent"),
@@ -973,6 +1031,14 @@ export function createApp(options: CreateAppOptions) {
         throw new AppError(400, "Debe adjuntar un comprobante", "FILE_REQUIRED");
       }
       const itemIds = parseItemIds(request.body?.itemIds);
+      const key = `receipts/${request.file.filename}`;
+      let filePath = key;
+      if (storage.kind === "s3") {
+        const buffer = await readFile(request.file.path);
+        await storage.put(key, buffer, request.file.mimetype);
+        await unlink(request.file.path).catch(() => undefined);
+        filePath = `s3://${storage.bucket}/${key}`;
+      }
       const receipt = await createPaymentReceipt(
         options.pool,
         actor(request),
@@ -980,7 +1046,7 @@ export function createApp(options: CreateAppOptions) {
         itemIds,
         {
           fileName: request.file.originalname,
-          filePath: `receipts/${request.file.filename}`,
+          filePath,
           mimeType: request.file.mimetype,
           sizeBytes: request.file.size,
         },
@@ -1006,10 +1072,45 @@ export function createApp(options: CreateAppOptions) {
       if (request.user!.role === "parent" && info.uploadedBy !== request.user!.id) {
         throw new AppError(403, "No puede acceder a ese comprobante", "FORBIDDEN");
       }
+      const key = info.filePath.startsWith("s3://")
+        ? receiptKeyFromPath(info.filePath, storage.bucket)
+        : info.filePath;
+      const buffer = await storage.get(key);
       response
         .type(info.mimeType)
         .set("Content-Disposition", `inline; filename="${info.fileName}"`)
-        .sendFile(resolve(uploadsDir, info.filePath));
+        .send(buffer);
+    }),
+  );
+
+  app.get(
+    "/api/admin/notifications/mail-status",
+    admin,
+    asyncRoute(async (_request, response) => {
+      const status = getMailStatus();
+      const verification = await verifyMailTransport();
+      response.json({ status, verification });
+    }),
+  );
+
+  app.post(
+    "/api/admin/notifications/test",
+    admin,
+    asyncRoute(async (request, response) => {
+      const result = await options.pool.query<{ email: string | null }>(
+        "SELECT email FROM users WHERE id = $1",
+        [request.user!.id],
+      );
+      const email = result.rows[0]?.email;
+      if (!email) {
+        throw new AppError(409, "El administrador no tiene correo configurado", "EMAIL_REQUIRED");
+      }
+      const sent = await sendMail({
+        to: email,
+        subject: "Prueba de correo · EDUCAR",
+        text: "Este es un correo de prueba del sistema de gestión EDUCAR PARA TRANSFORMAR.",
+      });
+      response.json({ message: "Correo de prueba enviado", ...sent });
     }),
   );
 
@@ -1108,6 +1209,20 @@ export function createApp(options: CreateAppOptions) {
   );
 
   app.get(
+    "/api/admin/billing/payments/:paymentId/receipt",
+    admin,
+    asyncRoute(async (request, response) => {
+      const paymentId = positiveInteger(request.params.paymentId, "paymentId");
+      const detail = await getPaymentDetail(options.pool, paymentId);
+      const pdf = await buildPaymentReceiptPdf(detail);
+      response
+        .type("application/pdf")
+        .set("Content-Disposition", `inline; filename="comprobante-pago-${detail.payment.number ?? paymentId}.pdf"`)
+        .send(pdf);
+    }),
+  );
+
+  app.get(
     "/api/admin/billing/receipts",
     admin,
     asyncRoute(async (request, response) => {
@@ -1182,7 +1297,7 @@ export function createApp(options: CreateAppOptions) {
     admin,
     asyncRoute(async (request, response) => {
       const { year, month } = requiredYearMonth(request.body);
-      response.json({ result: await sendMonthlyReminders(options.pool, bank, year, month) });
+      response.json({ result: await sendMonthlyReminders(options.pool, bank, year, month, { force: true }) });
     }),
   );
 
@@ -1191,7 +1306,7 @@ export function createApp(options: CreateAppOptions) {
     admin,
     asyncRoute(async (request, response) => {
       const { year, month } = requiredYearMonth(request.body);
-      response.json({ result: await sendDebtNotices(options.pool, bank, year, month) });
+      response.json({ result: await sendDebtNotices(options.pool, bank, year, month, { force: true }) });
     }),
   );
 
@@ -1336,6 +1451,16 @@ export function createAppFromConfig(pool: DatabasePool, config: AppConfig) {
     corsOrigin: config.corsOrigin,
     uploadsDir: config.uploadsDir,
     appUrl: config.appUrl,
+    notificationsToken: config.notificationsToken,
+    storage: createReceiptStorage({
+      driver: config.storage.driver,
+      uploadsDir: config.uploadsDir,
+      bucket: config.storage.bucket,
+      region: config.storage.region,
+      endpoint: config.storage.endpoint,
+      accessKey: config.storage.accessKey,
+      secretKey: config.storage.secretKey,
+    }),
     bank: config.bank,
     smtp: config.smtp,
   });

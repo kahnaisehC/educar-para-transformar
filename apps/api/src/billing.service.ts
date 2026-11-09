@@ -43,6 +43,13 @@ export interface ReceiptItemView {
   paidAmount: number;
 }
 
+export interface PaymentView {
+  id: number;
+  number: string | null;
+  amount: number;
+  createdAt: string;
+}
+
 export interface ReceiptView {
   id: number;
   invoiceId: number;
@@ -57,6 +64,7 @@ export interface ReceiptView {
   reviewedAt: string | null;
   createdAt: string;
   items: ReceiptItemView[];
+  payment: PaymentView | null;
 }
 
 export interface InvoiceView {
@@ -74,6 +82,7 @@ export interface InvoiceView {
   displayStatus: "pending" | "partial" | "paid" | "cancelled" | "overdue";
   items: InvoiceItemView[];
   receipts: ReceiptView[];
+  payments: PaymentView[];
 }
 
 export interface BillingSummary {
@@ -879,13 +888,18 @@ export async function approveReceipt(
           throw new AppError(409, "Los ítems ya están pagos", "ITEMS_ALREADY_PAID");
         }
 
-        const paymentResult = await client.query<{ id: number }>(
+        const paymentResult = await client.query<{ id: number; created_at: string }>(
           `INSERT INTO payments (receipt_id, invoice_id, amount, approved_by)
            VALUES ($1, $2, $3, $4)
-           RETURNING id`,
+           RETURNING id, created_at`,
           [receiptId, receipt.invoice_id, moneyString(paymentAmount), actor.userId],
         );
         const paymentId = paymentResult.rows[0].id;
+        const paymentNumber = `PAGO-${new Date(paymentResult.rows[0].created_at).getUTCFullYear()}-${String(paymentId).padStart(6, "0")}`;
+        await client.query("UPDATE payments SET payment_number = $1 WHERE id = $2", [
+          paymentNumber,
+          paymentId,
+        ]);
 
         for (const allocation of allocations) {
           await client.query(
@@ -1045,6 +1059,15 @@ async function loadReceipt(executor: Queryable, receiptId: number): Promise<Rece
      ORDER BY ii.id`,
     [receiptId],
   );
+  const paymentResult = await executor.query<{
+    id: number;
+    payment_number: string | null;
+    amount: string | number;
+    created_at: string;
+  }>("SELECT id, payment_number, amount, created_at FROM payments WHERE receipt_id = $1", [
+    receiptId,
+  ]);
+  const paymentRow = paymentResult.rows[0];
   return {
     id: receipt.id,
     invoiceId: receipt.invoice_id,
@@ -1064,6 +1087,14 @@ async function loadReceipt(executor: Queryable, receiptId: number): Promise<Rece
       amount: money(row.amount),
       paidAmount: money(row.paid_amount),
     })),
+    payment: paymentRow
+      ? {
+          id: paymentRow.id,
+          number: paymentRow.payment_number,
+          amount: money(paymentRow.amount),
+          createdAt: paymentRow.created_at,
+        }
+      : null,
   };
 }
 
@@ -1112,6 +1143,16 @@ async function loadInvoice(executor: Queryable, invoiceId: number): Promise<Invo
     receipts.push(await loadReceipt(executor, receipt.id));
   }
 
+  const paymentsResult = await executor.query<{
+    id: number;
+    payment_number: string | null;
+    amount: string | number;
+    created_at: string;
+  }>(
+    "SELECT id, payment_number, amount, created_at FROM payments WHERE invoice_id = $1 ORDER BY id",
+    [invoiceId],
+  );
+
   const today = todayIso();
   const displayStatus =
     invoice.status === "paid" || invoice.status === "cancelled"
@@ -1135,5 +1176,75 @@ async function loadInvoice(executor: Queryable, invoiceId: number): Promise<Invo
     displayStatus,
     items,
     receipts,
+    payments: paymentsResult.rows.map((row) => ({
+      id: row.id,
+      number: row.payment_number,
+      amount: money(row.amount),
+      createdAt: row.created_at,
+    })),
   };
+}
+
+export interface PaymentDetail {
+  payment: PaymentView;
+  invoice: InvoiceView;
+  allocations: Array<{ description: string; amount: number }>;
+  approvedBy: string | null;
+}
+
+export async function getPaymentDetail(
+  pool: Queryable,
+  paymentId: number,
+): Promise<PaymentDetail> {
+  const result = await pool.query<{
+    id: number;
+    payment_number: string | null;
+    amount: string | number;
+    created_at: string;
+    invoice_id: number;
+    approved_by_name: string | null;
+  }>(
+    `SELECT p.id, p.payment_number, p.amount, p.created_at, p.invoice_id,
+            u.display_name AS approved_by_name
+     FROM payments p
+     JOIN users u ON u.id = p.approved_by
+     WHERE p.id = $1`,
+    [paymentId],
+  );
+  const row = result.rows[0];
+  if (!row) {
+    throw new AppError(404, "El pago no existe", "PAYMENT_NOT_FOUND");
+  }
+  const allocations = await pool.query<{ description: string; amount: string | number }>(
+    `SELECT ii.description, pa.amount
+     FROM payment_allocations pa
+     JOIN invoice_items ii ON ii.id = pa.invoice_item_id
+     WHERE pa.payment_id = $1
+     ORDER BY ii.id`,
+    [paymentId],
+  );
+  return {
+    payment: {
+      id: row.id,
+      number: row.payment_number,
+      amount: money(row.amount),
+      createdAt: row.created_at,
+    },
+    invoice: await loadInvoice(pool, row.invoice_id),
+    allocations: allocations.rows.map((allocation) => ({
+      description: allocation.description,
+      amount: money(allocation.amount),
+    })),
+    approvedBy: row.approved_by_name,
+  };
+}
+
+export async function getPaymentForParent(
+  pool: Queryable,
+  userId: number,
+  paymentId: number,
+): Promise<PaymentDetail> {
+  const detail = await getPaymentDetail(pool, paymentId);
+  await assertChildAssociation(pool, userId, detail.invoice.studentId);
+  return detail;
 }

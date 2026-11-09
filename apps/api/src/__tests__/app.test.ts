@@ -11,6 +11,12 @@ import { createApp } from "../app.js";
 import type { DatabasePool } from "../db.js";
 import { closeDatabasePool, getDatabasePool } from "../database.js";
 import { RowIterator } from "../rowIterator.js";
+import {
+  isDebtNoticeDay,
+  isLastBusinessDayOfMonth,
+  sendDebtNotices,
+  sendMonthlyReminders,
+} from "../billingNotifications.service.js";
 
 const schema = readFileSync(
   fileURLToPath(new URL("../../../../database/schema.sql", import.meta.url)),
@@ -34,6 +40,7 @@ beforeEach(async () => {
     pool,
     jwtSecret: JWT_SECRET,
     corsOrigin: "http://localhost:5173",
+    notificationsToken: "test-internal-token",
     uploadsDir,
     appUrl: "http://localhost:5173",
     bank: { alias: "EDUCAR.TEST", cbu: "0000003100010000000001", holder: "Centro Educativo" },
@@ -100,6 +107,36 @@ describe("authentication and role access", () => {
       .send({ status: "inactive" });
     expect(updated.status).toBe(200);
     expect(updated.body.user.status).toBe("inactive");
+  });
+
+  it("stores and updates the email of new users", async () => {
+    const adminToken = await loginAs("admin.demo");
+    const created = await request(app)
+      .post("/api/admin/users")
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({
+        username: "con.correo",
+        displayName: "Con Correo",
+        email: "con.correo@educar.local",
+        password: PASSWORD,
+        role: "student",
+      });
+    expect(created.status).toBe(201);
+    expect(created.body.user.email).toBe("con.correo@educar.local");
+
+    const updated = await request(app)
+      .patch(`/api/admin/users/${created.body.user.id}`)
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({ email: "nuevo.correo@educar.local" });
+    expect(updated.status).toBe(200);
+    expect(updated.body.user.email).toBe("nuevo.correo@educar.local");
+
+    const invalid = await request(app)
+      .patch(`/api/admin/users/${created.body.user.id}`)
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({ email: "no-es-un-email" });
+    expect(invalid.status).toBe(400);
+    expect(invalid.body.code).toBe("INVALID_EMAIL");
   });
 
   it("creates the initial profile required by a new student account", async () => {
@@ -1130,6 +1167,28 @@ describe("notifications panel", () => {
     expect(missing.body.code).toBe("NOTIFICATION_NOT_FOUND");
   });
 
+  it("reports the mail transport and sends a test email", async () => {
+    const adminToken = await loginAs("admin.demo");
+    const status = await request(app)
+      .get("/api/admin/notifications/mail-status")
+      .set("Authorization", `Bearer ${adminToken}`);
+    expect(status.status).toBe(200);
+    expect(status.body.status.transport).toBe("json");
+    expect(status.body.verification.ok).toBe(true);
+
+    const test = await request(app)
+      .post("/api/admin/notifications/test")
+      .set("Authorization", `Bearer ${adminToken}`);
+    expect(test.status).toBe(200);
+    expect(test.body.transport).toBe("json");
+
+    const studentToken = await loginAs("ana.alumna");
+    const forbidden = await request(app)
+      .get("/api/admin/notifications/mail-status")
+      .set("Authorization", `Bearer ${studentToken}`);
+    expect(forbidden.status).toBe(403);
+  });
+
   it("notifies a user when the administrator updates the account", async () => {
     const adminToken = await loginAs("admin.demo");
     const created = await request(app)
@@ -1313,6 +1372,24 @@ describe("billing module (Parte 3)", () => {
     expect(approved.status).toBe(200);
     expect(approved.body.invoice.status).toBe("partial");
     expect(approved.body.invoice.paidAmount).toBe(58000);
+    expect(approved.body.receipt.payment.number).toMatch(/^PAGO-\d{4}-\d{6}$/);
+    const paymentId = approved.body.receipt.payment.id as number;
+
+    const paymentPdf = await request(app)
+      .get(`/api/parent/billing/payments/${paymentId}/receipt`)
+      .set("Authorization", `Bearer ${parentToken}`);
+    expect(paymentPdf.status).toBe(200);
+    expect(paymentPdf.headers["content-type"]).toContain("application/pdf");
+
+    const adminPaymentPdf = await request(app)
+      .get(`/api/admin/billing/payments/${paymentId}/receipt`)
+      .set("Authorization", `Bearer ${adminToken}`);
+    expect(adminPaymentPdf.status).toBe(200);
+
+    const foreignPaymentPdf = await request(app)
+      .get(`/api/parent/billing/payments/${paymentId}/receipt`)
+      .set("Authorization", `Bearer ${otherParent}`);
+    expect(foreignPaymentPdf.status).toBe(403);
 
     const doubleApproval = await request(app)
       .post(`/api/admin/billing/receipts/${receiptId}/approve`)
@@ -1524,6 +1601,42 @@ describe("billing module (Parte 3)", () => {
       .post("/api/auth/forgot-password")
       .send({ username: "no.existe" });
     expect(unknown.status).toBe(200);
+  });
+});
+
+describe("billing notification schedule", () => {
+  it("detects the last business day and the day 20", () => {
+    expect(isLastBusinessDayOfMonth(new Date("2026-10-30T12:00:00Z"))).toBe(true);
+    expect(isLastBusinessDayOfMonth(new Date("2026-10-29T12:00:00Z"))).toBe(false);
+    expect(isLastBusinessDayOfMonth(new Date("2026-10-31T12:00:00Z"))).toBe(false);
+    expect(isDebtNoticeDay(new Date("2026-11-20T12:00:00Z"))).toBe(true);
+    expect(isDebtNoticeDay(new Date("2026-11-19T12:00:00Z"))).toBe(false);
+  });
+
+  it("skips scheduled sends outside their day and protects the internal endpoint", async () => {
+    const bank = { alias: "EDUCAR.TEST", cbu: "0000003100010000000001", holder: "Centro" };
+    const reminders = await sendMonthlyReminders(pool, bank, 2026, 10, {
+      today: new Date("2026-10-29T12:00:00Z"),
+    });
+    expect(reminders.reason).toBe("not_last_business_day");
+
+    const debt = await sendDebtNotices(pool, bank, 2026, 11, {
+      today: new Date("2026-11-19T12:00:00Z"),
+    });
+    expect(debt.reason).toBe("not_debt_notice_day");
+
+    const forbidden = await request(app)
+      .post("/api/internal/notifications/run")
+      .set("x-internal-token", "wrong")
+      .send({ kind: "debt", year: 2026, month: 11 });
+    expect(forbidden.status).toBe(401);
+
+    const accepted = await request(app)
+      .post("/api/internal/notifications/run")
+      .set("x-internal-token", "test-internal-token")
+      .send({ kind: "debt", year: 2026, month: 11 });
+    expect(accepted.status).toBe(200);
+    expect(accepted.body.kind).toBe("debt");
   });
 });
 

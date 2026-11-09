@@ -98,3 +98,20 @@ personas del grupo: no dependas de la memoria del chat.
 - **Cambios:** ESLint, Husky + lint-staged, Cypress (E2E y regresión), cobertura con `@vitest/coverage-v8`, configuración de SonarCloud, job `e2e` y paso `lint` en CI, política de PR y carpeta `unidad5v2/` con el Word y el PDF. Se eliminaron imports sin usar detectados por ESLint.
 - **Estado:** lint 0 errores, typecheck, 50 tests y build en verde; Cypress 4/4 contra el stack real.
 - **Próximos pasos:** vincular SonarCloud (`SONAR_TOKEN`) y activar la protección de `main`.
+
+## 2026-11-09 — Cierre de brechas de la Parte 3
+- **Objetivo:** ejecutar el plan de cierre de las 8 brechas detectadas en la
+  auditoría de la Parte 3.
+- **Cambios:** runner de migraciones (`scripts/migrate-db.mjs` y `schema_migrations`),
+  email en alta/edición de usuarios, comprobante de pago numerado con PDF y
+  descarga móvil, estado y prueba de SMTP, scheduler con lógica de último día
+  hábil/día 20 y workflow de GitHub Actions, adaptador de storage local/S3,
+  configuración EAS y documentación de branch protection.
+- **Tests:** se agregaron casos de email de usuarios, comprobante de pago,
+  estado de correo y calendario de notificaciones. Total: 54 tests.
+- **Estado:** implementación local completa. Pendientes operativos: credenciales
+  SMTP/S3, secretos del workflow, build EAS y ejecución de branch protection.
+- **Verificación:** lint sin errores (12 warnings), typecheck de API/web/móvil,
+  54 tests y build en verde; migración 007 probada contra PostgreSQL real.
+- **Próximos pasos:** configurar secretos en Render/GitHub, generar APK de
+  prueba y activar branch protection.

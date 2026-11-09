@@ -59,3 +59,31 @@ export async function sendMail(input: MailInput): Promise<{ messageId: string; t
   });
   return { messageId: info.messageId, transport: smtp.host ? "smtp" : "json" };
 }
+
+export function getMailStatus(): { transport: "smtp" | "json"; from: string; host: string | null } {
+  return {
+    transport: smtp.host ? "smtp" : "json",
+    from: smtp.from,
+    host: smtp.host,
+  };
+}
+
+export async function verifyMailTransport(): Promise<{
+  ok: boolean;
+  transport: "smtp" | "json";
+  error?: string;
+}> {
+  if (!smtp.host) {
+    return { ok: true, transport: "json" };
+  }
+  try {
+    await getTransporter().verify();
+    return { ok: true, transport: "smtp" };
+  } catch (error) {
+    return {
+      ok: false,
+      transport: "smtp",
+      error: error instanceof Error ? error.message : "No se pudo verificar SMTP",
+    };
+  }
+}

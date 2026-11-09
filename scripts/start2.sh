@@ -107,6 +107,7 @@ docker run --detach \
   --env "BANK_ALIAS=${BANK_ALIAS:-EDUCAR.CUOTAS}" \
   --env "BANK_CBU=${BANK_CBU:-0000003100010000000001}" \
   --env "BANK_HOLDER=${BANK_HOLDER:-Centro Educativo Educar para Transformar}" \
+  --env "NOTIFICATIONS_TOKEN=${NOTIFICATIONS_TOKEN:-}" \
   --volume "$UPLOADS_VOLUME:/workspace/uploads" \
   --publish 4000:4000 \
   educar-api >/dev/null
