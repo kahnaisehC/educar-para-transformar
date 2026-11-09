@@ -18,6 +18,7 @@ import {
   SectionTitle,
 } from "../../src/ui";
 import { colors, spacing } from "../../src/theme";
+import { shareInvoicePdf } from "../../src/downloads";
 
 export default function ParentInvoicesScreen() {
   const { token } = useAuth();
@@ -25,7 +26,9 @@ export default function ParentInvoicesScreen() {
   const [summary, setSummary] = useState<BillingSummary | null>(null);
   const [detail, setDetail] = useState<Invoice | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
+  const [sharingId, setSharingId] = useState<number | null>(null);
 
   useEffect(() => {
     if (!token || selectedId === null) return;
@@ -45,6 +48,19 @@ export default function ParentInvoicesScreen() {
       active = false;
     };
   }, [selectedId, token]);
+
+  async function downloadInvoice(invoiceId: number) {
+    if (!token) return;
+    setSharingId(invoiceId);
+    setNotice(null);
+    try {
+      await shareInvoicePdf(invoiceId, token);
+    } catch (requestError) {
+      setNotice(getErrorMessage(requestError));
+    } finally {
+      setSharingId(null);
+    }
+  }
 
   async function openInvoice(invoiceId: number) {
     if (!token) return;
@@ -71,6 +87,7 @@ export default function ParentInvoicesScreen() {
   return (
     <Screen title="Cuotas" subtitle="Facturas pendientes, pagadas y vencidas.">
       <ErrorMessage>{error}</ErrorMessage>
+      {notice ? <Text style={styles.notice}>{notice}</Text> : null}
       {children.length === 0 ? (
         <EmptyState title="Sin hijos asociados" detail="No hay cuotas para mostrar." />
       ) : (
@@ -108,6 +125,12 @@ export default function ParentInvoicesScreen() {
               />
               {detail?.id === invoice.id ? (
                 <View style={styles.detail}>
+                  <Button
+                    label={sharingId === invoice.id ? "Generando factura..." : "Descargar factura PDF"}
+                    variant="secondary"
+                    onPress={() => void downloadInvoice(invoice.id)}
+                    loading={sharingId === invoice.id}
+                  />
                   <SectionTitle>Ítems</SectionTitle>
                   {detail.items.map((item) => (
                     <View key={item.id} style={styles.itemRow}>
@@ -161,4 +184,5 @@ const styles = StyleSheet.create({
   receiptRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 6 },
   rejection: { marginTop: 2, color: colors.danger, fontSize: 11 },
   note: { color: colors.muted, fontSize: 12 },
+  notice: { marginBottom: spacing.sm, color: colors.danger, fontSize: 12 },
 });

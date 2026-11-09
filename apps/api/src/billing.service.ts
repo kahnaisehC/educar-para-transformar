@@ -166,6 +166,13 @@ function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
+function dateOnly(value: string | Date): string {
+  if (value instanceof Date) {
+    return value.toISOString().slice(0, 10);
+  }
+  return String(value).slice(0, 10);
+}
+
 function periodStart(year: number, month: number): string {
   return `${year}-${String(month).padStart(2, "0")}-01`;
 }
@@ -663,9 +670,12 @@ export async function listChildInvoices(
 ): Promise<InvoiceView[]> {
   await assertChildAssociation(pool, userId, studentId);
   const invoices = await listInvoices(pool, { studentId });
+  const fromPeriod = from ? from.slice(0, 7) : undefined;
+  const toPeriod = to ? to.slice(0, 7) : undefined;
   return invoices.filter((invoice) => {
-    if (from && invoice.issueDate < from) return false;
-    if (to && invoice.issueDate > to) return false;
+    const period = `${invoice.periodYear}-${String(invoice.periodMonth).padStart(2, "0")}`;
+    if (fromPeriod && period < fromPeriod) return false;
+    if (toPeriod && period > toPeriod) return false;
     return true;
   });
 }
@@ -1154,10 +1164,12 @@ async function loadInvoice(executor: Queryable, invoiceId: number): Promise<Invo
   );
 
   const today = todayIso();
+  const issueDate = dateOnly(invoice.issue_date);
+  const dueDate = dateOnly(invoice.due_date);
   const displayStatus =
     invoice.status === "paid" || invoice.status === "cancelled"
       ? invoice.status
-      : invoice.due_date < today
+      : dueDate < today
         ? "overdue"
         : invoice.status;
 
@@ -1167,8 +1179,8 @@ async function loadInvoice(executor: Queryable, invoiceId: number): Promise<Invo
     studentName: invoice.student_name,
     periodYear: invoice.period_year,
     periodMonth: invoice.period_month,
-    issueDate: invoice.issue_date,
-    dueDate: invoice.due_date,
+    issueDate,
+    dueDate,
     totalAmount,
     paidAmount: money(paidAmount),
     balance,

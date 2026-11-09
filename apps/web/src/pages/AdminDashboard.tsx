@@ -754,12 +754,29 @@ export function AdminEnrollmentsTab({ token }: { token: string }) {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<{ tone: "success" | "error"; text: string } | null>(null);
   const [saving, setSaving] = useState(false);
+  const [students, setStudents] = useState<AcademicOverview["students"]>([]);
+  const [groups, setGroups] = useState<ServicesOverview["sportGroups"]>([]);
+  const [routes, setRoutes] = useState<ServicesOverview["transportRoutes"]>([]);
+  const [form, setForm] = useState({
+    studentId: "",
+    kind: "sport" as "sport" | "transport" | "cafeteria",
+    groupId: "",
+    routeId: "",
+  });
 
   async function load() {
     setLoading(true);
     setError(null);
     try {
-      setData(await apiRequest<EnrollmentsOverview>("/admin/enrollments", { token }));
+      const [enrollments, academic, services] = await Promise.all([
+        apiRequest<EnrollmentsOverview>("/admin/enrollments", { token }),
+        apiRequest<AcademicOverview>("/admin/academic", { token }),
+        apiRequest<ServicesOverview>("/admin/services", { token }),
+      ]);
+      setData(enrollments);
+      setStudents(academic.students);
+      setGroups(services.sportGroups.filter((group) => group.active));
+      setRoutes(services.transportRoutes.filter((route) => route.active));
     } catch (requestError) {
       setError(getErrorMessage(requestError));
     } finally {
@@ -785,6 +802,44 @@ export function AdminEnrollmentsTab({ token }: { token: string }) {
     }
   }
 
+  async function createEnrollment(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const studentId = Number(form.studentId);
+    if (!studentId) return;
+    if (form.kind === "sport") {
+      await run(
+        () =>
+          apiRequest("/admin/enrollments/sports", {
+            method: "POST",
+            token,
+            body: JSON.stringify({ studentId, groupId: Number(form.groupId) }),
+          }),
+        "Inscripción deportiva registrada.",
+      );
+    } else if (form.kind === "transport") {
+      await run(
+        () =>
+          apiRequest("/admin/enrollments/transport", {
+            method: "POST",
+            token,
+            body: JSON.stringify({ studentId, routeId: Number(form.routeId) }),
+          }),
+        "Recorrido de transporte registrado.",
+      );
+    } else {
+      await run(
+        () =>
+          apiRequest(`/admin/enrollments/cafeteria/${studentId}`, {
+            method: "PATCH",
+            token,
+            body: JSON.stringify({ active: true }),
+          }),
+        "Inscripción al comedor registrada.",
+      );
+    }
+    setForm({ studentId: "", kind: "sport", groupId: "", routeId: "" });
+  }
+
   if (loading) return <DashboardSkeleton />;
   if (error && !data) return <ErrorState message={error} onRetry={() => void load()} />;
   if (!data) return null;
@@ -792,6 +847,35 @@ export function AdminEnrollmentsTab({ token }: { token: string }) {
   return (
     <>
       {notice && <InlineMessage tone={notice.tone}>{notice.text}</InlineMessage>}
+      <section className="surface-panel">
+        <PanelHeading eyebrow="RF-AD-01" title="Nueva inscripción" detail="Alta administrativa de deporte, transporte o comedor." />
+        <form className="inline-form inline-form-wrap" onSubmit={createEnrollment}>
+          <select value={form.studentId} onChange={(event) => setForm({ ...form, studentId: event.target.value })} required>
+            <option value="">Alumno</option>
+            {students.map((student) => <option key={student.id} value={student.id}>{student.fullName} · {student.level} {student.course}</option>)}
+          </select>
+          <select value={form.kind} onChange={(event) => setForm({ ...form, kind: event.target.value as typeof form.kind, groupId: "", routeId: "" })}>
+            <option value="sport">Deporte</option>
+            <option value="transport">Transporte</option>
+            <option value="cafeteria">Comedor</option>
+          </select>
+          {form.kind === "sport" ? (
+            <select value={form.groupId} onChange={(event) => setForm({ ...form, groupId: event.target.value })} required>
+              <option value="">Grupo deportivo</option>
+              {groups.map((group) => <option key={group.id} value={group.id}>{group.sport} · {group.level} · {group.weekdayName} {group.startTime}-{group.endTime}</option>)}
+            </select>
+          ) : null}
+          {form.kind === "transport" ? (
+            <select value={form.routeId} onChange={(event) => setForm({ ...form, routeId: event.target.value })} required>
+              <option value="">Recorrido</option>
+              {routes.map((route) => <option key={route.id} value={route.id}>{route.name}</option>)}
+            </select>
+          ) : null}
+          <button className="primary-button" type="submit" disabled={saving || !form.studentId || (form.kind === "sport" && !form.groupId) || (form.kind === "transport" && !form.routeId)}>
+            {saving ? "Registrando..." : "Registrar inscripción"}
+          </button>
+        </form>
+      </section>
       <div className="admin-grid">
         <section className="surface-panel">
           <PanelHeading eyebrow="Deportes" title="Inscripciones deportivas" detail="Bajas administrativas con registro de auditoría." />

@@ -269,8 +269,46 @@ function enrollStudentWithAudit(
       code: error instanceof AppError ? error.code : "INTERNAL_ERROR",
       reason: error instanceof Error ? error.message : "Unknown error",
     }),
-    handler: () =>
-      withTransaction(pool, async (client) => {
+    handler: () => withTransaction(pool, (client) => enrollInGroup(client, studentId, groupId)),
+  });
+}
+
+export async function enrollStudentAsAdmin(
+  pool: DatabasePool,
+  actorUserId: number,
+  actorRole: UserRole,
+  studentId: number,
+  groupId: number,
+): Promise<SportGroupView> {
+  return withAuditProxy(pool, {
+    operation: "enroll_sport_admin",
+    actorUserId,
+    actorRole,
+    allowedRoles: ["admin"],
+    normalizeError: normalizeEnrollmentError,
+    onSuccess: (result) => ({
+      studentId,
+      groupId,
+      sport: result.sport,
+      weekday: result.weekdayName,
+      startTime: result.startTime,
+      endTime: result.endTime,
+    }),
+    onError: (error) => ({
+      studentId,
+      groupId,
+      code: error instanceof AppError ? error.code : "INTERNAL_ERROR",
+      reason: error instanceof Error ? error.message : "Unknown error",
+    }),
+    handler: () => withTransaction(pool, (client) => enrollInGroup(client, studentId, groupId)),
+  });
+}
+
+async function enrollInGroup(
+  client: PoolClient,
+  studentId: number,
+  groupId: number,
+): Promise<SportGroupView> {
         // Lock the student so concurrent requests cannot both pass the two-sport check.
         const student = await client.query<{ id: number }>(
           "SELECT id FROM students WHERE id = $1 AND status = 'active' FOR UPDATE",
@@ -331,8 +369,6 @@ function enrollStudentWithAudit(
         );
 
         return mapGroup(group);
-      }),
-  });
 }
 
 export async function cancelEnrollment(

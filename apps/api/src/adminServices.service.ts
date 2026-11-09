@@ -795,3 +795,64 @@ export async function cancelTransportEnrollmentAdmin(
     () => ({ studentId }),
   );
 }
+
+export async function createTransportEnrollmentAdmin(
+  pool: DatabasePool,
+  actor: Actor,
+  studentId: number,
+  routeId: number,
+): Promise<{
+  studentId: number;
+  routeId: number;
+  name: string;
+  description: string;
+  enrolledAt: string;
+}> {
+  return audited(
+    pool,
+    actor,
+    "create_transport_enrollment_admin",
+    () =>
+      withTransaction(pool, async (client) => {
+        const student = await client.query(
+          "SELECT 1 FROM students WHERE id = $1 AND status = 'active' FOR UPDATE",
+          [studentId],
+        );
+        if (!student.rowCount) {
+          throw new AppError(404, "El alumno no existe o no está activo", "STUDENT_NOT_FOUND");
+        }
+        const route = await client.query<{ id: number; name: string; description: string }>(
+          "SELECT id, name, description FROM transport_routes WHERE id = $1 AND active = TRUE",
+          [routeId],
+        );
+        if (!route.rows[0]) {
+          throw new AppError(404, "El recorrido no existe o no está disponible", "ROUTE_NOT_FOUND");
+        }
+        const existing = await client.query(
+          "SELECT 1 FROM transport_enrollments WHERE student_id = $1",
+          [studentId],
+        );
+        if (existing.rowCount) {
+          throw new AppError(
+            409,
+            "El alumno ya tiene un recorrido de transporte",
+            "TRANSPORT_ALREADY_ENROLLED",
+          );
+        }
+        const inserted = await client.query<{ enrolled_at: string }>(
+          `INSERT INTO transport_enrollments (student_id, route_id)
+           VALUES ($1, $2)
+           RETURNING created_at AS enrolled_at`,
+          [studentId, routeId],
+        );
+        return {
+          studentId,
+          routeId,
+          name: route.rows[0].name,
+          description: route.rows[0].description,
+          enrolledAt: inserted.rows[0].enrolled_at,
+        };
+      }),
+    (row) => ({ studentId: row.studentId, routeId: row.routeId }),
+  );
+}

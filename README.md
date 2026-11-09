@@ -9,13 +9,13 @@ Sistema de gestión del Centro Educativo **EDUCAR PARA TRANSFORMAR** (Partes 2 y
 - Módulo Alumno: perfil académico, actualización de contacto, transporte, comedor y reporte personal.
 - Reglas de inscripción: máximo dos deportes, sin superposición de horarios y sin duplicados.
 - Portal Padre: hijos asociados, materias, docentes, resumen deportivo y matrícula anual del cursado.
-- Panel Administrador: usuarios y roles, estructura académica (niveles, cursos, materias, asignaciones), alumnos, docentes, padres, deportes y grupos, transporte, comedor, inscripciones y años lectivos.
+- Panel Administrador: usuarios y roles, estructura académica (niveles, cursos, materias, asignaciones), alumnos, docentes, padres, deportes y grupos, transporte, comedor, altas y bajas de inscripciones y años lectivos.
 - Sprint 2: actualización de contacto para alumnos y docentes, con validación de correo y teléfono.
 - Sprint 3: listado de alumnos por materia para docentes (HU-05), inscripción al transporte (HU-06), plantillas de reportes institucionales para la Dirección (HU-07) con filtros por parámetros y exportación CSV, y acceso del administrador a los reportes autorizados.
 - Reporte docente (cursos a cargo por nivel, materias y horarios), parámetros de consulta para la Dirección (RF-DI-02/03) y borrado de plantillas.
 - Auditoría de inscripciones, cancelaciones, operaciones administrativas y generación de reportes.
 - Panel de alertas y notificaciones: confirmaciones, rechazos, cambios de cuenta y matrículas.
-- **Parte 3 (móvil):** app Expo con login, consulta de cuotas y facturas, historial de comprobantes, selección de ítems, carga de comprobante (imagen/PDF), validación administrativa, tarifas, emisión de facturas y reportes de cobranza.
+- **Parte 3 (móvil):** app Expo con login, consulta de cuotas y facturas, filtro de historial por período, descarga de facturas y comprobantes, selección de ítems, carga de comprobante (imagen/PDF), validación administrativa, tarifas, emisión de facturas y reportes de cobranza.
 - Recuperación y cambio de contraseña, notificaciones por correo con PDF adjunto, idempotencia de envíos y panel de morosidad.
 
 ## Estructura
@@ -115,7 +115,7 @@ npm run typecheck
 npm run build
 ```
 
-Las 54 pruebas del backend (Vitest + `pg-mem` + supertest) cubren autenticación y RBAC, aislamiento padre-hijo, límite de dos deportes, conflictos de horario, duplicados, perfiles iniciales, contacto, transporte, comedor, cancelaciones, reportes, listado docente (HU-05), plantillas de reportes institucionales (HU-07), matrículas del padre (RF-PA-02), gestión académica del administrador (RF-AD-01/02, HU-04), reporte docente (RF-PR-01/03), parámetros de consulta (RF-DI-02/03), notificaciones y los patrones Singleton, Proxy e Iterator. Para la Parte 3 agregan tarifas, generación idempotente de facturas, consulta de cuotas, carga multipart de comprobantes, aprobación/rechazo con imputación, pagos parciales, reportes de cobranza, morosidad, recordatorios idempotentes, scheduler de notificaciones, comprobante de pago y recuperación de contraseña.
+Las 56 pruebas del backend (Vitest + `pg-mem` + supertest) cubren autenticación y RBAC, aislamiento padre-hijo, límite de dos deportes, conflictos de horario, duplicados, perfiles iniciales, contacto, transporte, comedor, cancelaciones, reportes, listado docente (HU-05), plantillas de reportes institucionales (HU-07), matrículas del padre (RF-PA-02), gestión académica del administrador (RF-AD-01/02, HU-04), reporte docente (RF-PR-01/03), parámetros de consulta (RF-DI-02/03), notificaciones y los patrones Singleton, Proxy e Iterator. Para la Parte 3 agregan tarifas, generación idempotente de facturas, consulta de cuotas, carga multipart de comprobantes, aprobación/rechazo con imputación, pagos parciales, reportes de cobranza, morosidad, recordatorios idempotentes, scheduler de notificaciones, comprobante de pago, concurrencia de aprobaciones y recuperación de contraseña.
 
 ## Patrones de diseño
 

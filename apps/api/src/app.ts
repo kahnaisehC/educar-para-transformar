@@ -48,6 +48,7 @@ import {
   cancelTransportEnrollmentAdmin,
   createSport,
   createSportGroup,
+  createTransportEnrollmentAdmin,
   createTransportRoute,
   deleteSport,
   deleteSportGroup,
@@ -105,6 +106,7 @@ import { AppError, isAppError } from "./errors.js";
 import {
   cancelEnrollment,
   enrollStudent,
+  enrollStudentAsAdmin,
   getStudentDashboard,
 } from "./enrollment.service.js";
 import {
@@ -910,6 +912,39 @@ export function createApp(options: CreateAppOptions) {
     admin,
     asyncRoute(async (_request, response) => {
       response.json(await getEnrollmentsOverview(options.pool));
+    }),
+  );
+
+  app.post(
+    "/api/admin/enrollments/sports",
+    admin,
+    asyncRoute(async (request, response) => {
+      const studentId = positiveInteger(request.body?.studentId, "studentId");
+      const groupId = positiveInteger(request.body?.groupId, "groupId");
+      const enrollment = await enrollStudentAsAdmin(
+        options.pool,
+        request.user!.id,
+        request.user!.role,
+        studentId,
+        groupId,
+      );
+      response.status(201).json({ enrollment });
+    }),
+  );
+
+  app.post(
+    "/api/admin/enrollments/transport",
+    admin,
+    asyncRoute(async (request, response) => {
+      const studentId = positiveInteger(request.body?.studentId, "studentId");
+      const routeId = positiveInteger(request.body?.routeId, "routeId");
+      const enrollment = await createTransportEnrollmentAdmin(
+        options.pool,
+        actor(request),
+        studentId,
+        routeId,
+      );
+      response.status(201).json({ enrollment });
     }),
   );
 

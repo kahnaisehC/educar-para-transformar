@@ -20,6 +20,18 @@ criterios de aceptación, riesgos y esfuerzo estimado.
 | 7 | Email en usuarios nuevos | Implementado en API y panel admin; alta con email obligatorio en la UI. |
 | 8 | Branch protection | Documentado con `gh api` en `docs/POLITICA_PR.md`. Requiere ejecutarlo con permisos de administrador. |
 
+### Brechas funcionales adicionales cerradas (2026-11-09)
+
+- **RF-AD-01:** el admin puede crear inscripciones deportivas, de transporte y
+  de comedor desde el panel, además de cancelarlas.
+- **RF-MV-10:** el historial móvil permite filtrar facturas y comprobantes por
+  rango de períodos.
+- **HU-06:** el padre y el admin pueden descargar la factura en PDF desde la app.
+- **RF-MV-15:** el admin puede abrir/descargar el comprobante cargado antes de
+  aprobarlo o rechazarlo.
+- **RNF-04:** se agregó una prueba de aprobación concurrente que verifica una
+  sola acreditación.
+
 ## Decisiones abiertas antes de implementar
 
 | Decisión | Opciones | Recomendación |

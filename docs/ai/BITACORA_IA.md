@@ -115,3 +115,18 @@ personas del grupo: no dependas de la memoria del chat.
   54 tests y build en verde; migración 007 probada contra PostgreSQL real.
 - **Próximos pasos:** configurar secretos en Render/GitHub, generar APK de
   prueba y activar branch protection.
+
+## 2026-11-09 — Brechas funcionales de la Parte 3
+- **Objetivo:** cerrar las brechas funcionales detectadas después de la
+  auditoría: inscripciones desde admin, filtros y PDFs móviles, preview de
+  comprobantes y concurrencia.
+- **Cambios:** altas administrativas de deporte/transporte/comedor; filtro de
+  historial por período; descarga de factura PDF para padre y admin; descarga
+  del comprobante cargado por el admin; normalización de fechas de factura y
+  prueba de aprobación concurrente.
+- **Tests:** 56 tests (se agregaron altas admin, filtro por período, PDFs y
+  concurrencia).
+- **Estado:** hecho a nivel código. Pendientes: credenciales SMTP/S3, secretos
+  de GitHub, APK EAS y branch protection.
+- **Verificación:** lint sin errores, typecheck API/web/móvil, 56 tests, build y
+  export web de Expo en verde.

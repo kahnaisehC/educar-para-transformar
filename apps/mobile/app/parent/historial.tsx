@@ -3,16 +3,19 @@ import { StyleSheet, Text, View } from "react-native";
 import { useAuth } from "../../src/auth";
 import { apiRequest, getErrorMessage } from "../../src/api";
 import { useChildren } from "../../src/useChildren";
-import type { BillingSummary } from "../../src/types";
+import type { Invoice } from "../../src/types";
 import { dateLabel, money, periodLabel } from "../../src/format";
-import { Badge, Button, Card, Choice, EmptyState, ErrorMessage, Loading, Screen } from "../../src/ui";
+import { Badge, Button, Card, Choice, EmptyState, ErrorMessage, Input, Loading, Screen } from "../../src/ui";
 import { sharePaymentReceipt } from "../../src/downloads";
 import { colors, spacing } from "../../src/theme";
 
 export default function ParentHistoryScreen() {
   const { token } = useAuth();
   const { children, selectedId, setSelectedId, loading } = useChildren(token);
-  const [summary, setSummary] = useState<BillingSummary | null>(null);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+  const [loadingInvoices, setLoadingInvoices] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [sharingId, setSharingId] = useState<number | null>(null);
@@ -20,18 +23,31 @@ export default function ParentHistoryScreen() {
   useEffect(() => {
     if (!token || selectedId === null) return;
     let active = true;
+    setLoadingInvoices(true);
     setError(null);
-    apiRequest<{ summary: BillingSummary }>(`/parent/billing/children/${selectedId}/summary`, { token })
+    const query = [
+      from ? `from=${encodeURIComponent(from)}` : "",
+      to ? `to=${encodeURIComponent(to)}` : "",
+    ]
+      .filter(Boolean)
+      .join("&");
+    apiRequest<{ invoices: Invoice[] }>(
+      `/parent/billing/children/${selectedId}/invoices${query ? `?${query}` : ""}`,
+      { token },
+    )
       .then((result) => {
-        if (active) setSummary(result.summary);
+        if (active) setInvoices(result.invoices);
       })
       .catch((requestError) => {
         if (active) setError(getErrorMessage(requestError));
+      })
+      .finally(() => {
+        if (active) setLoadingInvoices(false);
       });
     return () => {
       active = false;
     };
-  }, [selectedId, token]);
+  }, [selectedId, token, from, to]);
 
   async function downloadReceipt(receiptId: number, paymentId: number, number: string | null) {
     if (!token) return;
@@ -72,8 +88,15 @@ export default function ParentHistoryScreen() {
               />
             ))}
           </View>
-          {!summary ? <Loading label="Cargando facturas..." /> : null}
-          {summary?.invoices.map((invoice) => (
+          <View style={styles.filters}>
+            <Input label="Desde (AAAA-MM-DD)" value={from} onChangeText={setFrom} placeholder="2026-10-01" />
+            <Input label="Hasta (AAAA-MM-DD)" value={to} onChangeText={setTo} placeholder="2026-12-31" />
+          </View>
+          {loadingInvoices ? <Loading label="Cargando facturas..." /> : null}
+          {invoices.length === 0 && !loadingInvoices ? (
+            <EmptyState title="Sin facturas en el período" detail="Probá con otro rango de fechas." />
+          ) : null}
+          {invoices.map((invoice) => (
             <Card key={invoice.id} title={periodLabel(invoice.periodYear, invoice.periodMonth)}>
               <View style={styles.header}>
                 <Text style={styles.amount}>{money(invoice.totalAmount)}</Text>
@@ -127,6 +150,7 @@ export default function ParentHistoryScreen() {
 
 const styles = StyleSheet.create({
   choices: { flexDirection: "row", flexWrap: "wrap", marginBottom: spacing.sm },
+  filters: { marginBottom: spacing.sm },
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: spacing.sm },
   amount: { color: colors.deep, fontSize: 20, fontWeight: "900" },
   receiptBlock: { paddingTop: spacing.sm, marginTop: spacing.sm, borderTopWidth: 1, borderTopColor: "#eef2f4" },

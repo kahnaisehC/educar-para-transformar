@@ -939,6 +939,43 @@ describe("admin academic and services management", () => {
     expect(deleteSport.status).toBe(200);
   });
 
+  it("creates sport and transport enrollments from the admin panel", async () => {
+    const adminToken = await loginAs("admin.demo");
+
+    const sport = await request(app)
+      .post("/api/admin/enrollments/sports")
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({ studentId: 1, groupId: 1 });
+    expect(sport.status).toBe(201);
+
+    const duplicateSport = await request(app)
+      .post("/api/admin/enrollments/sports")
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({ studentId: 1, groupId: 1 });
+    expect(duplicateSport.status).toBe(409);
+    expect(duplicateSport.body.code).toBe("DUPLICATE_ENROLLMENT");
+
+    const transport = await request(app)
+      .post("/api/admin/enrollments/transport")
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({ studentId: 1, routeId: 1 });
+    expect(transport.status).toBe(201);
+
+    const duplicateTransport = await request(app)
+      .post("/api/admin/enrollments/transport")
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({ studentId: 1, routeId: 2 });
+    expect(duplicateTransport.status).toBe(409);
+    expect(duplicateTransport.body.code).toBe("TRANSPORT_ALREADY_ENROLLED");
+
+    const studentToken = await loginAs("ana.alumna");
+    const forbidden = await request(app)
+      .post("/api/admin/enrollments/sports")
+      .set("Authorization", `Bearer ${studentToken}`)
+      .send({ studentId: 1, groupId: 2 });
+    expect(forbidden.status).toBe(403);
+  });
+
   it("administers enrollments across every service", async () => {
     const studentToken = await loginAs("ana.alumna");
     await request(app)
@@ -1317,6 +1354,24 @@ describe("billing module (Parte 3)", () => {
     expect(pdf.status).toBe(200);
     expect(pdf.headers["content-type"]).toContain("application/pdf");
 
+    const filtered = await request(app)
+      .get("/api/parent/billing/children/1/invoices?from=2026-10-01&to=2026-10-31")
+      .set("Authorization", `Bearer ${parentToken}`);
+    expect(filtered.status).toBe(200);
+    expect(filtered.body.invoices).toHaveLength(1);
+
+    const outside = await request(app)
+      .get("/api/parent/billing/children/1/invoices?from=2025-01-01&to=2025-12-31")
+      .set("Authorization", `Bearer ${parentToken}`);
+    expect(outside.status).toBe(200);
+    expect(outside.body.invoices).toHaveLength(0);
+
+    const adminPdf = await request(app)
+      .get(`/api/admin/billing/invoices/${context.anaInvoiceId}/pdf`)
+      .set("Authorization", `Bearer ${context.adminToken}`);
+    expect(adminPdf.status).toBe(200);
+    expect(adminPdf.headers["content-type"]).toContain("application/pdf");
+
     const bank = await request(app)
       .get("/api/parent/billing/bank-details")
       .set("Authorization", `Bearer ${parentToken}`);
@@ -1353,6 +1408,11 @@ describe("billing module (Parte 3)", () => {
       .get(`/api/billing/receipts/${receiptId}/file`)
       .set("Authorization", `Bearer ${parentToken}`);
     expect(ownFile.status).toBe(200);
+
+    const adminFile = await request(app)
+      .get(`/api/billing/receipts/${receiptId}/file`)
+      .set("Authorization", `Bearer ${context.adminToken}`);
+    expect(adminFile.status).toBe(200);
 
     const otherParent = await loginAs("carlos.padre");
     const forbiddenFile = await request(app)
@@ -1601,6 +1661,42 @@ describe("billing module (Parte 3)", () => {
       .post("/api/auth/forgot-password")
       .send({ username: "no.existe" });
     expect(unknown.status).toBe(200);
+  });
+});
+
+describe("billing concurrency", () => {
+  it("prevents double accreditation under concurrent approvals", async () => {
+    const context = await prepareBilling();
+    const parentToken = await loginAs("marta.madre");
+    const detail = await request(app)
+      .get(`/api/parent/billing/invoices/${context.anaInvoiceId}`)
+      .set("Authorization", `Bearer ${parentToken}`);
+    const itemId = detail.body.invoice.items[0].id as number;
+
+    const upload = await request(app)
+      .post(`/api/parent/billing/invoices/${context.anaInvoiceId}/receipts`)
+      .set("Authorization", `Bearer ${parentToken}`)
+      .field("itemIds", JSON.stringify([itemId]))
+      .attach("file", Buffer.from("%PDF-1.4\n% concurrencia\n"), {
+        filename: "concurrencia.pdf",
+        contentType: "application/pdf",
+      });
+    expect(upload.status).toBe(201);
+
+    const [first, second] = await Promise.all([
+      request(app)
+        .post(`/api/admin/billing/receipts/${upload.body.receipt.id}/approve`)
+        .set("Authorization", `Bearer ${context.adminToken}`),
+      request(app)
+        .post(`/api/admin/billing/receipts/${upload.body.receipt.id}/approve`)
+        .set("Authorization", `Bearer ${context.adminToken}`),
+    ]);
+    expect([first.status, second.status].sort()).toEqual([200, 409]);
+
+    const invoice = await request(app)
+      .get(`/api/admin/billing/invoices/${context.anaInvoiceId}`)
+      .set("Authorization", `Bearer ${context.adminToken}`);
+    expect(invoice.body.invoice.payments).toHaveLength(1);
   });
 });
 

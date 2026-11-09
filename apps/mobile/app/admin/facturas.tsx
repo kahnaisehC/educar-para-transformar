@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { useAuth } from "../../src/auth";
 import { apiRequest, getErrorMessage } from "../../src/api";
-import { sharePaymentReceipt } from "../../src/downloads";
+import { shareInvoicePdf, sharePaymentReceipt } from "../../src/downloads";
 import type { Invoice } from "../../src/types";
 import { dateLabel, money, periodLabel } from "../../src/format";
 import {
@@ -32,6 +32,7 @@ export default function AdminInvoicesScreen() {
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [sharingId, setSharingId] = useState<number | null>(null);
+  const [invoiceSharingId, setInvoiceSharingId] = useState<number | null>(null);
 
   async function load() {
     if (!token) return;
@@ -78,6 +79,19 @@ export default function AdminInvoicesScreen() {
       setError(getErrorMessage(requestError));
     } finally {
       setGenerating(false);
+    }
+  }
+
+  async function downloadInvoice(invoiceId: number) {
+    if (!token) return;
+    setInvoiceSharingId(invoiceId);
+    setError(null);
+    try {
+      await shareInvoicePdf(invoiceId, token, "admin");
+    } catch (requestError) {
+      setError(getErrorMessage(requestError));
+    } finally {
+      setInvoiceSharingId(null);
     }
   }
 
@@ -141,6 +155,12 @@ export default function AdminInvoicesScreen() {
           />
           {detail?.id === invoice.id ? (
             <>
+              <Button
+                label={invoiceSharingId === invoice.id ? "Generando..." : "Descargar factura PDF"}
+                variant="secondary"
+                onPress={() => void downloadInvoice(invoice.id)}
+                loading={invoiceSharingId === invoice.id}
+              />
               <SectionTitle>Ítems</SectionTitle>
               {detail.items.map((item) => (
                 <Row key={item.id} label={item.description} value={money(item.amount)} />

@@ -16,6 +16,7 @@ import {
   Screen,
 } from "../../src/ui";
 import { colors, spacing } from "../../src/theme";
+import { shareUploadedReceipt } from "../../src/downloads";
 
 export default function AdminReceiptsScreen() {
   const { token } = useAuth();
@@ -26,6 +27,7 @@ export default function AdminReceiptsScreen() {
   const [busyId, setBusyId] = useState<number | null>(null);
   const [rejectingId, setRejectingId] = useState<number | null>(null);
   const [reason, setReason] = useState("");
+  const [viewingId, setViewingId] = useState<number | null>(null);
 
   async function load() {
     if (!token) return;
@@ -47,6 +49,19 @@ export default function AdminReceiptsScreen() {
   useEffect(() => {
     void load();
   }, [token]);
+
+  async function viewReceipt(receiptId: number, fileName: string) {
+    if (!token) return;
+    setViewingId(receiptId);
+    setError(null);
+    try {
+      await shareUploadedReceipt(receiptId, token, fileName);
+    } catch (requestError) {
+      setError(getErrorMessage(requestError));
+    } finally {
+      setViewingId(null);
+    }
+  }
 
   async function approve(receiptId: number) {
     if (!token) return;
@@ -114,6 +129,13 @@ export default function AdminReceiptsScreen() {
             {receipt.items.map((item) => (
               <Row key={item.invoiceItemId} label={item.description} value={money(item.amount)} />
             ))}
+
+            <Button
+              label={viewingId === receipt.id ? "Abriendo..." : "Ver comprobante"}
+              variant="secondary"
+              onPress={() => void viewReceipt(receipt.id, receipt.fileName)}
+              loading={viewingId === receipt.id}
+            />
 
             {rejectingId === receipt.id ? (
               <>
