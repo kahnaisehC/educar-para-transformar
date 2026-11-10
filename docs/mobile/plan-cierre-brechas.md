@@ -41,7 +41,7 @@ criterios de aceptación, riesgos y esfuerzo estimado.
 | Scheduler de notificaciones | Render Cron, GitHub Actions schedule, `node-cron` en la API | Render Cron si el plan lo permite; si no, GitHub Actions con token interno |
 | Numeración del comprobante de pago | `payments.id` formateado, secuencia propia, UUID | Secuencia propia `PAGO-AAAA-000001` persistida en `payments.payment_number` |
 | Build móvil | Solo Android APK, Android + iOS, EAS Update | Android APK para la defensa; iOS solo si hay cuenta Apple |
-| Branch protection | Checks obligatorios, revisiones obligatorias | Requerir `build-and-test` y `e2e`; PR obligatorio (SonarCloud desactivado por facturación) |
+| Branch protection | Checks obligatorios, revisiones obligatorias | Requerir `build-and-test`, `e2e` y `SonarCloud Code Analysis`; PR obligatorio |
 
 ## Orden recomendado
 
@@ -396,9 +396,10 @@ a `main`.
   - Require a pull request before merging.
   - Require approvals (1).
   - Dismiss stale approvals.
-  - Require status checks: `build-and-test` y `e2e`.
-    SonarCloud queda fuera: el 2026-11-10 se desactivó el workflow por un
-    problema de facturación de la organización (ver `.github/workflows/sonarcloud.yml`).
+  - Require status checks: `build-and-test`, `e2e` y `SonarCloud Code Analysis`.
+    Usar el check del Automatic Analysis (`SonarCloud Code Analysis`), no el job
+    `Análisis SonarCloud`: el workflow se desactivó el 2026-11-10 porque duplicaba
+    el análisis (ver `.github/workflows/sonarcloud.yml`).
   - Require branches to be up to date.
   - Block force pushes y deletions.
 - Verificar que los checks existan en un PR reciente.
@@ -415,8 +416,8 @@ a `main`.
 - La configuración queda documentada y reproducible.
 
 **Riesgos:** permisos de administrador del repositorio; checks con nombres
-exactos. Si se reactiva SonarCloud, volver a agregar `Análisis SonarCloud` a
-los checks requeridos y el secreto `SONAR_TOKEN`.
+exactos; una cuenta de GitHub bloqueada por facturación impide que corra
+cualquier workflow (ver `render.yaml`).
 
 **Esfuerzo:** 0,5 día (más permisos).
 

@@ -6,9 +6,11 @@ Reglas para integrar cambios a `main` mediante revisión por pares.
 
 1. **Todo cambio entra por Pull Request.** No se hace push directo a `main`.
 2. **Una aprobación mínima** de un integrante distinto del autor. `.github/CODEOWNERS` solicita la revisión automáticamente.
-3. **Checks obligatorios en verde:** CI (lint, typecheck, test, build) y job E2E con Cypress.
-   SonarCloud está desactivado por un problema de facturación de la organización
-   (ver `.github/workflows/sonarcloud.yml`); no es un check obligatorio.
+3. **Checks obligatorios en verde:** CI (lint, typecheck, test, build), job E2E con Cypress
+   y `SonarCloud Code Analysis`.
+   Ese check lo publica el *Automatic Analysis* de SonarCloud (no consume minutos de
+   Actions). El workflow `.github/workflows/sonarcloud.yml` quedó desactivado porque
+   duplicaba el análisis, así que el contexto `Análisis SonarCloud` ya no existe.
 4. **PR pequeño y enfocado** (idealmente menos de 400 líneas), una rebanada vertical por vez.
 5. **Rama actualizada contra `main`** y conversaciones del diff resueltas antes de mergear.
 6. **Commits en inglés con Conventional Commits** (`feat:`, `fix:`, `docs:`, `chore:`, `refactor:`).

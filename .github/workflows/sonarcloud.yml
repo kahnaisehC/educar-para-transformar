@@ -1,11 +1,12 @@
 name: SonarCloud
 
-# DESACTIVADO (2026-11-10): la organización de SonarCloud tiene un problema de
-# facturación y el check "Análisis SonarCloud" queda en rojo, bloqueando los
-# deploys de Render (autoDeployTrigger: checksPass).
+# DESACTIVADO (2026-11-10): SonarCloud ya publica el check
+# "SonarCloud Code Analysis" mediante su Automatic Analysis, que corre en los
+# servidores de Sonar y NO consume minutos de GitHub Actions. Este workflow
+# quedó redundante (y además duplicaría el análisis).
 #
-# Se dejó el flujo solo con disparo manual para no romper la trazabilidad de la
-# Unidad 5. Para reactivarlo, restaurar los disparadores push/pull_request:
+# Se conserva el archivo, con disparo manual, para no perder la configuración
+# documentada en la Unidad 5. Para reactivar el escaneo por CI:
 #
 #   on:
 #     push:
@@ -13,8 +14,8 @@ name: SonarCloud
 #     pull_request:
 #       branches: [main]
 #
-# y volver a agregar "Análisis SonarCloud" a los checks obligatorios de
-# docs/POLITICA_PR.md.
+# y desactivar antes el Automatic Analysis en SonarCloud
+# (Administration > Analysis Method), porque no pueden convivir.
 on:
   workflow_dispatch: {}
 

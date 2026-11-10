@@ -19,7 +19,7 @@ Funcionalidad elegida: **RF-AL-03 / HU-01 – Inscripción a deportes** (la Unid
 | Husky + lint-staged (pre-commit) | `.husky/pre-commit`, `lint-staged` en `package.json` | automático al hacer `git commit` |
 | Cypress 13 (E2E y regresión) | `cypress.config.ts`, `cypress/` | `npm run e2e`, `npm run e2e:open` |
 | Cobertura (`@vitest/coverage-v8`) | `apps/api/package.json` | `npm run test:coverage` |
-| SonarCloud (vinculado, Quality Gate aprobado en el PR #4) | `sonar-project.properties`, `.github/workflows/sonarcloud.yml` | **desactivado el 2026-11-10 por un problema de facturación**; el flujo quedó solo con disparo manual |
+| SonarCloud (vinculado, Quality Gate aprobado en el PR #4) | `sonar-project.properties`, `.github/workflows/sonarcloud.yml` | el workflow quedó **con disparo manual desde el 2026-11-10**: el análisis lo hace el Automatic Analysis, que publica el check `SonarCloud Code Analysis` sin consumir minutos de Actions |
 | Política de PR | `.github/CODEOWNERS`, `.github/pull_request_template.md`, `docs/POLITICA_PR.md` | – |
 | CI ampliado | `.github/workflows/ci.yml` (paso Lint y job `e2e`) | automático en push y PR |
 
