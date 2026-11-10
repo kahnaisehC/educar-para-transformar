@@ -66,7 +66,7 @@ que editás. Política de PR en `docs/POLITICA_PR.md`; entrega de la Unidad 5 en
 ## Reglas de trabajo (obligatorias)
 
 1. **Una rebanada vertical por vez.** No implementes "todo el plan" de una.
-   Ver `docs/app-steering-guide.txt`.
+   Ver `docs/app-steering-guide.md`.
 2. **Antes de dar una tarea por terminada** ejecutá:
    `npm run lint && npm run typecheck && npm test && npm run build`. El CI corre exactamente
    eso en cada push/PR a `main`; no se mergea en rojo.
