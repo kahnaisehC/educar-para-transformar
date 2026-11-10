@@ -18,6 +18,8 @@ postgres_data/
 uploads/
 .expo/
 apps/mobile/.expo/
+apps/mobile/android/
+apps/mobile/ios/
 
 cypress/screenshots/
 cypress/videos/

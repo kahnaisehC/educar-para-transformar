@@ -258,9 +258,12 @@ CREATE TABLE IF NOT EXISTS payments (
     receipt_id INTEGER NOT NULL UNIQUE REFERENCES payment_receipts (id) ON DELETE RESTRICT,
     invoice_id INTEGER NOT NULL REFERENCES invoices (id) ON DELETE RESTRICT,
     amount NUMERIC(12, 2) NOT NULL CHECK (amount >= 0),
+    payment_number VARCHAR(30) UNIQUE,
     approved_by INTEGER NOT NULL REFERENCES users (id) ON DELETE RESTRICT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+CREATE INDEX IF NOT EXISTS idx_payments_number ON payments (payment_number);
 
 CREATE TABLE IF NOT EXISTS payment_allocations (
     id SERIAL PRIMARY KEY,

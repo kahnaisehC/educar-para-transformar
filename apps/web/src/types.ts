@@ -108,6 +108,7 @@ export interface ChildSummary {
 }
 
 export interface AdminUser extends User {
+  email: string | null;
   createdAt: string;
 }
 

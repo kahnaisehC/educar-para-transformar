@@ -6,7 +6,11 @@ Reglas para integrar cambios a `main` mediante revisión por pares.
 
 1. **Todo cambio entra por Pull Request.** No se hace push directo a `main`.
 2. **Una aprobación mínima** de un integrante distinto del autor. `.github/CODEOWNERS` solicita la revisión automáticamente.
-3. **Checks obligatorios en verde:** CI (lint, typecheck, test, build), job E2E con Cypress y Quality Gate de SonarCloud.
+3. **Checks obligatorios en verde:** CI (lint, typecheck, test, build), job E2E con Cypress
+   y `SonarCloud Code Analysis`.
+   Ese check lo publica el *Automatic Analysis* de SonarCloud (no consume minutos de
+   Actions). El workflow `.github/workflows/sonarcloud.yml` quedó desactivado porque
+   duplicaba el análisis, así que el contexto `Análisis SonarCloud` ya no existe.
 4. **PR pequeño y enfocado** (idealmente menos de 400 líneas), una rebanada vertical por vez.
 5. **Rama actualizada contra `main`** y conversaciones del diff resueltas antes de mergear.
 6. **Commits en inglés con Conventional Commits** (`feat:`, `fix:`, `docs:`, `chore:`, `refactor:`).
@@ -25,8 +29,46 @@ Reglas para integrar cambios a `main` mediante revisión por pares.
 Configurada en *Settings > Branches > Add branch protection rule* para `main`:
 
 - Require a pull request before merging (1 approval, Require review from Code Owners).
-- Require status checks to pass: `Build, typecheck y test`, `Pruebas E2E (Cypress)` y `Análisis SonarCloud`.
+- Require status checks to pass: `Build, typecheck y test` y `Pruebas E2E (Cypress)`.
 - Require branches to be up to date before merging.
 - Require conversation resolution before merging.
 
 Estas reglas se configuran desde la interfaz de GitHub; no se pueden versionar en el repositorio.
+
+### Configuración reproducible con `gh`
+
+Con permisos de administrador del repositorio:
+
+```bash
+gh api --method PUT repos/{owner}/{repo}/branches/main/protection \
+  -H "Accept: application/vnd.github+json" \
+  --input - <<'JSON'
+{
+  "required_status_checks": {
+    "strict": true,
+    "contexts": [
+      "Build, typecheck y test",
+      "Pruebas E2E (Cypress)"
+    ]
+  },
+  "enforce_admins": false,
+  "required_pull_request_reviews": {
+    "required_approving_review_count": 1,
+    "require_code_owner_reviews": true,
+    "dismiss_stale_reviews": true
+  },
+  "restrictions": null,
+  "required_conversation_resolution": true,
+  "allow_force_pushes": false,
+  "allow_deletions": false
+}
+JSON
+```
+
+Verificar con:
+
+```bash
+gh api repos/{owner}/{repo}/branches/main/protection
+```
+
+La configuración de protección de rama vive en GitHub, no en el repositorio.

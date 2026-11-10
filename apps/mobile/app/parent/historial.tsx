@@ -3,32 +3,64 @@ import { StyleSheet, Text, View } from "react-native";
 import { useAuth } from "../../src/auth";
 import { apiRequest, getErrorMessage } from "../../src/api";
 import { useChildren } from "../../src/useChildren";
-import type { BillingSummary } from "../../src/types";
+import type { Invoice } from "../../src/types";
 import { dateLabel, money, periodLabel } from "../../src/format";
-import { Badge, Card, Choice, EmptyState, ErrorMessage, Loading, Screen } from "../../src/ui";
+import { Badge, Button, Card, Choice, EmptyState, ErrorMessage, Input, Loading, Screen } from "../../src/ui";
+import { sharePaymentReceipt } from "../../src/downloads";
 import { colors, spacing } from "../../src/theme";
 
 export default function ParentHistoryScreen() {
   const { token } = useAuth();
   const { children, selectedId, setSelectedId, loading } = useChildren(token);
-  const [summary, setSummary] = useState<BillingSummary | null>(null);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+  const [loadingInvoices, setLoadingInvoices] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [sharingId, setSharingId] = useState<number | null>(null);
 
   useEffect(() => {
     if (!token || selectedId === null) return;
     let active = true;
+    setLoadingInvoices(true);
     setError(null);
-    apiRequest<{ summary: BillingSummary }>(`/parent/billing/children/${selectedId}/summary`, { token })
+    const query = [
+      from ? `from=${encodeURIComponent(from)}` : "",
+      to ? `to=${encodeURIComponent(to)}` : "",
+    ]
+      .filter(Boolean)
+      .join("&");
+    apiRequest<{ invoices: Invoice[] }>(
+      `/parent/billing/children/${selectedId}/invoices${query ? `?${query}` : ""}`,
+      { token },
+    )
       .then((result) => {
-        if (active) setSummary(result.summary);
+        if (active) setInvoices(result.invoices);
       })
       .catch((requestError) => {
         if (active) setError(getErrorMessage(requestError));
+      })
+      .finally(() => {
+        if (active) setLoadingInvoices(false);
       });
     return () => {
       active = false;
     };
-  }, [selectedId, token]);
+  }, [selectedId, token, from, to]);
+
+  async function downloadReceipt(receiptId: number, paymentId: number, number: string | null) {
+    if (!token) return;
+    setSharingId(receiptId);
+    setNotice(null);
+    try {
+      await sharePaymentReceipt(paymentId, token, number);
+    } catch (requestError) {
+      setNotice(getErrorMessage(requestError));
+    } finally {
+      setSharingId(null);
+    }
+  }
 
   if (loading) {
     return (
@@ -41,6 +73,7 @@ export default function ParentHistoryScreen() {
   return (
     <Screen title="Historial" subtitle="Comprobantes cargados y facturas por período.">
       <ErrorMessage>{error}</ErrorMessage>
+      {notice ? <Text style={styles.error}>{notice}</Text> : null}
       {children.length === 0 ? (
         <EmptyState title="Sin hijos asociados" detail="No hay historial para mostrar." />
       ) : (
@@ -55,8 +88,15 @@ export default function ParentHistoryScreen() {
               />
             ))}
           </View>
-          {!summary ? <Loading label="Cargando facturas..." /> : null}
-          {summary?.invoices.map((invoice) => (
+          <View style={styles.filters}>
+            <Input label="Desde (AAAA-MM-DD)" value={from} onChangeText={setFrom} placeholder="2026-10-01" />
+            <Input label="Hasta (AAAA-MM-DD)" value={to} onChangeText={setTo} placeholder="2026-12-31" />
+          </View>
+          {loadingInvoices ? <Loading label="Cargando facturas..." /> : null}
+          {invoices.length === 0 && !loadingInvoices ? (
+            <EmptyState title="Sin facturas en el período" detail="Probá con otro rango de fechas." />
+          ) : null}
+          {invoices.map((invoice) => (
             <Card key={invoice.id} title={periodLabel(invoice.periodYear, invoice.periodMonth)}>
               <View style={styles.header}>
                 <Text style={styles.amount}>{money(invoice.totalAmount)}</Text>
@@ -66,17 +106,37 @@ export default function ParentHistoryScreen() {
                 <Text style={styles.note}>Sin comprobantes cargados.</Text>
               ) : (
                 invoice.receipts.map((receipt) => (
-                  <View key={receipt.id} style={styles.receiptRow}>
-                    <View style={styles.copy}>
-                      <Text style={styles.description}>
-                        {money(receipt.claimedAmount)} · {dateLabel(receipt.createdAt)}
-                      </Text>
-                      <Text style={styles.meta}>{receipt.fileName}</Text>
-                      {receipt.rejectionReason ? (
-                        <Text style={styles.rejection}>{receipt.rejectionReason}</Text>
-                      ) : null}
+                  <View key={receipt.id} style={styles.receiptBlock}>
+                    <View style={styles.receiptRow}>
+                      <View style={styles.copy}>
+                        <Text style={styles.description}>
+                          {money(receipt.claimedAmount)} · {dateLabel(receipt.createdAt)}
+                        </Text>
+                        <Text style={styles.meta}>{receipt.fileName}</Text>
+                        {receipt.rejectionReason ? (
+                          <Text style={styles.rejection}>{receipt.rejectionReason}</Text>
+                        ) : null}
+                      </View>
+                      <Badge status={receipt.status} />
                     </View>
-                    <Badge status={receipt.status} />
+                    {receipt.payment ? (
+                      <Button
+                        label={
+                          sharingId === receipt.id
+                            ? "Generando comprobante..."
+                            : `Comprobante ${receipt.payment.number ?? ""}`
+                        }
+                        variant="secondary"
+                        onPress={() =>
+                          void downloadReceipt(
+                            receipt.id,
+                            receipt.payment!.id,
+                            receipt.payment!.number,
+                          )
+                        }
+                        loading={sharingId === receipt.id}
+                      />
+                    ) : null}
                   </View>
                 ))
               )}
@@ -90,12 +150,15 @@ export default function ParentHistoryScreen() {
 
 const styles = StyleSheet.create({
   choices: { flexDirection: "row", flexWrap: "wrap", marginBottom: spacing.sm },
+  filters: { marginBottom: spacing.sm },
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: spacing.sm },
   amount: { color: colors.deep, fontSize: 20, fontWeight: "900" },
-  receiptRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 6, borderTopWidth: 1, borderTopColor: "#eef2f4" },
+  receiptBlock: { paddingTop: spacing.sm, marginTop: spacing.sm, borderTopWidth: 1, borderTopColor: "#eef2f4" },
+  receiptRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 4 },
   copy: { flex: 1, paddingRight: spacing.sm },
   description: { color: colors.ink, fontSize: 13 },
   meta: { marginTop: 2, color: colors.muted, fontSize: 11 },
   rejection: { marginTop: 2, color: colors.danger, fontSize: 11 },
   note: { color: colors.muted, fontSize: 12 },
+  error: { color: colors.danger, fontSize: 12, marginBottom: spacing.sm },
 });

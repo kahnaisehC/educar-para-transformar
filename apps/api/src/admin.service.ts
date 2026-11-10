@@ -11,6 +11,7 @@ export interface AdminUser {
   id: number;
   username: string;
   displayName: string;
+  email: string | null;
   role: UserRole;
   status: "active" | "inactive";
   createdAt: string;
@@ -19,6 +20,7 @@ export interface AdminUser {
 export interface CreateUserInput {
   username: string;
   displayName: string;
+  email?: string | null;
   password: string;
   role: UserRole;
   status: "active" | "inactive";
@@ -26,6 +28,7 @@ export interface CreateUserInput {
 
 export interface UpdateUserInput {
   displayName?: string;
+  email?: string | null;
   password?: string;
   role?: UserRole;
   status?: "active" | "inactive";
@@ -35,6 +38,7 @@ interface AdminUserRow {
   id: number;
   username: string;
   display_name: string;
+  email: string | null;
   role: UserRole;
   status: "active" | "inactive";
   created_at: string;
@@ -45,6 +49,7 @@ function mapUser(user: AdminUserRow): AdminUser {
     id: user.id,
     username: user.username,
     displayName: user.display_name,
+    email: user.email,
     role: user.role,
     status: user.status,
     createdAt: user.created_at,
@@ -53,7 +58,7 @@ function mapUser(user: AdminUserRow): AdminUser {
 
 export async function listUsers(pool: DatabasePool): Promise<AdminUser[]> {
   const result = await pool.query<AdminUserRow>(
-    `SELECT id, username, display_name, role, status, created_at
+    `SELECT id, username, display_name, email, role, status, created_at
      FROM users
      ORDER BY display_name, username`,
   );
@@ -87,18 +92,18 @@ export async function createUser(
       withTransaction(pool, async (client) => {
         const passwordHash = await bcrypt.hash(input.password, 12);
         const result = await client.query<AdminUserRow>(
-          `INSERT INTO users (username, display_name, password_hash, role, status)
-           VALUES ($1, $2, $3, $4, $5)
-           RETURNING id, username, display_name, role, status, created_at`,
-          [input.username, input.displayName, passwordHash, input.role, input.status],
+          `INSERT INTO users (username, display_name, email, password_hash, role, status)
+           VALUES ($1, $2, $3, $4, $5, $6)
+           RETURNING id, username, display_name, email, role, status, created_at`,
+          [input.username, input.displayName, input.email ?? null, passwordHash, input.role, input.status],
         );
         const user = result.rows[0];
         if (user.role === "student") {
           await client.query(
             `INSERT INTO students
-               (user_id, record_number, dni, full_name, status)
-             VALUES ($1, $2, $3, $4, $5)`,
-            [user.id, `PEND-${user.id}`, `PEND-${user.id}`, input.displayName, input.status],
+               (user_id, record_number, dni, full_name, email, status)
+             VALUES ($1, $2, $3, $4, $5, $6)`,
+            [user.id, `PEND-${user.id}`, `PEND-${user.id}`, input.displayName, input.email ?? null, input.status],
           );
         }
         if (user.role === "parent") {
@@ -117,7 +122,7 @@ export async function createUser(
               `PEND-PR-${user.id}`,
               `PEND-DNI-${user.id}`,
               input.displayName,
-              `${user.username}@educar.local`,
+              input.email ?? `${user.username}@educar.local`,
               input.status,
             ],
           );
@@ -166,6 +171,10 @@ export async function updateUser(
           values.push(input.displayName);
           assignments.push(`display_name = $${values.length}`);
         }
+        if (input.email !== undefined) {
+          values.push(input.email);
+          assignments.push(`email = $${values.length}`);
+        }
         if (input.password !== undefined) {
           const passwordHash = await bcrypt.hash(input.password, 12);
           values.push(passwordHash);
@@ -191,7 +200,7 @@ export async function updateUser(
           `UPDATE users
            SET ${assignments.join(", ")}, updated_at = NOW()
            WHERE id = $${values.length}
-           RETURNING id, username, display_name, role, status, created_at`,
+           RETURNING id, username, display_name, email, role, status, created_at`,
           values,
         );
         const user = result.rows[0];
@@ -199,7 +208,7 @@ export async function updateUser(
           throw new AppError(404, "El usuario no existe", "USER_NOT_FOUND");
         }
         if (input.role && input.role !== current.rows[0].role) {
-          await ensureRoleProfile(client, user.id, user.username, user.display_name, user.role);
+          await ensureRoleProfile(client, user.id, user.username, user.display_name, user.email, user.role);
         }
         return mapUser(user);
       }),
@@ -227,15 +236,16 @@ async function ensureRoleProfile(
   userId: number,
   username: string,
   displayName: string,
+  email: string | null,
   role: UserRole,
 ): Promise<void> {
   if (role === "student") {
     const existing = await client.query("SELECT 1 FROM students WHERE user_id = $1", [userId]);
     if (!existing.rowCount) {
       await client.query(
-        `INSERT INTO students (user_id, record_number, dni, full_name, status)
-         VALUES ($1, $2, $3, $4, 'active')`,
-        [userId, `PEND-${userId}`, `PEND-DNI-${userId}`, displayName],
+        `INSERT INTO students (user_id, record_number, dni, full_name, email, status)
+         VALUES ($1, $2, $3, $4, $5, 'active')`,
+        [userId, `PEND-${userId}`, `PEND-DNI-${userId}`, displayName, email],
       );
     }
   }
@@ -260,7 +270,7 @@ async function ensureRoleProfile(
           `PEND-PR-${userId}`,
           `PEND-DNI-${userId}`,
           displayName,
-          `${username}@educar.local`,
+          email ?? `${username}@educar.local`,
         ],
       );
     }

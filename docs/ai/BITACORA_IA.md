@@ -98,3 +98,71 @@ personas del grupo: no dependas de la memoria del chat.
 - **Cambios:** ESLint, Husky + lint-staged, Cypress (E2E y regresión), cobertura con `@vitest/coverage-v8`, configuración de SonarCloud, job `e2e` y paso `lint` en CI, política de PR y carpeta `unidad5v2/` con el Word y el PDF. Se eliminaron imports sin usar detectados por ESLint.
 - **Estado:** lint 0 errores, typecheck, 50 tests y build en verde; Cypress 4/4 contra el stack real.
 - **Próximos pasos:** vincular SonarCloud (`SONAR_TOKEN`) y activar la protección de `main`.
+
+## 2026-11-09 — Cierre de brechas de la Parte 3
+- **Objetivo:** ejecutar el plan de cierre de las 8 brechas detectadas en la
+  auditoría de la Parte 3.
+- **Cambios:** runner de migraciones (`scripts/migrate-db.mjs` y `schema_migrations`),
+  email en alta/edición de usuarios, comprobante de pago numerado con PDF y
+  descarga móvil, estado y prueba de SMTP, scheduler con lógica de último día
+  hábil/día 20 y workflow de GitHub Actions, adaptador de storage local/S3,
+  configuración EAS y documentación de branch protection.
+- **Tests:** se agregaron casos de email de usuarios, comprobante de pago,
+  estado de correo y calendario de notificaciones. Total: 54 tests.
+- **Estado:** implementación local completa. Pendientes operativos: credenciales
+  SMTP/S3, secretos del workflow, build EAS y ejecución de branch protection.
+- **Verificación:** lint sin errores (12 warnings), typecheck de API/web/móvil,
+  54 tests y build en verde; migración 007 probada contra PostgreSQL real.
+- **Próximos pasos:** configurar secretos en Render/GitHub, generar APK de
+  prueba y activar branch protection.
+
+## 2026-11-09 — Brechas funcionales de la Parte 3
+- **Objetivo:** cerrar las brechas funcionales detectadas después de la
+  auditoría: inscripciones desde admin, filtros y PDFs móviles, preview de
+  comprobantes y concurrencia.
+- **Cambios:** altas administrativas de deporte/transporte/comedor; filtro de
+  historial por período; descarga de factura PDF para padre y admin; descarga
+  del comprobante cargado por el admin; normalización de fechas de factura y
+  prueba de aprobación concurrente.
+- **Tests:** 56 tests (se agregaron altas admin, filtro por período, PDFs y
+  concurrencia).
+- **Estado:** hecho a nivel código. Pendientes: credenciales SMTP/S3, secretos
+  de GitHub, APK EAS y branch protection.
+- **Verificación:** lint sin errores, typecheck API/web/móvil, 56 tests, build y
+  export web de Expo en verde.
+
+## 2026-11-10 — Bloqueo de GitHub Actions por facturación
+- **Objetivo:** destrabar los deploys de Render.
+- **Diagnóstico:** desde el 2026-11-09 ningún job de Actions arranca. La anotación
+  del check es "The job was not started because your account is locked due to a
+  billing issue". El primer CI en fallar es `1ebc677`; el último en verde había
+  sido `981ed88` (2026-11-04). El repo es público, así que no se trata de minutos
+  agotados: la cuenta tiene un problema de pago (plan, Copilot, Packages o medio
+  de pago rechazado).
+- **Corrección de un diagnóstico previo:** el fallo del job `Análisis SonarCloud`
+  era consecuencia del mismo bloqueo, no de una facturación de SonarCloud. El
+  check `SonarCloud Code Analysis` (Automatic Analysis, corre en servidores de
+  Sonar) sigue en verde y no depende de Actions.
+- **Cambios:** `.github/workflows/sonarcloud.yml` queda con disparo manual y su
+  comentario documenta que el análisis lo cubre el Automatic Analysis;
+  `docs/POLITICA_PR.md`, `docs/mobile/plan-cierre-brechas.md`,
+  `sonar-project.properties` y `unidad5v2/README.md` se alinean a eso;
+  `render.yaml` pasa `autoDeployTrigger` de `checksPass` a `commit` (temporal).
+- **Estado:** pendiente que el titular de la cuenta resuelva la facturación en
+  GitHub (*Settings > Billing*) y que se vuelva a `checksPass` en `render.yaml`.
+- **Mientras tanto:** el deploy se destraba con *Manual Deploy > Deploy latest
+  commit* en Render, o con el próximo push una vez sincronizado el blueprint.
+
+## 2026-11-10 — APK local y bug de subida de comprobantes
+- **Objetivo:** conseguir un APK instalable y destrabar la carga de comprobantes.
+- **Build:** `expo prebuild` + `assembleRelease` dentro de podman
+  (`docs/mobile/build-apk-local.md`). El proyecto compila contra API 37, no 36.
+  APK firmado con la keystore de debug, `arm64-v8a`, 29 MB.
+- **Bug:** "Unsupported FormDataPart implementation" al adjuntar el comprobante.
+  Causa: el `fetch` de Expo SDK 58 (`expo/src/winter/fetch/convertFormData.ts`)
+  sólo acepta string, `Blob` u objetos con `bytes()`; el pseudo-blob
+  `{ uri, name, type }` de React Native cae al `throw`.
+- **Fix:** `app/parent/pagos.tsx` envía un objeto con `uri`, `name`, `type` y
+  `bytes()` (respaldado por `File` de `expo-file-system`), y resuelve el MIME
+  por extensión.
+- **Estado:** typecheck en verde, APK recompilado. Falta probar en dispositivo.

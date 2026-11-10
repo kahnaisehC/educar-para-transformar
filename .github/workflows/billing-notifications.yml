@@ -1,0 +1,41 @@
+name: Billing notifications
+
+# Ejecuta el recordatorio mensual y el aviso de deuda.
+# La API decide si la fecha corresponde (último día hábil / día 20) y evita
+# envíos duplicados con notification_deliveries.
+
+on:
+  schedule:
+    # 12:00 UTC = 09:00 en Argentina (UTC-3)
+    - cron: "0 12 * * *"
+  workflow_dispatch:
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Enviar recordatorio mensual
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+          NOTIFICATIONS_TOKEN: ${{ secrets.NOTIFICATIONS_TOKEN }}
+        run: |
+          YEAR=$(date -u +%Y)
+          MONTH=$(date -u +%m)
+          curl --fail --silent --show-error \
+            -X POST "$APP_URL/api/internal/notifications/run" \
+            -H "Content-Type: application/json" \
+            -H "x-internal-token: $NOTIFICATIONS_TOKEN" \
+            -d "{\"kind\":\"reminders\",\"year\":$YEAR,\"month\":$MONTH}"
+
+      - name: Enviar aviso de deuda
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+          NOTIFICATIONS_TOKEN: ${{ secrets.NOTIFICATIONS_TOKEN }}
+        run: |
+          YEAR=$(date -u +%Y)
+          MONTH=$(date -u +%m)
+          curl --fail --silent --show-error \
+            -X POST "$APP_URL/api/internal/notifications/run" \
+            -H "Content-Type: application/json" \
+            -H "x-internal-token: $NOTIFICATIONS_TOKEN" \
+            -d "{\"kind\":\"debt\",\"year\":$YEAR,\"month\":$MONTH}"

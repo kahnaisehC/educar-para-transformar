@@ -27,6 +27,10 @@ DB_CONTAINER="educar-db"
 API_CONTAINER="educar-api"
 WEB_CONTAINER="educar-web"
 JWT_SECRET_VALUE="${JWT_SECRET:-local-only-change-this-jwt-secret-educar-2026}"
+# IP de la LAN: permite abrir el frontend y el preview web de Expo desde
+# otro dispositivo sin depender de la extensión de CORS del navegador.
+LAN_IP="$(hostname -I 2>/dev/null | awk '{print $1}')"
+LAN_IP="${LAN_IP:-127.0.0.1}"
 
 remove_container() {
   local container="$1"
@@ -95,7 +99,7 @@ docker run --detach \
   --env PORT=4000 \
   --env DATABASE_URL=postgres://educar:educar_dev_password@educar-db:5432/educar \
   --env JWT_SECRET="$JWT_SECRET_VALUE" \
-  --env CORS_ORIGIN=http://localhost:5173 \
+  --env "CORS_ORIGIN=${CORS_ORIGIN:-http://localhost:5173,http://localhost:8081,http://${LAN_IP}:5173,http://${LAN_IP}:8081}" \
   --env APP_URL=http://localhost:5173 \
   --env UPLOADS_DIR=/workspace/uploads \
   --env "SMTP_HOST=${SMTP_HOST:-}" \
@@ -107,6 +111,7 @@ docker run --detach \
   --env "BANK_ALIAS=${BANK_ALIAS:-EDUCAR.CUOTAS}" \
   --env "BANK_CBU=${BANK_CBU:-0000003100010000000001}" \
   --env "BANK_HOLDER=${BANK_HOLDER:-Centro Educativo Educar para Transformar}" \
+  --env "NOTIFICATIONS_TOKEN=${NOTIFICATIONS_TOKEN:-}" \
   --volume "$UPLOADS_VOLUME:/workspace/uploads" \
   --publish 4000:4000 \
   educar-api >/dev/null

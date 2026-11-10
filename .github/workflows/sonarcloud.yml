@@ -1,12 +1,23 @@
 name: SonarCloud
 
-# Análisis estático centralizado. Requiere el secreto SONAR_TOKEN
-# (SonarCloud > My Account > Security). Sin el secreto, el escaneo se omite.
+# DESACTIVADO (2026-11-10): SonarCloud ya publica el check
+# "SonarCloud Code Analysis" mediante su Automatic Analysis, que corre en los
+# servidores de Sonar y NO consume minutos de GitHub Actions. Este workflow
+# quedó redundante (y además duplicaría el análisis).
+#
+# Se conserva el archivo, con disparo manual, para no perder la configuración
+# documentada en la Unidad 5. Para reactivar el escaneo por CI:
+#
+#   on:
+#     push:
+#       branches: [main]
+#     pull_request:
+#       branches: [main]
+#
+# y desactivar antes el Automatic Analysis en SonarCloud
+# (Administration > Analysis Method), porque no pueden convivir.
 on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+  workflow_dispatch: {}
 
 jobs:
   sonarcloud:

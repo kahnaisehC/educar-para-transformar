@@ -1,6 +1,7 @@
 import { Redirect, Tabs } from "expo-router";
 import { useAuth } from "../../src/auth";
 import { colors } from "../../src/theme";
+import { tabIcon } from "../../src/tabIcon";
 
 export default function ParentLayout() {
   const { user, loading } = useAuth();
@@ -19,11 +20,11 @@ export default function ParentLayout() {
         tabBarLabelStyle: { fontSize: 10, fontWeight: "700" },
       }}
     >
-      <Tabs.Screen name="index" options={{ title: "Resumen" }} />
-      <Tabs.Screen name="cuotas" options={{ title: "Cuotas" }} />
-      <Tabs.Screen name="pagos" options={{ title: "Pagos" }} />
-      <Tabs.Screen name="historial" options={{ title: "Historial" }} />
-      <Tabs.Screen name="perfil" options={{ title: "Perfil" }} />
+      <Tabs.Screen name="index" options={{ title: "Resumen", tabBarIcon: tabIcon("🏠") }} />
+      <Tabs.Screen name="cuotas" options={{ title: "Cuotas", tabBarIcon: tabIcon("💳") }} />
+      <Tabs.Screen name="pagos" options={{ title: "Pagos", tabBarIcon: tabIcon("📤") }} />
+      <Tabs.Screen name="historial" options={{ title: "Historial", tabBarIcon: tabIcon("🧾") }} />
+      <Tabs.Screen name="perfil" options={{ title: "Perfil", tabBarIcon: tabIcon("👤") }} />
     </Tabs>
   );
 }

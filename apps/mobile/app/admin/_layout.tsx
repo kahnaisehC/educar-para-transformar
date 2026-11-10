@@ -1,6 +1,7 @@
 import { Redirect, Tabs } from "expo-router";
 import { useAuth } from "../../src/auth";
 import { colors } from "../../src/theme";
+import { tabIcon } from "../../src/tabIcon";
 
 export default function AdminLayout() {
   const { user, loading } = useAuth();
@@ -20,21 +21,33 @@ export default function AdminLayout() {
         tabBarLabelStyle: { fontSize: 10, fontWeight: "700" },
       }}
     >
-      <Tabs.Screen name="index" options={{ title: "Resumen" }} />
+      <Tabs.Screen name="index" options={{ title: "Resumen", tabBarIcon: tabIcon("🏠") }} />
       <Tabs.Screen
         name="comprobantes"
-        options={{ title: "Comprobantes", href: director ? null : undefined }}
+        options={{
+          title: "Comprobantes",
+          href: director ? null : undefined,
+          tabBarIcon: tabIcon("🧾"),
+        }}
       />
       <Tabs.Screen
         name="facturas"
-        options={{ title: "Facturas", href: director ? null : undefined }}
+        options={{
+          title: "Facturas",
+          href: director ? null : undefined,
+          tabBarIcon: tabIcon("📄"),
+        }}
       />
       <Tabs.Screen
         name="tarifas"
-        options={{ title: "Tarifas", href: director ? null : undefined }}
+        options={{
+          title: "Tarifas",
+          href: director ? null : undefined,
+          tabBarIcon: tabIcon("🏷️"),
+        }}
       />
-      <Tabs.Screen name="reportes" options={{ title: "Reportes" }} />
-      <Tabs.Screen name="perfil" options={{ title: "Perfil" }} />
+      <Tabs.Screen name="reportes" options={{ title: "Reportes", tabBarIcon: tabIcon("📊") }} />
+      <Tabs.Screen name="perfil" options={{ title: "Perfil", tabBarIcon: tabIcon("👤") }} />
     </Tabs>
   );
 }

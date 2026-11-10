@@ -1,6 +1,13 @@
 # Blueprint de Render: PostgreSQL + API + frontend estático.
 # Después del primer deploy hay que completar las variables marcadas
 # "sync: false" (ver docs/DEPLOY_RENDER.md).
+#
+# autoDeployTrigger: commit (temporal, 2026-11-10)
+# La cuenta de GitHub quedó bloqueada por un problema de facturación
+# ("The job was not started because your account is locked due to a billing
+# issue"), así que ningún workflow de Actions arranca y checksPass bloquea
+# todos los deploys. Volver a checksPass cuando se resuelva la facturación:
+#   autoDeployTrigger: checksPass
 databases:
   - name: educar-db
     databaseName: educar
@@ -12,9 +19,9 @@ services:
     name: educar-api
     runtime: node
     plan: free
-    autoDeployTrigger: checksPass
+    autoDeployTrigger: commit
     buildCommand: npm install && npm run build --workspace @educar/api
-    startCommand: node scripts/init-db.mjs && npm run start --workspace @educar/api
+    startCommand: node scripts/migrate-db.mjs && npm run start --workspace @educar/api
     healthCheckPath: /api/health
     envVars:
       - key: NODE_VERSION
@@ -29,11 +36,45 @@ services:
         sync: false
       - key: APP_URL
         sync: false
+      - key: UPLOADS_DIR
+        value: /workspace/uploads
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        value: 587
+      - key: SMTP_SECURE
+        value: false
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: SMTP_FROM
+        sync: false
+      - key: BANK_ALIAS
+        value: EDUCAR.CUOTAS
+      - key: BANK_CBU
+        value: "0000003100010000000001"
+      - key: BANK_HOLDER
+        value: Centro Educativo Educar para Transformar
+      - key: NOTIFICATIONS_TOKEN
+        generateValue: true
+      - key: STORAGE_DRIVER
+        value: local
+      - key: S3_ENDPOINT
+        sync: false
+      - key: S3_BUCKET
+        sync: false
+      - key: S3_REGION
+        sync: false
+      - key: S3_ACCESS_KEY
+        sync: false
+      - key: S3_SECRET_KEY
+        sync: false
 
   - type: web
     name: educar-web
     runtime: static
-    autoDeployTrigger: checksPass
+    autoDeployTrigger: commit
     buildCommand: npm install && npm run build --workspace @educar/web
     staticPublishPath: apps/web/dist
     envVars:
