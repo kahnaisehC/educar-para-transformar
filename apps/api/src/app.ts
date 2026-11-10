@@ -224,8 +224,12 @@ export function createApp(options: CreateAppOptions) {
     });
   };
 
+  const allowedOrigins = (options.corsOrigin ?? "http://localhost:5173")
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean);
   app.disable("x-powered-by");
-  app.use(cors({ origin: options.corsOrigin ?? "http://localhost:5173" }));
+  app.use(cors({ origin: allowedOrigins }));
   app.use(express.json({ limit: "32kb" }));
 
   app.get("/api/health", asyncRoute(async (_request, response) => {

@@ -95,7 +95,7 @@ docker run --detach \
   --env PORT=4000 \
   --env DATABASE_URL=postgres://educar:educar_dev_password@educar-db:5432/educar \
   --env JWT_SECRET="$JWT_SECRET_VALUE" \
-  --env CORS_ORIGIN=http://localhost:5173 \
+  --env "CORS_ORIGIN=${CORS_ORIGIN:-http://localhost:5173,http://localhost:8081}" \
   --env APP_URL=http://localhost:5173 \
   --env UPLOADS_DIR=/workspace/uploads \
   --env "SMTP_HOST=${SMTP_HOST:-}" \
