@@ -1,6 +1,13 @@
 # Blueprint de Render: PostgreSQL + API + frontend estático.
 # Después del primer deploy hay que completar las variables marcadas
 # "sync: false" (ver docs/DEPLOY_RENDER.md).
+#
+# autoDeployTrigger: commit (temporal, 2026-11-10)
+# La cuenta de GitHub quedó bloqueada por un problema de facturación
+# ("The job was not started because your account is locked due to a billing
+# issue"), así que ningún workflow de Actions arranca y checksPass bloquea
+# todos los deploys. Volver a checksPass cuando se resuelva la facturación:
+#   autoDeployTrigger: checksPass
 databases:
   - name: educar-db
     databaseName: educar
@@ -12,7 +19,7 @@ services:
     name: educar-api
     runtime: node
     plan: free
-    autoDeployTrigger: checksPass
+    autoDeployTrigger: commit
     buildCommand: npm install && npm run build --workspace @educar/api
     startCommand: node scripts/migrate-db.mjs && npm run start --workspace @educar/api
     healthCheckPath: /api/health
@@ -67,7 +74,7 @@ services:
   - type: web
     name: educar-web
     runtime: static
-    autoDeployTrigger: checksPass
+    autoDeployTrigger: commit
     buildCommand: npm install && npm run build --workspace @educar/web
     staticPublishPath: apps/web/dist
     envVars:
