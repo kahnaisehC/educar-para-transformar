@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import * as DocumentPicker from "expo-document-picker";
-import { StyleSheet, Text, View } from "react-native";
+import { File as ExpoFile } from "expo-file-system";
+import { Platform, StyleSheet, Text, View } from "react-native";
 import { useAuth } from "../../src/auth";
 import { apiRequest, apiUpload, getErrorMessage } from "../../src/api";
 import { useChildren } from "../../src/useChildren";
@@ -25,6 +26,38 @@ interface PickedFile {
   type: string;
   file?: unknown;
 }
+
+const MIME_BY_EXTENSION: Record<string, string> = {
+  pdf: "application/pdf",
+  png: "image/png",
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+};
+
+function resolveMimeType(fileName: string, reported: string | undefined): string {
+  const extension = fileName.split(".").pop()?.toLowerCase() ?? "";
+  return MIME_BY_EXTENSION[extension] ?? reported ?? "application/pdf";
+}
+
+/**
+ * El `fetch` que instala Expo en SDK 58 no soporta el pseudo-blob de React Native
+ * (`{ uri, name, type }`): su `convertFormDataAsync` solo acepta string, `Blob` u
+ * objetos con `bytes()`. `File` de expo-file-system cumple la interfaz `Blob` y
+ * expone `bytes()`, pero su `name` es el del archivo temporal en caché. Por eso se
+ * arma un wrapper que conserva el nombre original y el MIME real.
+ */
+async function createUploadPart(file: PickedFile): Promise<Blob> {
+  const source = new ExpoFile(file.uri);
+  return {
+    // `uri` sirve si el fetch termina usando la red nativa de React Native;
+    // `bytes()` es lo que consume el fetch de Expo.
+    uri: file.uri,
+    name: file.name,
+    type: file.type,
+    bytes: () => source.bytes(),
+  } as unknown as Blob;
+}
+
 
 export default function ParentPaymentScreen() {
   const { token } = useAuth();
@@ -104,8 +137,8 @@ export default function ParentPaymentScreen() {
     setFile({
       uri: asset.uri,
       name: asset.name,
-      type: asset.mimeType ?? "application/pdf",
-      file: (asset as { file?: unknown }).file,
+      type: resolveMimeType(asset.name, asset.mimeType ?? undefined),
+      file: Platform.OS === "web" ? (asset as { file?: unknown }).file : undefined,
     });
   }
 
@@ -117,14 +150,10 @@ export default function ParentPaymentScreen() {
     try {
       const formData = new FormData();
       formData.append("itemIds", JSON.stringify(selectedItems));
-      if (file.file) {
+      if (Platform.OS === "web" && file.file) {
         formData.append("file", file.file as Blob);
       } else {
-        formData.append("file", {
-          uri: file.uri,
-          name: file.name,
-          type: file.type,
-        } as unknown as Blob);
+        formData.append("file", await createUploadPart(file));
       }
       await apiUpload(`/parent/billing/invoices/${invoice.id}/receipts`, token, formData);
       setFile(null);
