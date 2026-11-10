@@ -130,3 +130,39 @@ personas del grupo: no dependas de la memoria del chat.
   de GitHub, APK EAS y branch protection.
 - **Verificación:** lint sin errores, typecheck API/web/móvil, 56 tests, build y
   export web de Expo en verde.
+
+## 2026-11-10 — Bloqueo de GitHub Actions por facturación
+- **Objetivo:** destrabar los deploys de Render.
+- **Diagnóstico:** desde el 2026-11-09 ningún job de Actions arranca. La anotación
+  del check es "The job was not started because your account is locked due to a
+  billing issue". El primer CI en fallar es `1ebc677`; el último en verde había
+  sido `981ed88` (2026-11-04). El repo es público, así que no se trata de minutos
+  agotados: la cuenta tiene un problema de pago (plan, Copilot, Packages o medio
+  de pago rechazado).
+- **Corrección de un diagnóstico previo:** el fallo del job `Análisis SonarCloud`
+  era consecuencia del mismo bloqueo, no de una facturación de SonarCloud. El
+  check `SonarCloud Code Analysis` (Automatic Analysis, corre en servidores de
+  Sonar) sigue en verde y no depende de Actions.
+- **Cambios:** `.github/workflows/sonarcloud.yml` queda con disparo manual y su
+  comentario documenta que el análisis lo cubre el Automatic Analysis;
+  `docs/POLITICA_PR.md`, `docs/mobile/plan-cierre-brechas.md`,
+  `sonar-project.properties` y `unidad5v2/README.md` se alinean a eso;
+  `render.yaml` pasa `autoDeployTrigger` de `checksPass` a `commit` (temporal).
+- **Estado:** pendiente que el titular de la cuenta resuelva la facturación en
+  GitHub (*Settings > Billing*) y que se vuelva a `checksPass` en `render.yaml`.
+- **Mientras tanto:** el deploy se destraba con *Manual Deploy > Deploy latest
+  commit* en Render, o con el próximo push una vez sincronizado el blueprint.
+
+## 2026-11-10 — APK local y bug de subida de comprobantes
+- **Objetivo:** conseguir un APK instalable y destrabar la carga de comprobantes.
+- **Build:** `expo prebuild` + `assembleRelease` dentro de podman
+  (`docs/mobile/build-apk-local.md`). El proyecto compila contra API 37, no 36.
+  APK firmado con la keystore de debug, `arm64-v8a`, 29 MB.
+- **Bug:** "Unsupported FormDataPart implementation" al adjuntar el comprobante.
+  Causa: el `fetch` de Expo SDK 58 (`expo/src/winter/fetch/convertFormData.ts`)
+  sólo acepta string, `Blob` u objetos con `bytes()`; el pseudo-blob
+  `{ uri, name, type }` de React Native cae al `throw`.
+- **Fix:** `app/parent/pagos.tsx` envía un objeto con `uri`, `name`, `type` y
+  `bytes()` (respaldado por `File` de `expo-file-system`), y resuelve el MIME
+  por extensión.
+- **Estado:** typecheck en verde, APK recompilado. Falta probar en dispositivo.
