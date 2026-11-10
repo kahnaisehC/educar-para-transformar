@@ -41,7 +41,7 @@ criterios de aceptación, riesgos y esfuerzo estimado.
 | Scheduler de notificaciones | Render Cron, GitHub Actions schedule, `node-cron` en la API | Render Cron si el plan lo permite; si no, GitHub Actions con token interno |
 | Numeración del comprobante de pago | `payments.id` formateado, secuencia propia, UUID | Secuencia propia `PAGO-AAAA-000001` persistida en `payments.payment_number` |
 | Build móvil | Solo Android APK, Android + iOS, EAS Update | Android APK para la defensa; iOS solo si hay cuenta Apple |
-| Branch protection | Checks obligatorios, revisiones obligatorias | Requerir `build-and-test`, `e2e` y SonarCloud; PR obligatorio |
+| Branch protection | Checks obligatorios, revisiones obligatorias | Requerir `build-and-test` y `e2e`; PR obligatorio (SonarCloud desactivado por facturación) |
 
 ## Orden recomendado
 
@@ -396,7 +396,9 @@ a `main`.
   - Require a pull request before merging.
   - Require approvals (1).
   - Dismiss stale approvals.
-  - Require status checks: `build-and-test`, `e2e` y SonarCloud.
+  - Require status checks: `build-and-test` y `e2e`.
+    SonarCloud queda fuera: el 2026-11-10 se desactivó el workflow por un
+    problema de facturación de la organización (ver `.github/workflows/sonarcloud.yml`).
   - Require branches to be up to date.
   - Block force pushes y deletions.
 - Verificar que los checks existan en un PR reciente.
@@ -408,12 +410,13 @@ a `main`.
 **Aceptación:**
 
 - Un push directo a `main` es rechazado.
-- Un PR con CI o SonarCloud en rojo no se puede mergear.
+- Un PR con CI en rojo no se puede mergear.
 - Un PR sin aprobación no se puede mergear.
 - La configuración queda documentada y reproducible.
 
 **Riesgos:** permisos de administrador del repositorio; checks con nombres
-exactos; SonarCloud requiere `SONAR_TOKEN`.
+exactos. Si se reactiva SonarCloud, volver a agregar `Análisis SonarCloud` a
+los checks requeridos y el secreto `SONAR_TOKEN`.
 
 **Esfuerzo:** 0,5 día (más permisos).
 
@@ -433,4 +436,4 @@ exactos; SonarCloud requiere `SONAR_TOKEN`.
 | 8 | Branch protection | 0,5 día |
 
 Total estimado: **9–13 días** de trabajo, sin contar aprovisionamiento de
-cuentas externas (SMTP, storage, Expo/EAS, SonarCloud).
+cuentas externas (SMTP, storage, Expo/EAS).

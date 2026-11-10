@@ -6,7 +6,9 @@ Reglas para integrar cambios a `main` mediante revisión por pares.
 
 1. **Todo cambio entra por Pull Request.** No se hace push directo a `main`.
 2. **Una aprobación mínima** de un integrante distinto del autor. `.github/CODEOWNERS` solicita la revisión automáticamente.
-3. **Checks obligatorios en verde:** CI (lint, typecheck, test, build), job E2E con Cypress y Quality Gate de SonarCloud.
+3. **Checks obligatorios en verde:** CI (lint, typecheck, test, build) y job E2E con Cypress.
+   SonarCloud está desactivado por un problema de facturación de la organización
+   (ver `.github/workflows/sonarcloud.yml`); no es un check obligatorio.
 4. **PR pequeño y enfocado** (idealmente menos de 400 líneas), una rebanada vertical por vez.
 5. **Rama actualizada contra `main`** y conversaciones del diff resueltas antes de mergear.
 6. **Commits en inglés con Conventional Commits** (`feat:`, `fix:`, `docs:`, `chore:`, `refactor:`).
@@ -25,7 +27,7 @@ Reglas para integrar cambios a `main` mediante revisión por pares.
 *Settings > Branches > Add branch protection rule* para `main`:
 
 - Require a pull request before merging (1 approval, Require review from Code Owners).
-- Require status checks to pass: `Build, typecheck y test`, `Pruebas E2E (Cypress)` y `Análisis SonarCloud`.
+- Require status checks to pass: `Build, typecheck y test` y `Pruebas E2E (Cypress)`.
 - Require branches to be up to date before merging.
 - Require conversation resolution before merging.
 
@@ -44,8 +46,7 @@ gh api --method PUT repos/{owner}/{repo}/branches/main/protection \
     "strict": true,
     "contexts": [
       "Build, typecheck y test",
-      "Pruebas E2E (Cypress)",
-      "Análisis SonarCloud"
+      "Pruebas E2E (Cypress)"
     ]
   },
   "enforce_admins": false,

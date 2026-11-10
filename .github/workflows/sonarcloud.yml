@@ -1,12 +1,22 @@
 name: SonarCloud
 
-# Análisis estático centralizado. Requiere el secreto SONAR_TOKEN
-# (SonarCloud > My Account > Security). Sin el secreto, el escaneo se omite.
+# DESACTIVADO (2026-11-10): la organización de SonarCloud tiene un problema de
+# facturación y el check "Análisis SonarCloud" queda en rojo, bloqueando los
+# deploys de Render (autoDeployTrigger: checksPass).
+#
+# Se dejó el flujo solo con disparo manual para no romper la trazabilidad de la
+# Unidad 5. Para reactivarlo, restaurar los disparadores push/pull_request:
+#
+#   on:
+#     push:
+#       branches: [main]
+#     pull_request:
+#       branches: [main]
+#
+# y volver a agregar "Análisis SonarCloud" a los checks obligatorios de
+# docs/POLITICA_PR.md.
 on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+  workflow_dispatch: {}
 
 jobs:
   sonarcloud:
