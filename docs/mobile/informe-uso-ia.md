@@ -128,11 +128,31 @@ historial están en la bitácora del repositorio.
 | 10 | Íconos de la barra inferior | «Los íconos funcionan en el navegador pero no en el APK» | Asistente IA | Afirmó que era un problema de renderizado por plataforma | No | No existía ningún `tabBarIcon` en el código: se agregaron los íconos | Reemplazado |
 | 11 | Tests con base en memoria | «Agregá tests de facturación con pg-mem» | Asistente IA | Escribió los casos y los fixtures | Sí | Se ajustaron tipos de fecha y secuencias para que coincidieran con PostgreSQL | Correcto |
 | 12 | Generar la documentación técnica | «Documentá el procedimiento de build del APK» | Asistente IA | Redactó el procedimiento completo | Sí | Se corrigieron versiones de SDK tras verificarlas contra el proyecto real | Correcto |
+| 13 | Análisis estático en un código que ya existía | «Configurá ESLint para el monorepo sin imponer estilo y corregí lo que detecte» | Claude Code (Claude Sonnet 5.5) | Armó `eslint.config.mjs` (flat config, typescript-eslint, react-hooks) y quitó los imports sin usar que encontró | Sí | Se dejó `exhaustive-deps` y `no-explicit-any` como advertencias, para no reescribir componentes ya probados; se excluyeron `dist`, `cypress` y `apps/mobile` | Correcto: 0 errores, 12 advertencias |
+| 14 | Que el lint no dependa de la memoria del equipo | «Agregá un hook de pre-commit y el paso de lint en el CI» | Claude Code | Husky + lint-staged y un paso `Lint` en `ci.yml` | Sí | Se actualizó `AGENTS.md` para que la verificación obligatoria incluya `npm run lint` | Correcto |
+| 15 | Prueba dinámica de RF-AL-03 / HU-01 (inscripción a deportes) | «Escribí pruebas E2E con Cypress del caso TC-DEP-01 y una de regresión de horarios» | Claude Code | Dos especificaciones (`inscripcion-deportes.cy.ts`, `regresion-horarios.cy.ts`) y un job `e2e` en el CI | Parcialmente | Hubo que levantar API, web y PostgreSQL reales y cargar la base con `init-db.mjs` antes de que corrieran; se verificó la ejecución local | Correcto: 4 de 4 pruebas aprobadas |
+| 16 | Despliegue en Render con base vacía | «Preparame el despliegue en Render» | Claude Code | `render.yaml` y un script de inicialización de la base | Parcialmente | El script se hizo **idempotente**: sólo aplica `schema.sql`, `seed.sql` y las migraciones si la tabla `users` no existe, para poder ejecutarlo en cada arranque sin perder datos | Correcto |
+| 17 | Métricas de calidad con SonarCloud | «Configurá SonarCloud y la cobertura para el TP de la Unidad 5» | Claude Code | `sonar-project.properties`, workflow y cobertura con `@vitest/coverage-v8` (84,61 % de líneas) | Parcialmente | La vinculación con SonarCloud, el token y la protección de `main` son pasos manuales en GitHub que la IA no puede hacer; se completaron a mano y se documentó la evidencia (Quality Gate aprobado en el PR #4) | Correcto con ajuste |
+| 18 | Documentar la entrega de la Unidad 5 | «Completá el documento del TP con el caso de prueba, las herramientas y las métricas» | Claude Code | Redactó el documento (Word y PDF), el README de la entrega y la política de PR | Sí | Se reemplazaron los resultados por los reales de la corrida (50 pruebas Vitest, 4 Cypress) y se agregó la captura del PR #4 | Correcto |
+
+*Las filas 13 a 18 corresponden al trabajo de Elias Morales con Claude Code
+(Unidad 5 y despliegue); las filas 1 a 12, al trabajo de Ian Hakanson con
+opencode. Los commits de las filas 13 a 18 llevan el trailer
+`Co-Authored-By: Claude`.*
 
 **Balance:** de 12 episodios, 6 fueron correctos en el primer intento, 2
 requirieron ajustes y 4 debieron reemplazarse. Los cuatro reemplazos tienen un
 patrón común: la IA respondió con conocimiento **genérico** cuando el problema
 dependía de una **versión concreta** del stack o del estado real del entorno.
+
+**Balance del trabajo con Claude Code (filas 13 a 18):** de 6 episodios, 3
+fueron correctos al primer intento y 3 requirieron ajustes; ninguno debió
+reemplazarse por completo. Son tareas de herramientas de calidad y despliegue,
+con forma definida y criterio de aceptación objetivo (lint en 0 errores, pruebas
+en verde, Quality Gate aprobado), que es justamente donde la IA rindió mejor. Los
+ajustes tuvieron una causa común: lo que la IA no puede ejecutar por nosotros
+(levantar el stack real, vincular SonarCloud en GitHub, activar la protección de
+ramas) quedó como paso manual del equipo.
 
 ---
 
@@ -278,5 +298,9 @@ otro prompt. La IA reemplaza parte de la escritura, no el criterio.
 | Guía de uso de IA en el repo | `docs/ai/GUIA_IA.md` |
 | Reglas de trabajo del proyecto | `AGENTS.md` |
 | Procedimiento de build del APK | `docs/mobile/build-apk-local.md` |
+| Entrega de la Unidad 5 (trabajo con Claude Code) | `unidad5v2/` |
+| ESLint, Cypress y SonarCloud | `eslint.config.mjs`, `cypress/`, `sonar-project.properties` |
+| Despliegue en Render | `render.yaml`, `scripts/init-db.mjs` |
+| Política de PR | `docs/POLITICA_PR.md` |
 | Diseño de la Parte 3 | `docs/mobile/` |
 | Tests del backend | `apps/api/src/__tests__/app.test.ts` (56 casos) |
